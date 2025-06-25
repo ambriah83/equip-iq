@@ -20,15 +20,27 @@ const Index = () => {
         return <EquipmentManagement />;
       case 'locations':
         return <LocationManagement />;
-      case 'documents':
+      case 'knowledge-base':
         return (
           <div className="p-6">
             <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-6 rounded-lg text-white">
-              <h2 className="text-xl font-bold">Document Management</h2>
-              <p className="text-blue-100">Manage manuals, contracts, and training materials</p>
+              <h2 className="text-xl font-bold">Knowledge Base</h2>
+              <p className="text-blue-100">Manage manuals, procedures, and training materials</p>
             </div>
             <div className="mt-6 text-center text-slate-500">
-              <p>Document management coming soon...</p>
+              <p>Knowledge base management coming soon...</p>
+            </div>
+          </div>
+        );
+      case 'vendors':
+        return (
+          <div className="p-6">
+            <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-6 rounded-lg text-white">
+              <h2 className="text-xl font-bold">Vendor Management</h2>
+              <p className="text-blue-100">Manage supplier relationships and vendor information</p>
+            </div>
+            <div className="mt-6 text-center text-slate-500">
+              <p>Vendor management coming soon...</p>
             </div>
           </div>
         );
