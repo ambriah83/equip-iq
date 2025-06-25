@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { Building2, MapPin, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import AddLocationDialog from './AddLocationDialog';
+import LocationDetailsModal from './LocationDetailsModal';
 
 interface Location {
   id: string;
@@ -17,7 +19,7 @@ interface Location {
 }
 
 const LocationManagement = () => {
-  const locations: Location[] = [
+  const [locations, setLocations] = useState<Location[]>([
     {
       id: '1',
       name: 'Sunshine Tanning - Downtown',
@@ -48,7 +50,11 @@ const LocationManagement = () => {
       status: 'maintenance',
       lastUpdated: '2024-01-23'
     }
-  ];
+  ]);
+
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [modalMode, setModalMode] = useState<'view' | 'manage'>('view');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -57,6 +63,31 @@ const LocationManagement = () => {
       case 'closed': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handleViewDetails = (location: Location) => {
+    setSelectedLocation(location);
+    setModalMode('view');
+    setIsModalOpen(true);
+  };
+
+  const handleManage = (location: Location) => {
+    setSelectedLocation(location);
+    setModalMode('manage');
+    setIsModalOpen(true);
+  };
+
+  const handleLocationUpdate = (updatedLocation: Location) => {
+    setLocations(prevLocations => 
+      prevLocations.map(loc => 
+        loc.id === updatedLocation.id ? updatedLocation : loc
+      )
+    );
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedLocation(null);
   };
 
   return (
@@ -114,10 +145,19 @@ const LocationManagement = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleViewDetails(location)}
+                  >
                     View Details
                   </Button>
-                  <Button size="sm" className="flex-1">
+                  <Button 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleManage(location)}
+                  >
                     Manage
                   </Button>
                 </div>
@@ -158,6 +198,14 @@ const LocationManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      <LocationDetailsModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        location={selectedLocation}
+        mode={modalMode}
+        onLocationUpdate={handleLocationUpdate}
+      />
     </div>
   );
 };
