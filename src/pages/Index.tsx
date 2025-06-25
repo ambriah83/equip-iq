@@ -5,6 +5,7 @@ import Dashboard from '@/components/Dashboard';
 import AIChat from '@/components/AIChat';
 import EquipmentManagement from '@/components/EquipmentManagement';
 import LocationManagement from '@/components/LocationManagement';
+import VendorManagement from '@/components/VendorManagement';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -20,6 +21,8 @@ const Index = () => {
         return <EquipmentManagement />;
       case 'locations':
         return <LocationManagement />;
+      case 'vendors':
+        return <VendorManagement />;
       case 'knowledge-base':
         return (
           <div className="p-6">
@@ -29,18 +32,6 @@ const Index = () => {
             </div>
             <div className="mt-6 text-center text-slate-500">
               <p>Knowledge base management coming soon...</p>
-            </div>
-          </div>
-        );
-      case 'vendors':
-        return (
-          <div className="p-6">
-            <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-6 rounded-lg text-white">
-              <h2 className="text-xl font-bold">Vendor Management</h2>
-              <p className="text-blue-100">Manage supplier relationships and vendor information</p>
-            </div>
-            <div className="mt-6 text-center text-slate-500">
-              <p>Vendor management coming soon...</p>
             </div>
           </div>
         );

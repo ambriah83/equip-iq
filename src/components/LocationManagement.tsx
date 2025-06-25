@@ -1,11 +1,12 @@
-
 import React, { useState } from 'react';
-import { Building2, MapPin, Users } from 'lucide-react';
+import { Building2, MapPin, Users, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AddLocationDialog from './AddLocationDialog';
 import LocationDetailsModal from './LocationDetailsModal';
+import ViewToggle from './ViewToggle';
 
 interface Location {
   id: string;
@@ -19,6 +20,7 @@ interface Location {
 }
 
 const LocationManagement = () => {
+  const [view, setView] = useState<'card' | 'list'>('card');
   const [locations, setLocations] = useState<Location[]>([
     {
       id: '1',
@@ -90,6 +92,131 @@ const LocationManagement = () => {
     setSelectedLocation(null);
   };
 
+  const renderCardView = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      {locations.map((location) => (
+        <Card key={location.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <CardTitle className="text-lg mb-2">{location.name}</CardTitle>
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <MapPin size={16} />
+                  <span>{location.address}</span>
+                </div>
+              </div>
+              <Badge className={getStatusColor(location.status)}>
+                {location.status}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Users size={16} className="text-slate-500" />
+                <span className="text-sm">Manager: {location.manager}</span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-sm text-blue-600">Equipment</p>
+                  <p className="text-lg font-bold text-blue-900">{location.equipmentCount}</p>
+                </div>
+                <div className="bg-red-50 p-3 rounded-lg">
+                  <p className="text-sm text-red-600">Active Issues</p>
+                  <p className="text-lg font-bold text-red-900">{location.activeIssues}</p>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t">
+                <p className="text-xs text-slate-500">Last updated: {location.lastUpdated}</p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => handleViewDetails(location)}
+                >
+                  View Details
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleManage(location)}
+                >
+                  Manage
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderListView = () => (
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Manager</TableHead>
+              <TableHead>Equipment</TableHead>
+              <TableHead>Issues</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Last Updated</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {locations.map((location) => (
+              <TableRow key={location.id}>
+                <TableCell>
+                  <div>
+                    <div className="font-medium">{location.name}</div>
+                    <div className="text-sm text-slate-600 flex items-center gap-1">
+                      <MapPin size={12} />
+                      {location.address}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>{location.manager}</TableCell>
+                <TableCell>{location.equipmentCount}</TableCell>
+                <TableCell>{location.activeIssues}</TableCell>
+                <TableCell>
+                  <Badge className={getStatusColor(location.status)}>
+                    {location.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>{location.lastUpdated}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleViewDetails(location)}
+                    >
+                      View
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleManage(location)}
+                    >
+                      <Edit size={16} />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="p-6 space-y-6">
       <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-6 rounded-lg text-white">
@@ -101,71 +228,14 @@ const LocationManagement = () => {
               <p className="text-blue-100">Manage all franchise locations and their details</p>
             </div>
           </div>
-          <AddLocationDialog />
+          <div className="flex items-center gap-4">
+            <ViewToggle view={view} onViewChange={setView} />
+            <AddLocationDialog />
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {locations.map((location) => (
-          <Card key={location.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-lg mb-2">{location.name}</CardTitle>
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <MapPin size={16} />
-                    <span>{location.address}</span>
-                  </div>
-                </div>
-                <Badge className={getStatusColor(location.status)}>
-                  {location.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Users size={16} className="text-slate-500" />
-                  <span className="text-sm">Manager: {location.manager}</span>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-sm text-blue-600">Equipment</p>
-                    <p className="text-lg font-bold text-blue-900">{location.equipmentCount}</p>
-                  </div>
-                  <div className="bg-red-50 p-3 rounded-lg">
-                    <p className="text-sm text-red-600">Active Issues</p>
-                    <p className="text-lg font-bold text-red-900">{location.activeIssues}</p>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t">
-                  <p className="text-xs text-slate-500">Last updated: {location.lastUpdated}</p>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={() => handleViewDetails(location)}
-                  >
-                    View Details
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => handleManage(location)}
-                  >
-                    Manage
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {view === 'card' ? renderCardView() : renderListView()}
 
       <Card>
         <CardHeader>

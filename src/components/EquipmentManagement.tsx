@@ -1,12 +1,14 @@
 
 import React, { useState } from 'react';
-import { Wrench, Search, Filter, X } from 'lucide-react';
+import { Wrench, Search, Filter, X, Edit, Save, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AddEquipmentDialog from './AddEquipmentDialog';
+import ViewToggle from './ViewToggle';
 
 interface Equipment {
   id: string;
@@ -20,18 +22,22 @@ interface Equipment {
   warranty: string;
 }
 
+const EQUIPMENT_TYPES = ['Sun', 'Spray', 'Spa', 'Red Light', 'Other', 'HVAC', 'Washer', 'Dryer'];
+
 const EquipmentManagement = () => {
+  const [view, setView] = useState<'card' | 'list'>('card');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   
-  const equipment: Equipment[] = [
+  const [equipment, setEquipment] = useState<Equipment[]>([
     {
       id: '1',
       name: 'Tanning Bed #3',
-      type: 'Tanning Equipment',
+      type: 'Sun',
       location: 'Location A',
       room: 'Room 3',
       serialNumber: 'TB-2023-003',
@@ -42,7 +48,7 @@ const EquipmentManagement = () => {
     {
       id: '2',
       name: 'HVAC Unit #1',
-      type: 'Climate Control',
+      type: 'HVAC',
       location: 'Location B',
       room: 'Main Floor',
       serialNumber: 'HVAC-2022-001',
@@ -53,7 +59,7 @@ const EquipmentManagement = () => {
     {
       id: '3',
       name: 'Water Heater',
-      type: 'Utilities',
+      type: 'Other',
       location: 'Location C',
       room: 'Utility Room',
       serialNumber: 'WH-2023-001',
@@ -63,8 +69,8 @@ const EquipmentManagement = () => {
     },
     {
       id: '4',
-      name: 'Light Therapy Unit #2',
-      type: 'Therapy Equipment',
+      name: 'Red Light Therapy Unit #2',
+      type: 'Red Light',
       location: 'Location A',
       room: 'Room 7',
       serialNumber: 'LT-2023-002',
@@ -72,7 +78,7 @@ const EquipmentManagement = () => {
       lastService: '2024-01-20',
       warranty: 'Active until 2025-12-31'
     }
-  ];
+  ]);
 
   // Get unique values for filter options
   const uniqueTypes = [...new Set(equipment.map(item => item.type))];
@@ -106,7 +112,115 @@ const EquipmentManagement = () => {
     setSearchTerm('');
   };
 
+  const handleEdit = (id: string) => {
+    setEditingId(id);
+  };
+
+  const handleSave = (id: string, updatedData: Partial<Equipment>) => {
+    setEquipment(prev => prev.map(item => 
+      item.id === id ? { ...item, ...updatedData } : item
+    ));
+    setEditingId(null);
+  };
+
   const hasActiveFilters = statusFilter !== 'all' || typeFilter !== 'all' || locationFilter !== 'all' || searchTerm !== '';
+
+  const renderCardView = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {filteredEquipment.map((item) => (
+        <Card key={item.id} className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle className="text-lg">{item.name}</CardTitle>
+                <p className="text-sm text-slate-600">{item.type}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className={getStatusColor(item.status)}>
+                  {item.status}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleEdit(item.id)}
+                >
+                  <Edit size={16} />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-600">Location:</span>
+                <span className="text-sm font-medium">{item.location}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-600">Room:</span>
+                <span className="text-sm font-medium">{item.room}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-600">Serial:</span>
+                <span className="text-sm font-medium">{item.serialNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-600">Last Service:</span>
+                <span className="text-sm font-medium">{item.lastService}</span>
+              </div>
+              <div className="pt-2 border-t">
+                <p className="text-xs text-slate-500">Warranty: {item.warranty}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderListView = () => (
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Room</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Last Service</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredEquipment.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell className="font-medium">{item.name}</TableCell>
+                <TableCell>{item.type}</TableCell>
+                <TableCell>{item.location}</TableCell>
+                <TableCell>{item.room}</TableCell>
+                <TableCell>
+                  <Badge className={getStatusColor(item.status)}>
+                    {item.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>{item.lastService}</TableCell>
+                <TableCell>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleEdit(item.id)}
+                  >
+                    <Edit size={16} />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="p-6 space-y-6">
@@ -119,7 +233,10 @@ const EquipmentManagement = () => {
               <p className="text-blue-100">Monitor and manage all equipment across locations</p>
             </div>
           </div>
-          <AddEquipmentDialog />
+          <div className="flex items-center gap-4">
+            <ViewToggle view={view} onViewChange={setView} />
+            <AddEquipmentDialog />
+          </div>
         </div>
       </div>
 
@@ -223,46 +340,7 @@ const EquipmentManagement = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEquipment.map((item) => (
-          <Card key={item.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">{item.name}</CardTitle>
-                  <p className="text-sm text-slate-600">{item.type}</p>
-                </div>
-                <Badge className={getStatusColor(item.status)}>
-                  {item.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-slate-600">Location:</span>
-                  <span className="text-sm font-medium">{item.location}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-slate-600">Room:</span>
-                  <span className="text-sm font-medium">{item.room}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-slate-600">Serial:</span>
-                  <span className="text-sm font-medium">{item.serialNumber}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-slate-600">Last Service:</span>
-                  <span className="text-sm font-medium">{item.lastService}</span>
-                </div>
-                <div className="pt-2 border-t">
-                  <p className="text-xs text-slate-500">Warranty: {item.warranty}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {view === 'card' ? renderCardView() : renderListView()}
 
       {filteredEquipment.length === 0 && (
         <div className="text-center py-12">
