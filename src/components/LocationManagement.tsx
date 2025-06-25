@@ -1,27 +1,20 @@
 import React, { useState } from 'react';
-import { Building2, MapPin, Users, Edit } from 'lucide-react';
+import { Building2, MapPin, Users, Edit, Home } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
 import { useViewToggle } from '@/hooks/useViewToggle';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useRooms } from '@/hooks/useRooms';
 import { DataTable, FilterBar, StatusBadge } from '@/components/shared';
 import { LocationCard, AddLocationDialog, LocationDetailsModal } from '@/components/location';
+import { AddRoomDialog } from '@/components/room';
+import { Location } from '@/types/Location';
 import ViewToggle from './ViewToggle';
-
-interface Location {
-  id: string;
-  name: string;
-  address: string;
-  manager: string;
-  equipmentCount: number;
-  activeIssues: number;
-  status: 'active' | 'maintenance' | 'closed';
-  lastUpdated: string;
-}
 
 const LocationManagement = () => {
   const { view, setView } = useViewToggle();
+  const { rooms } = useRooms();
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [modalMode, setModalMode] = useState<'view' | 'manage'>('view');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,7 +28,8 @@ const LocationManagement = () => {
       equipmentCount: 12,
       activeIssues: 2,
       status: 'active',
-      lastUpdated: '2024-01-25'
+      lastUpdated: '2024-01-25',
+      abbreviation: 'CA'
     },
     {
       id: '2',
@@ -45,7 +39,8 @@ const LocationManagement = () => {
       equipmentCount: 8,
       activeIssues: 0,
       status: 'active',
-      lastUpdated: '2024-01-24'
+      lastUpdated: '2024-01-24',
+      abbreviation: 'FL'
     },
     {
       id: '3',
@@ -55,7 +50,8 @@ const LocationManagement = () => {
       equipmentCount: 15,
       activeIssues: 1,
       status: 'maintenance',
-      lastUpdated: '2024-01-23'
+      lastUpdated: '2024-01-23',
+      abbreviation: 'TX'
     }
   ]);
 
@@ -71,7 +67,7 @@ const LocationManagement = () => {
     hasActiveFilters
   } = useDataFiltering({
     data: locations,
-    searchFields: ['name', 'address', 'manager'],
+    searchFields: ['name', 'address', 'manager', 'abbreviation'],
     filterConfigs: {
       status: 'Status'
     }
@@ -108,7 +104,12 @@ const LocationManagement = () => {
       label: 'Name',
       render: (location: Location) => (
         <div>
-          <div className="font-medium">{location.name}</div>
+          <div className="font-medium flex items-center gap-2">
+            {location.name}
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+              {location.abbreviation}
+            </span>
+          </div>
           <div className="text-sm text-slate-600 flex items-center gap-1">
             <MapPin size={12} />
             {location.address}
@@ -123,6 +124,16 @@ const LocationManagement = () => {
     {
       key: 'equipmentCount',
       label: 'Equipment'
+    },
+    {
+      key: 'rooms',
+      label: 'Rooms',
+      render: (location: Location) => (
+        <div className="flex items-center gap-1">
+          <Home size={14} />
+          <span>{rooms.filter(room => room.locationId === location.id).length}</span>
+        </div>
+      )
     },
     {
       key: 'activeIssues',
@@ -174,6 +185,7 @@ const LocationManagement = () => {
           location={location}
           onViewDetails={handleViewDetails}
           onManage={handleManage}
+          roomCount={rooms.filter(room => room.locationId === location.id).length}
         />
       ))}
     </div>
@@ -192,6 +204,7 @@ const LocationManagement = () => {
           </div>
           <div className="flex items-center gap-4">
             <ViewToggle view={view} onViewChange={setView} />
+            <AddRoomDialog locations={locations} />
             <AddLocationDialog />
           </div>
         </div>
@@ -200,7 +213,7 @@ const LocationManagement = () => {
       <FilterBar
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Search locations by name, address, or manager..."
+        searchPlaceholder="Search locations by name, address, manager, or abbreviation..."
         filters={filterConfigs}
         showFilters={showFilters}
         onToggleFilters={() => setShowFilters(!showFilters)}
@@ -230,6 +243,10 @@ const LocationManagement = () => {
               <p className="text-sm text-slate-600">Total Locations</p>
             </div>
             <div className="text-center">
+              <p className="text-2xl font-bold text-purple-600">{rooms.length}</p>
+              <p className="text-sm text-slate-600">Total Rooms</p>
+            </div>
+            <div className="text-center">
               <p className="text-2xl font-bold text-green-600">
                 {locations.reduce((sum, loc) => sum + loc.equipmentCount, 0)}
               </p>
@@ -240,12 +257,6 @@ const LocationManagement = () => {
                 {locations.reduce((sum, loc) => sum + loc.activeIssues, 0)}
               </p>
               <p className="text-sm text-slate-600">Active Issues</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">
-                {locations.filter(loc => loc.status === 'active').length}
-              </p>
-              <p className="text-sm text-slate-600">Active Locations</p>
             </div>
           </div>
         </CardContent>
