@@ -6,6 +6,7 @@ import AIChat from '@/components/AIChat';
 import EquipmentManagement from '@/components/EquipmentManagement';
 import LocationManagement from '@/components/LocationManagement';
 import VendorManagement from '@/components/VendorManagement';
+import Settings from '@/components/Settings';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -48,17 +49,7 @@ const Index = () => {
           </div>
         );
       case 'settings':
-        return (
-          <div className="p-6">
-            <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-6 rounded-lg text-white">
-              <h2 className="text-xl font-bold">Settings</h2>
-              <p className="text-blue-100">Configure your system preferences</p>
-            </div>
-            <div className="mt-6 text-center text-slate-500">
-              <p>Settings panel coming soon...</p>
-            </div>
-          </div>
-        );
+        return <Settings />;
       default:
         return <Dashboard onSectionChange={setActiveSection} />;
     }
