@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
-import { MessageSquare, Send, Upload, Mic, Image as ImageIcon } from 'lucide-react';
+import { MessageSquare, Send, Upload, Mic, Image as ImageIcon, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -11,6 +11,15 @@ interface Message {
   sender: 'user' | 'ai';
   timestamp: Date;
   image?: string;
+}
+
+interface FeedbackData {
+  id: string;
+  sessionId: string;
+  wasSolved: boolean;
+  suggestions?: string;
+  timestamp: Date;
+  conversationSummary: string;
 }
 
 const AIChat = () => {
@@ -24,6 +33,9 @@ const AIChat = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [sessionId] = useState(Date.now().toString());
+  const { toast } = useToast();
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
@@ -49,7 +61,61 @@ const AIChat = () => {
       };
       setMessages(prev => [...prev, aiResponse]);
       setIsLoading(false);
+
+      // Show feedback prompt after a few exchanges
+      if (messages.length >= 4) {
+        setTimeout(() => setShowFeedback(true), 3000);
+      }
     }, 1500);
+  };
+
+  const handleFeedback = (wasSolved: boolean) => {
+    const conversationSummary = messages.slice(1).map(m => `${m.sender}: ${m.text}`).join('\n');
+    
+    const feedbackData: FeedbackData = {
+      id: Date.now().toString(),
+      sessionId,
+      wasSolved,
+      timestamp: new Date(),
+      conversationSummary,
+      suggestions: wasSolved ? undefined : generateImprovementSuggestions(conversationSummary)
+    };
+
+    // Store feedback in localStorage (would be backend in production)
+    const existingFeedback = JSON.parse(localStorage.getItem('aiFeedback') || '[]');
+    existingFeedback.push(feedbackData);
+    localStorage.setItem('aiFeedback', JSON.stringify(existingFeedback));
+
+    toast({
+      title: wasSolved ? "Thank you!" : "Feedback recorded",
+      description: wasSolved 
+        ? "Great to hear your issue was resolved!" 
+        : "We'll use this feedback to improve our AI assistant.",
+    });
+
+    setShowFeedback(false);
+  };
+
+  const generateImprovementSuggestions = (conversation: string): string => {
+    // Simple AI improvement suggestions based on conversation patterns
+    const suggestions = [];
+    
+    if (conversation.includes('error') || conversation.includes('broken')) {
+      suggestions.push("Add more specific error code recognition");
+    }
+    if (conversation.includes('location') && !conversation.includes('which location')) {
+      suggestions.push("Improve location identification prompts");
+    }
+    if (conversation.includes('image') || conversation.includes('picture')) {
+      suggestions.push("Enhance image analysis capabilities");
+    }
+    if (conversation.length < 200) {
+      suggestions.push("Provide more detailed troubleshooting steps");
+    }
+    
+    return suggestions.length > 0 
+      ? suggestions.join('; ') 
+      : "Review conversation flow and add more targeted questions";
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,6 +191,42 @@ const AIChat = () => {
           </div>
         )}
       </div>
+
+      {/* Feedback Modal */}
+      {showFeedback && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="p-6 max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Was your issue resolved?</h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Your feedback helps us improve our AI assistant for everyone.
+            </p>
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => handleFeedback(true)}
+                className="flex-1 gap-2"
+              >
+                <ThumbsUp size={16} />
+                Yes, resolved
+              </Button>
+              <Button 
+                onClick={() => handleFeedback(false)}
+                variant="outline"
+                className="flex-1 gap-2"
+              >
+                <ThumbsDown size={16} />
+                No, still need help
+              </Button>
+            </div>
+            <Button 
+              onClick={() => setShowFeedback(false)}
+              variant="ghost"
+              className="w-full mt-2 text-sm"
+            >
+              Skip feedback
+            </Button>
+          </Card>
+        </div>
+      )}
 
       <div className="border-t border-slate-200 p-6">
         <div className="flex gap-3 mb-4">

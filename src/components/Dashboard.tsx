@@ -1,18 +1,37 @@
-
-import React from 'react';
-import { AlertTriangle, CheckCircle, Clock, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AlertTriangle, CheckCircle, Clock, TrendingUp, Brain, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import AIEffectivenessModal from './AIEffectivenessModal';
 
 interface DashboardProps {
   onSectionChange: (section: string) => void;
 }
 
 const Dashboard = ({ onSectionChange }: DashboardProps) => {
+  const [aiEffectiveness, setAiEffectiveness] = useState(0);
+  const [showEffectivenessModal, setShowEffectivenessModal] = useState(false);
+
+  useEffect(() => {
+    // Calculate AI effectiveness from stored feedback
+    const feedback = JSON.parse(localStorage.getItem('aiFeedback') || '[]');
+    if (feedback.length > 0) {
+      const resolved = feedback.filter((f: any) => f.wasSolved).length;
+      setAiEffectiveness(Math.round((resolved / feedback.length) * 100));
+    }
+  }, []);
+
   const stats = [
     { title: 'Active Equipment', value: '127', icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
     { title: 'Pending Issues', value: '8', icon: AlertTriangle, color: 'text-yellow-600', bg: 'bg-yellow-50' },
     { title: 'Response Time', value: '3.2m', icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { title: 'Resolution Rate', value: '94%', icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { 
+      title: 'AI Effectiveness', 
+      value: `${aiEffectiveness}%`, 
+      icon: Brain, 
+      color: 'text-purple-600', 
+      bg: 'bg-purple-50',
+      onClick: () => setShowEffectivenessModal(true)
+    },
   ];
 
   const recentActivity = [
@@ -33,15 +52,22 @@ const Dashboard = ({ onSectionChange }: DashboardProps) => {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
+            <Card 
+              key={index} 
+              className={`hover:shadow-lg transition-shadow ${stat.onClick ? 'cursor-pointer' : ''}`}
+              onClick={stat.onClick}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-600">{stat.title}</p>
                     <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
                   </div>
-                  <div className={`p-3 rounded-full ${stat.bg}`}>
+                  <div className={`p-3 rounded-full ${stat.bg} relative`}>
                     <Icon className={`h-6 w-6 ${stat.color}`} />
+                    {stat.onClick && (
+                      <Eye className="h-3 w-3 text-slate-400 absolute -bottom-1 -right-1" />
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -111,6 +137,11 @@ const Dashboard = ({ onSectionChange }: DashboardProps) => {
           </CardContent>
         </Card>
       </div>
+
+      <AIEffectivenessModal 
+        isOpen={showEffectivenessModal}
+        onClose={() => setShowEffectivenessModal(false)}
+      />
     </div>
   );
 };
