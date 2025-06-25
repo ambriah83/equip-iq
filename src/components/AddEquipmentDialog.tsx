@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import FileUpload from './FileUpload';
 
 const AddEquipmentDialog = () => {
   const [open, setOpen] = useState(false);
@@ -18,20 +19,34 @@ const AddEquipmentDialog = () => {
     room: '',
     serialNumber: '',
     warranty: '',
+    tmaxConnection: '',
   });
+  
+  const [equipmentPhoto, setEquipmentPhoto] = useState<File[]>([]);
+  const [documentation, setDocumentation] = useState<File[]>([]);
+  const [roomLayout, setRoomLayout] = useState<File[]>([]);
+  const [roomPhoto, setRoomPhoto] = useState<File[]>([]);
 
   const equipmentTypes = [
-    'Tanning Equipment',
-    'Climate Control',
-    'Utilities',
-    'Therapy Equipment',
-    'Safety Equipment',
+    'Sun',
+    'Spray',
+    'Spa',
+    'Red Light',
+    'Other',
+    'HVAC',
+    'Washer',
+    'Dryer',
   ];
 
   const locations = [
     'Location A',
     'Location B', 
     'Location C',
+  ];
+
+  const tmaxConnections = [
+    'Wired',
+    'Wireless',
   ];
 
   const handleInputChange = (field: string, value: string) => {
@@ -41,7 +56,13 @@ const AddEquipmentDialog = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Here you would typically send the data to your backend
-    console.log('Adding equipment:', formData);
+    console.log('Adding equipment:', {
+      ...formData,
+      equipmentPhoto,
+      documentation,
+      roomLayout,
+      roomPhoto,
+    });
     
     toast({
       title: "Equipment Added",
@@ -56,7 +77,12 @@ const AddEquipmentDialog = () => {
       room: '',
       serialNumber: '',
       warranty: '',
+      tmaxConnection: '',
     });
+    setEquipmentPhoto([]);
+    setDocumentation([]);
+    setRoomLayout([]);
+    setRoomPhoto([]);
     setOpen(false);
   };
 
@@ -68,7 +94,7 @@ const AddEquipmentDialog = () => {
           Add Equipment
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Equipment</DialogTitle>
         </DialogHeader>
@@ -149,6 +175,55 @@ const AddEquipmentDialog = () => {
                 onChange={(e) => handleInputChange('warranty', e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tmaxConnection">TMAX Connection</Label>
+            <Select value={formData.tmaxConnection} onValueChange={(value) => handleInputChange('tmaxConnection', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select connection type" />
+              </SelectTrigger>
+              <SelectContent>
+                {tmaxConnections.map((connection) => (
+                  <SelectItem key={connection} value={connection}>
+                    {connection}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-lg font-medium">Media & Documentation</h3>
+            
+            <FileUpload
+              label="Equipment Photo"
+              accept="image/*"
+              type="image"
+              onFilesChange={setEquipmentPhoto}
+            />
+            
+            <FileUpload
+              label="Documentation"
+              accept=".pdf,.doc,.docx,.txt"
+              multiple
+              type="document"
+              onFilesChange={setDocumentation}
+            />
+            
+            <FileUpload
+              label="Room Layout"
+              accept="image/*"
+              type="image"
+              onFilesChange={setRoomLayout}
+            />
+            
+            <FileUpload
+              label="Room Photo"
+              accept="image/*"
+              type="image"
+              onFilesChange={setRoomPhoto}
+            />
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">

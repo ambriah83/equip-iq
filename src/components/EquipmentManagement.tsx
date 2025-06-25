@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Wrench, Search, Filter, X, Edit, Save, Star } from 'lucide-react';
+import { Wrench, Search, Filter, X, Edit, Save, Image, FileText, Layout } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +19,11 @@ interface Equipment {
   status: 'active' | 'maintenance' | 'offline';
   lastService: string;
   warranty: string;
+  tmaxConnection?: 'Wired' | 'Wireless';
+  equipmentPhoto?: string;
+  documentation?: string[];
+  roomLayout?: string;
+  roomPhoto?: string;
 }
 
 const EQUIPMENT_TYPES = ['Sun', 'Spray', 'Spa', 'Red Light', 'Other', 'HVAC', 'Washer', 'Dryer'];
@@ -43,7 +47,12 @@ const EquipmentManagement = () => {
       serialNumber: 'TB-2023-003',
       status: 'active',
       lastService: '2024-01-15',
-      warranty: 'Active until 2025-06-30'
+      warranty: 'Active until 2025-06-30',
+      tmaxConnection: 'Wired',
+      equipmentPhoto: 'tanning-bed-3.jpg',
+      documentation: ['manual.pdf', 'maintenance-guide.pdf'],
+      roomLayout: 'room-3-layout.jpg',
+      roomPhoto: 'room-3-photo.jpg'
     },
     {
       id: '2',
@@ -54,7 +63,8 @@ const EquipmentManagement = () => {
       serialNumber: 'HVAC-2022-001',
       status: 'maintenance',
       lastService: '2024-01-10',
-      warranty: 'Expired'
+      warranty: 'Expired',
+      tmaxConnection: 'Wireless'
     },
     {
       id: '3',
@@ -65,7 +75,8 @@ const EquipmentManagement = () => {
       serialNumber: 'WH-2023-001',
       status: 'offline',
       lastService: '2023-12-20',
-      warranty: 'Active until 2026-03-15'
+      warranty: 'Active until 2026-03-15',
+      tmaxConnection: 'Wired'
     },
     {
       id: '4',
@@ -76,7 +87,8 @@ const EquipmentManagement = () => {
       serialNumber: 'LT-2023-002',
       status: 'active',
       lastService: '2024-01-20',
-      warranty: 'Active until 2025-12-31'
+      warranty: 'Active until 2025-12-31',
+      tmaxConnection: 'Wireless'
     }
   ]);
 
@@ -164,9 +176,46 @@ const EquipmentManagement = () => {
                 <span className="text-sm font-medium">{item.serialNumber}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-sm text-slate-600">TMAX:</span>
+                <span className="text-sm font-medium">{item.tmaxConnection || 'Not specified'}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-sm text-slate-600">Last Service:</span>
                 <span className="text-sm font-medium">{item.lastService}</span>
               </div>
+              
+              {(item.equipmentPhoto || item.documentation || item.roomLayout || item.roomPhoto) && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-slate-500 mb-2">Media & Documents:</p>
+                  <div className="flex gap-2">
+                    {item.equipmentPhoto && (
+                      <Badge variant="outline" className="text-xs">
+                        <Image size={12} className="mr-1" />
+                        Equipment
+                      </Badge>
+                    )}
+                    {item.documentation && item.documentation.length > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        <FileText size={12} className="mr-1" />
+                        Docs ({item.documentation.length})
+                      </Badge>
+                    )}
+                    {item.roomLayout && (
+                      <Badge variant="outline" className="text-xs">
+                        <Layout size={12} className="mr-1" />
+                        Layout
+                      </Badge>
+                    )}
+                    {item.roomPhoto && (
+                      <Badge variant="outline" className="text-xs">
+                        <Image size={12} className="mr-1" />
+                        Room
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <div className="pt-2 border-t">
                 <p className="text-xs text-slate-500">Warranty: {item.warranty}</p>
               </div>
@@ -187,8 +236,10 @@ const EquipmentManagement = () => {
               <TableHead>Type</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Room</TableHead>
+              <TableHead>TMAX</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last Service</TableHead>
+              <TableHead>Media</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -199,12 +250,20 @@ const EquipmentManagement = () => {
                 <TableCell>{item.type}</TableCell>
                 <TableCell>{item.location}</TableCell>
                 <TableCell>{item.room}</TableCell>
+                <TableCell>{item.tmaxConnection || 'Not specified'}</TableCell>
                 <TableCell>
                   <Badge className={getStatusColor(item.status)}>
                     {item.status}
                   </Badge>
                 </TableCell>
                 <TableCell>{item.lastService}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    {item.equipmentPhoto && <Image size={14} className="text-slate-400" />}
+                    {item.documentation && item.documentation.length > 0 && <FileText size={14} className="text-slate-400" />}
+                    {item.roomLayout && <Layout size={14} className="text-slate-400" />}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <Button
                     size="sm"
