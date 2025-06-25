@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Wrench, Search, Filter, X, Edit, Save, Image, FileText, Layout } from 'lucide-react';
+import { Wrench, Search, Filter, X, Edit, Save, Image, FileText, Layout, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AddEquipmentDialog from './AddEquipmentDialog';
+import EditEquipmentDialog from './EditEquipmentDialog';
 import ViewToggle from './ViewToggle';
 
 interface Equipment {
@@ -22,6 +24,7 @@ interface Equipment {
   tmaxConnection?: 'Wired' | 'Wireless';
   equipmentPhoto?: string;
   documentation?: string[];
+  warrantyDocumentation?: string[];
   roomLayout?: string;
   roomPhoto?: string;
 }
@@ -35,7 +38,8 @@ const EquipmentManagement = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   
   const [equipment, setEquipment] = useState<Equipment[]>([
     {
@@ -51,6 +55,7 @@ const EquipmentManagement = () => {
       tmaxConnection: 'Wired',
       equipmentPhoto: 'tanning-bed-3.jpg',
       documentation: ['manual.pdf', 'maintenance-guide.pdf'],
+      warrantyDocumentation: ['warranty-2023.pdf'],
       roomLayout: 'room-3-layout.jpg',
       roomPhoto: 'room-3-photo.jpg'
     },
@@ -64,7 +69,8 @@ const EquipmentManagement = () => {
       status: 'maintenance',
       lastService: '2024-01-10',
       warranty: 'Expired',
-      tmaxConnection: 'Wireless'
+      tmaxConnection: 'Wireless',
+      warrantyDocumentation: ['warranty-expired-2022.pdf']
     },
     {
       id: '3',
@@ -76,7 +82,8 @@ const EquipmentManagement = () => {
       status: 'offline',
       lastService: '2023-12-20',
       warranty: 'Active until 2026-03-15',
-      tmaxConnection: 'Wired'
+      tmaxConnection: 'Wired',
+      warrantyDocumentation: ['warranty-2023.pdf', 'extended-warranty.pdf']
     },
     {
       id: '4',
@@ -88,7 +95,8 @@ const EquipmentManagement = () => {
       status: 'active',
       lastService: '2024-01-20',
       warranty: 'Active until 2025-12-31',
-      tmaxConnection: 'Wireless'
+      tmaxConnection: 'Wireless',
+      warrantyDocumentation: ['warranty-2023.pdf']
     }
   ]);
 
@@ -124,15 +132,15 @@ const EquipmentManagement = () => {
     setSearchTerm('');
   };
 
-  const handleEdit = (id: string) => {
-    setEditingId(id);
+  const handleEdit = (equipmentItem: Equipment) => {
+    setEditingEquipment(equipmentItem);
+    setEditDialogOpen(true);
   };
 
-  const handleSave = (id: string, updatedData: Partial<Equipment>) => {
+  const handleUpdateEquipment = (updatedEquipment: Equipment) => {
     setEquipment(prev => prev.map(item => 
-      item.id === id ? { ...item, ...updatedData } : item
+      item.id === updatedEquipment.id ? updatedEquipment : item
     ));
-    setEditingId(null);
   };
 
   const hasActiveFilters = statusFilter !== 'all' || typeFilter !== 'all' || locationFilter !== 'all' || searchTerm !== '';
@@ -154,7 +162,7 @@ const EquipmentManagement = () => {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => handleEdit(item.id)}
+                  onClick={() => handleEdit(item)}
                 >
                   <Edit size={16} />
                 </Button>
@@ -184,10 +192,10 @@ const EquipmentManagement = () => {
                 <span className="text-sm font-medium">{item.lastService}</span>
               </div>
               
-              {(item.equipmentPhoto || item.documentation || item.roomLayout || item.roomPhoto) && (
+              {(item.equipmentPhoto || item.documentation || item.warrantyDocumentation || item.roomLayout || item.roomPhoto) && (
                 <div className="pt-2 border-t">
                   <p className="text-xs text-slate-500 mb-2">Media & Documents:</p>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {item.equipmentPhoto && (
                       <Badge variant="outline" className="text-xs">
                         <Image size={12} className="mr-1" />
@@ -198,6 +206,12 @@ const EquipmentManagement = () => {
                       <Badge variant="outline" className="text-xs">
                         <FileText size={12} className="mr-1" />
                         Docs ({item.documentation.length})
+                      </Badge>
+                    )}
+                    {item.warrantyDocumentation && item.warrantyDocumentation.length > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        <Shield size={12} className="mr-1" />
+                        Warranty ({item.warrantyDocumentation.length})
                       </Badge>
                     )}
                     {item.roomLayout && (
@@ -261,6 +275,7 @@ const EquipmentManagement = () => {
                   <div className="flex gap-1">
                     {item.equipmentPhoto && <Image size={14} className="text-slate-400" />}
                     {item.documentation && item.documentation.length > 0 && <FileText size={14} className="text-slate-400" />}
+                    {item.warrantyDocumentation && item.warrantyDocumentation.length > 0 && <Shield size={14} className="text-slate-400" />}
                     {item.roomLayout && <Layout size={14} className="text-slate-400" />}
                   </div>
                 </TableCell>
@@ -268,7 +283,7 @@ const EquipmentManagement = () => {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => handleEdit(item.id)}
+                    onClick={() => handleEdit(item)}
                   >
                     <Edit size={16} />
                   </Button>
@@ -410,6 +425,13 @@ const EquipmentManagement = () => {
           <p className="text-slate-500">Try adjusting your search or filter criteria</p>
         </div>
       )}
+
+      <EditEquipmentDialog
+        equipment={editingEquipment}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onUpdateEquipment={handleUpdateEquipment}
+      />
     </div>
   );
 };

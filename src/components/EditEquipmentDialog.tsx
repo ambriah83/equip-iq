@@ -1,16 +1,44 @@
 
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import FileUpload from './FileUpload';
 
-const AddEquipmentDialog = () => {
-  const [open, setOpen] = useState(false);
+interface Equipment {
+  id: string;
+  name: string;
+  type: string;
+  location: string;
+  room: string;
+  serialNumber: string;
+  status: 'active' | 'maintenance' | 'offline';
+  lastService: string;
+  warranty: string;
+  tmaxConnection?: 'Wired' | 'Wireless';
+  equipmentPhoto?: string;
+  documentation?: string[];
+  warrantyDocumentation?: string[];
+  roomLayout?: string;
+  roomPhoto?: string;
+}
+
+interface EditEquipmentDialogProps {
+  equipment: Equipment | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUpdateEquipment: (equipment: Equipment) => void;
+}
+
+const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({ 
+  equipment, 
+  open, 
+  onOpenChange, 
+  onUpdateEquipment 
+}) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
@@ -18,37 +46,38 @@ const AddEquipmentDialog = () => {
     location: '',
     room: '',
     serialNumber: '',
+    status: 'active' as 'active' | 'maintenance' | 'offline',
+    lastService: '',
     warranty: '',
-    tmaxConnection: '',
+    tmaxConnection: ''
   });
-  
+
   const [equipmentPhoto, setEquipmentPhoto] = useState<File[]>([]);
   const [documentation, setDocumentation] = useState<File[]>([]);
   const [warrantyDocumentation, setWarrantyDocumentation] = useState<File[]>([]);
   const [roomLayout, setRoomLayout] = useState<File[]>([]);
   const [roomPhoto, setRoomPhoto] = useState<File[]>([]);
 
-  const equipmentTypes = [
-    'Sun',
-    'Spray',
-    'Spa',
-    'Red Light',
-    'Other',
-    'HVAC',
-    'Washer',
-    'Dryer',
-  ];
+  const equipmentTypes = ['Sun', 'Spray', 'Spa', 'Red Light', 'Other', 'HVAC', 'Washer', 'Dryer'];
+  const locations = ['Location A', 'Location B', 'Location C'];
+  const tmaxConnections = ['Wired', 'Wireless'];
+  const statuses = ['active', 'maintenance', 'offline'];
 
-  const locations = [
-    'Location A',
-    'Location B', 
-    'Location C',
-  ];
-
-  const tmaxConnections = [
-    'Wired',
-    'Wireless',
-  ];
+  useEffect(() => {
+    if (equipment) {
+      setFormData({
+        name: equipment.name,
+        type: equipment.type,
+        location: equipment.location,
+        room: equipment.room,
+        serialNumber: equipment.serialNumber,
+        status: equipment.status,
+        lastService: equipment.lastService,
+        warranty: equipment.warranty,
+        tmaxConnection: equipment.tmaxConnection || ''
+      });
+    }
+  }, [equipment]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -56,50 +85,31 @@ const AddEquipmentDialog = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the data to your backend
-    console.log('Adding equipment:', {
-      ...formData,
-      equipmentPhoto,
-      documentation,
-      warrantyDocumentation,
-      roomLayout,
-      roomPhoto,
-    });
     
-    toast({
-      title: "Equipment Added",
-      description: `${formData.name} has been successfully added to the system.`,
-    });
-    
-    // Reset form and close dialog
-    setFormData({
-      name: '',
-      type: '',
-      location: '',
-      room: '',
-      serialNumber: '',
-      warranty: '',
-      tmaxConnection: '',
-    });
-    setEquipmentPhoto([]);
-    setDocumentation([]);
-    setWarrantyDocumentation([]);
-    setRoomLayout([]);
-    setRoomPhoto([]);
-    setOpen(false);
+    if (equipment) {
+      const updatedEquipment = {
+        ...equipment,
+        ...formData,
+        tmaxConnection: formData.tmaxConnection as 'Wired' | 'Wireless'
+      };
+      onUpdateEquipment(updatedEquipment);
+      
+      toast({
+        title: "Equipment Updated",
+        description: `${formData.name} has been successfully updated.`,
+      });
+      
+      onOpenChange(false);
+    }
   };
 
+  if (!equipment) return null;
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-white text-blue-600 hover:bg-blue-50">
-          <Plus size={20} className="mr-2" />
-          Add Equipment
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Equipment</DialogTitle>
+          <DialogTitle>Edit Equipment</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -109,7 +119,6 @@ const AddEquipmentDialog = () => {
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="e.g. Tanning Bed #4"
                 required
               />
             </div>
@@ -152,7 +161,6 @@ const AddEquipmentDialog = () => {
                 id="room"
                 value={formData.room}
                 onChange={(e) => handleInputChange('room', e.target.value)}
-                placeholder="e.g. Room 3"
                 required
               />
             </div>
@@ -165,17 +173,43 @@ const AddEquipmentDialog = () => {
                 id="serialNumber"
                 value={formData.serialNumber}
                 onChange={(e) => handleInputChange('serialNumber', e.target.value)}
-                placeholder="e.g. TB-2024-004"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="warranty">Warranty Expiry</Label>
+              <Label htmlFor="status">Status</Label>
+              <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="lastService">Last Service Date</Label>
+              <Input
+                id="lastService"
+                type="date"
+                value={formData.lastService}
+                onChange={(e) => handleInputChange('lastService', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="warranty">Warranty</Label>
               <Input
                 id="warranty"
-                type="date"
                 value={formData.warranty}
                 onChange={(e) => handleInputChange('warranty', e.target.value)}
+                placeholder="e.g. Active until 2025-06-30"
               />
             </div>
           </div>
@@ -204,6 +238,7 @@ const AddEquipmentDialog = () => {
               accept="image/*"
               type="image"
               onFilesChange={setEquipmentPhoto}
+              existingFiles={equipment.equipmentPhoto ? [equipment.equipmentPhoto] : []}
             />
             
             <FileUpload
@@ -212,6 +247,7 @@ const AddEquipmentDialog = () => {
               multiple
               type="document"
               onFilesChange={setDocumentation}
+              existingFiles={equipment.documentation || []}
             />
             
             <FileUpload
@@ -220,6 +256,7 @@ const AddEquipmentDialog = () => {
               multiple
               type="document"
               onFilesChange={setWarrantyDocumentation}
+              existingFiles={equipment.warrantyDocumentation || []}
             />
             
             <FileUpload
@@ -227,6 +264,7 @@ const AddEquipmentDialog = () => {
               accept="image/*"
               type="image"
               onFilesChange={setRoomLayout}
+              existingFiles={equipment.roomLayout ? [equipment.roomLayout] : []}
             />
             
             <FileUpload
@@ -234,15 +272,16 @@ const AddEquipmentDialog = () => {
               accept="image/*"
               type="image"
               onFilesChange={setRoomPhoto}
+              existingFiles={equipment.roomPhoto ? [equipment.roomPhoto] : []}
             />
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit">
-              Add Equipment
+              Update Equipment
             </Button>
           </div>
         </form>
@@ -251,4 +290,4 @@ const AddEquipmentDialog = () => {
   );
 };
 
-export default AddEquipmentDialog;
+export default EditEquipmentDialog;
