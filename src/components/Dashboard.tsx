@@ -3,7 +3,11 @@ import React from 'react';
 import { AlertTriangle, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const Dashboard = () => {
+interface DashboardProps {
+  onSectionChange: (section: string) => void;
+}
+
+const Dashboard = ({ onSectionChange }: DashboardProps) => {
   const stats = [
     { title: 'Active Equipment', value: '127', icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
     { title: 'Pending Issues', value: '8', icon: AlertTriangle, color: 'text-yellow-600', bg: 'bg-yellow-50' },
@@ -78,19 +82,28 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              <button className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors">
+              <button 
+                onClick={() => onSectionChange('ai-chat')}
+                className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors cursor-pointer"
+              >
                 <div className="font-medium text-blue-900">Start AI Chat</div>
                 <div className="text-sm text-blue-600">Get instant help</div>
               </button>
-              <button className="p-4 bg-green-50 hover:bg-green-100 rounded-lg text-left transition-colors">
+              <button 
+                onClick={() => onSectionChange('equipment')}
+                className="p-4 bg-green-50 hover:bg-green-100 rounded-lg text-left transition-colors cursor-pointer"
+              >
                 <div className="font-medium text-green-900">Add Equipment</div>
                 <div className="text-sm text-green-600">Register new device</div>
               </button>
-              <button className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors">
+              <button className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors cursor-pointer">
                 <div className="font-medium text-purple-900">View Reports</div>
                 <div className="text-sm text-purple-600">Analytics dashboard</div>
               </button>
-              <button className="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg text-left transition-colors">
+              <button 
+                onClick={() => onSectionChange('users')}
+                className="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg text-left transition-colors cursor-pointer"
+              >
                 <div className="font-medium text-orange-900">Manage Users</div>
                 <div className="text-sm text-orange-600">Team permissions</div>
               </button>

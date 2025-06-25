@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
-import { Wrench, Plus, Search, Filter } from 'lucide-react';
+import { Wrench, Search, Filter } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import AddEquipmentDialog from './AddEquipmentDialog';
 
 interface Equipment {
   id: string;
@@ -94,10 +94,7 @@ const EquipmentManagement = () => {
               <p className="text-blue-100">Monitor and manage all equipment across locations</p>
             </div>
           </div>
-          <Button className="bg-white text-blue-600 hover:bg-blue-50">
-            <Plus size={20} className="mr-2" />
-            Add Equipment
-          </Button>
+          <AddEquipmentDialog />
         </div>
       </div>
 

@@ -13,7 +13,7 @@ const Index = () => {
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onSectionChange={setActiveSection} />;
       case 'ai-chat':
         return <AIChat />;
       case 'equipment':
@@ -57,7 +57,7 @@ const Index = () => {
           </div>
         );
       default:
-        return <Dashboard />;
+        return <Dashboard onSectionChange={setActiveSection} />;
     }
   };
 

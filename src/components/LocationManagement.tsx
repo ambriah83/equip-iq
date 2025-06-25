@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
-import { Building2, MapPin, Plus, Users } from 'lucide-react';
+import { Building2, MapPin, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import AddLocationDialog from './AddLocationDialog';
 
 interface Location {
   id: string;
@@ -70,10 +70,7 @@ const LocationManagement = () => {
               <p className="text-blue-100">Manage all franchise locations and their details</p>
             </div>
           </div>
-          <Button className="bg-white text-blue-600 hover:bg-blue-50">
-            <Plus size={20} className="mr-2" />
-            Add Location
-          </Button>
+          <AddLocationDialog />
         </div>
       </div>
 
