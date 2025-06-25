@@ -53,7 +53,7 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
     lastService: '',
     warranty: {
       status: 'inactive' as 'active' | 'inactive',
-      expiryDate: '',
+      expiryDate: undefined as string | undefined,
       documentation: [] as string[]
     },
     tmaxConnection: ''
@@ -80,11 +80,7 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
         serialNumber: equipment.serialNumber,
         status: equipment.status,
         lastService: equipment.lastService,
-        warranty: equipment.warranty || {
-          status: 'inactive',
-          expiryDate: '',
-          documentation: []
-        },
+        warranty: equipment.warranty,
         tmaxConnection: equipment.tmaxConnection || ''
       });
     }
@@ -219,30 +215,27 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="warranty">Warranty</Label>
-              <WarrantySection
-                warranty={formData.warranty}
-                onWarrantyChange={handleWarrantyChange}
-                onWarrantyDocsChange={setWarrantyDocumentation}
-              />
+              <Label htmlFor="tmaxConnection">TMAX Connection</Label>
+              <Select value={formData.tmaxConnection} onValueChange={(value) => handleInputChange('tmaxConnection', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select connection type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tmaxConnections.map((connection) => (
+                    <SelectItem key={connection} value={connection}>
+                      {connection}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="tmaxConnection">TMAX Connection</Label>
-            <Select value={formData.tmaxConnection} onValueChange={(value) => handleInputChange('tmaxConnection', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select connection type" />
-              </SelectTrigger>
-              <SelectContent>
-                {tmaxConnections.map((connection) => (
-                  <SelectItem key={connection} value={connection}>
-                    {connection}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <WarrantySection
+            warranty={formData.warranty}
+            onWarrantyChange={handleWarrantyChange}
+            onWarrantyDocsChange={setWarrantyDocumentation}
+          />
 
           <div className="space-y-4 border-t pt-4">
             <h3 className="text-lg font-medium">Media & Documentation</h3>
@@ -288,7 +281,7 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
             <Button type="submit">
               Update Equipment
             </Button>
-          </div>
+            </div>
         </form>
       </DialogContent>
     </Dialog>

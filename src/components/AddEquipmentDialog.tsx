@@ -20,7 +20,7 @@ const AddEquipmentDialog = () => {
     serialNumber: '',
     warranty: {
       status: 'inactive' as 'active' | 'inactive',
-      expiryDate: '',
+      expiryDate: undefined as string | undefined,
       documentation: [] as string[]
     },
     tmaxConnection: '',
@@ -88,7 +88,7 @@ const AddEquipmentDialog = () => {
       serialNumber: '',
       warranty: {
         status: 'inactive',
-        expiryDate: '',
+        expiryDate: undefined,
         documentation: []
       },
       tmaxConnection: '',

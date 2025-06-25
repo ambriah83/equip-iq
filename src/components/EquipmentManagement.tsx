@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Wrench, Edit, Image, FileText, Layout, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,11 +19,14 @@ interface Equipment {
   serialNumber: string;
   status: 'active' | 'maintenance' | 'offline';
   lastService: string;
-  warranty: string;
+  warranty: {
+    status: 'active' | 'inactive';
+    expiryDate?: string;
+    documentation?: string[];
+  };
   tmaxConnection?: 'Wired' | 'Wireless';
   equipmentPhoto?: string;
   documentation?: string[];
-  warrantyDocumentation?: string[];
   roomLayout?: string;
   roomPhoto?: string;
 }
@@ -43,11 +47,14 @@ const EquipmentManagement = () => {
       serialNumber: 'TB-2023-003',
       status: 'active',
       lastService: '2024-01-15',
-      warranty: 'Active until 2025-06-30',
+      warranty: {
+        status: 'active',
+        expiryDate: '2025-06-30',
+        documentation: ['warranty-2023.pdf']
+      },
       tmaxConnection: 'Wired',
       equipmentPhoto: 'tanning-bed-3.jpg',
       documentation: ['manual.pdf', 'maintenance-guide.pdf'],
-      warrantyDocumentation: ['warranty-2023.pdf'],
       roomLayout: 'room-3-layout.jpg',
       roomPhoto: 'room-3-photo.jpg'
     },
@@ -60,9 +67,11 @@ const EquipmentManagement = () => {
       serialNumber: 'HVAC-2022-001',
       status: 'maintenance',
       lastService: '2024-01-10',
-      warranty: 'Expired',
-      tmaxConnection: 'Wireless',
-      warrantyDocumentation: ['warranty-expired-2022.pdf']
+      warranty: {
+        status: 'inactive',
+        documentation: ['warranty-expired-2022.pdf']
+      },
+      tmaxConnection: 'Wireless'
     },
     {
       id: '3',
@@ -73,9 +82,12 @@ const EquipmentManagement = () => {
       serialNumber: 'WH-2023-001',
       status: 'offline',
       lastService: '2023-12-20',
-      warranty: 'Active until 2026-03-15',
-      tmaxConnection: 'Wired',
-      warrantyDocumentation: ['warranty-2023.pdf', 'extended-warranty.pdf']
+      warranty: {
+        status: 'active',
+        expiryDate: '2026-03-15',
+        documentation: ['warranty-2023.pdf', 'extended-warranty.pdf']
+      },
+      tmaxConnection: 'Wired'
     },
     {
       id: '4',
@@ -86,9 +98,12 @@ const EquipmentManagement = () => {
       serialNumber: 'LT-2023-002',
       status: 'active',
       lastService: '2024-01-20',
-      warranty: 'Active until 2025-12-31',
-      tmaxConnection: 'Wireless',
-      warrantyDocumentation: ['warranty-2023.pdf']
+      warranty: {
+        status: 'active',
+        expiryDate: '2025-12-31',
+        documentation: ['warranty-2023.pdf']
+      },
+      tmaxConnection: 'Wireless'
     }
   ]);
 
@@ -171,7 +186,7 @@ const EquipmentManagement = () => {
         <div className="flex gap-1">
           {item.equipmentPhoto && <Image size={14} className="text-slate-400" />}
           {item.documentation && item.documentation.length > 0 && <FileText size={14} className="text-slate-400" />}
-          {item.warrantyDocumentation && item.warrantyDocumentation.length > 0 && <Shield size={14} className="text-slate-400" />}
+          {item.warranty.documentation && item.warranty.documentation.length > 0 && <Shield size={14} className="text-slate-400" />}
           {item.roomLayout && <Layout size={14} className="text-slate-400" />}
         </div>
       )
