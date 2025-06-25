@@ -1,9 +1,15 @@
+
 import React, { useState } from 'react';
 import { Building2, MapPin, Users, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useDataFiltering } from '@/hooks/useDataFiltering';
+import { useViewToggle } from '@/hooks/useViewToggle';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import DataTable from '@/components/shared/DataTable';
+import FilterBar from '@/components/shared/FilterBar';
+import StatusBadge from '@/components/shared/StatusBadge';
 import AddLocationDialog from './AddLocationDialog';
 import LocationDetailsModal from './LocationDetailsModal';
 import ViewToggle from './ViewToggle';
@@ -20,8 +26,12 @@ interface Location {
 }
 
 const LocationManagement = () => {
-  const [view, setView] = useState<'card' | 'list'>('card');
-  const [locations, setLocations] = useState<Location[]>([
+  const { view, setView } = useViewToggle();
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [modalMode, setModalMode] = useState<'view' | 'manage'>('view');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [locations, setLocations] = useLocalStorage<Location[]>('locations', [
     {
       id: '1',
       name: 'Sunshine Tanning - Downtown',
@@ -54,18 +64,23 @@ const LocationManagement = () => {
     }
   ]);
 
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
-  const [modalMode, setModalMode] = useState<'view' | 'manage'>('view');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'maintenance': return 'bg-yellow-100 text-yellow-800';
-      case 'closed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const {
+    searchTerm,
+    setSearchTerm,
+    filters,
+    updateFilter,
+    showFilters,
+    setShowFilters,
+    filteredData: filteredLocations,
+    clearAllFilters,
+    hasActiveFilters
+  } = useDataFiltering({
+    data: locations,
+    searchFields: ['name', 'address', 'manager'],
+    filterConfigs: {
+      status: 'Status'
     }
-  };
+  });
 
   const handleViewDetails = (location: Location) => {
     setSelectedLocation(location);
@@ -92,9 +107,73 @@ const LocationManagement = () => {
     setSelectedLocation(null);
   };
 
+  const columns = [
+    {
+      key: 'name',
+      label: 'Name',
+      render: (location: Location) => (
+        <div>
+          <div className="font-medium">{location.name}</div>
+          <div className="text-sm text-slate-600 flex items-center gap-1">
+            <MapPin size={12} />
+            {location.address}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'manager',
+      label: 'Manager'
+    },
+    {
+      key: 'equipmentCount',
+      label: 'Equipment'
+    },
+    {
+      key: 'activeIssues',
+      label: 'Issues'
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (location: Location) => (
+        <StatusBadge status={location.status} variant="location" />
+      )
+    },
+    {
+      key: 'lastUpdated',
+      label: 'Last Updated'
+    }
+  ];
+
+  const renderActions = (location: Location) => (
+    <div className="flex gap-1">
+      <Button size="sm" variant="outline" onClick={() => handleViewDetails(location)}>
+        View
+      </Button>
+      <Button size="sm" onClick={() => handleManage(location)}>
+        <Edit size={16} />
+      </Button>
+    </div>
+  );
+
+  const filterConfigs = [
+    {
+      key: 'status',
+      label: 'Status',
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'maintenance', label: 'Maintenance' },
+        { value: 'closed', label: 'Closed' }
+      ],
+      value: filters.status,
+      onChange: (value: string) => updateFilter('status', value)
+    }
+  ];
+
   const renderCardView = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-      {locations.map((location) => (
+      {filteredLocations.map((location) => (
         <Card key={location.id} className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <div className="flex items-start justify-between">
@@ -105,9 +184,7 @@ const LocationManagement = () => {
                   <span>{location.address}</span>
                 </div>
               </div>
-              <Badge className={getStatusColor(location.status)}>
-                {location.status}
-              </Badge>
+              <StatusBadge status={location.status} variant="location" />
             </div>
           </CardHeader>
           <CardContent>
@@ -156,67 +233,6 @@ const LocationManagement = () => {
     </div>
   );
 
-  const renderListView = () => (
-    <Card>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Manager</TableHead>
-              <TableHead>Equipment</TableHead>
-              <TableHead>Issues</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Updated</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {locations.map((location) => (
-              <TableRow key={location.id}>
-                <TableCell>
-                  <div>
-                    <div className="font-medium">{location.name}</div>
-                    <div className="text-sm text-slate-600 flex items-center gap-1">
-                      <MapPin size={12} />
-                      {location.address}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>{location.manager}</TableCell>
-                <TableCell>{location.equipmentCount}</TableCell>
-                <TableCell>{location.activeIssues}</TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(location.status)}>
-                    {location.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>{location.lastUpdated}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleViewDetails(location)}
-                    >
-                      View
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleManage(location)}
-                    >
-                      <Edit size={16} />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-
   return (
     <div className="p-6 space-y-6">
       <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-6 rounded-lg text-white">
@@ -235,7 +251,27 @@ const LocationManagement = () => {
         </div>
       </div>
 
-      {view === 'card' ? renderCardView() : renderListView()}
+      <FilterBar
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search locations by name, address, or manager..."
+        filters={filterConfigs}
+        showFilters={showFilters}
+        onToggleFilters={() => setShowFilters(!showFilters)}
+        onClearAll={clearAllFilters}
+        hasActiveFilters={hasActiveFilters}
+        resultCount={filteredLocations.length}
+        totalCount={locations.length}
+      />
+
+      {view === 'card' ? renderCardView() : (
+        <DataTable
+          data={filteredLocations}
+          columns={columns}
+          onEdit={handleManage}
+          actions={renderActions}
+        />
+      )}
 
       <Card>
         <CardHeader>

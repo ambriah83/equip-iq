@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,12 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface AddVendorDialogProps {
   onAddVendor: (vendor: any) => void;
 }
 
 const AddVendorDialog: React.FC<AddVendorDialogProps> = ({ onAddVendor }) => {
+  const { settings } = useSettings();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -79,9 +80,9 @@ const AddVendorDialog: React.FC<AddVendorDialogProps> = ({ onAddVendor }) => {
                 <SelectValue placeholder="Select vendor type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="electrician">Electrician</SelectItem>
-                <SelectItem value="plumber">Plumber</SelectItem>
-                <SelectItem value="handyman">Handyman</SelectItem>
+                {settings.vendorTypes.map(type => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

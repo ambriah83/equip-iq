@@ -1,12 +1,15 @@
-
 import React, { useState } from 'react';
-import { Wrench, Search, Filter, X, Edit, Save, Image, FileText, Layout, Shield } from 'lucide-react';
+import { Wrench, Edit, Image, FileText, Layout, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useDataFiltering } from '@/hooks/useDataFiltering';
+import { useViewToggle } from '@/hooks/useViewToggle';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import DataTable from '@/components/shared/DataTable';
+import FilterBar from '@/components/shared/FilterBar';
+import StatusBadge from '@/components/shared/StatusBadge';
 import AddEquipmentDialog from './AddEquipmentDialog';
 import EditEquipmentDialog from './EditEquipmentDialog';
 import ViewToggle from './ViewToggle';
@@ -29,19 +32,13 @@ interface Equipment {
   roomPhoto?: string;
 }
 
-const EQUIPMENT_TYPES = ['Sun', 'Spray', 'Spa', 'Red Light', 'Other', 'HVAC', 'Washer', 'Dryer'];
-
 const EquipmentManagement = () => {
-  const [view, setView] = useState<'card' | 'list'>('card');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [locationFilter, setLocationFilter] = useState<string>('all');
-  const [showFilters, setShowFilters] = useState(false);
+  const { view, setView } = useViewToggle();
+  const { settings } = useSettings();
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   
-  const [equipment, setEquipment] = useState<Equipment[]>([
+  const [equipment, setEquipment] = useLocalStorage<Equipment[]>('equipment', [
     {
       id: '1',
       name: 'Tanning Bed #3',
@@ -100,37 +97,28 @@ const EquipmentManagement = () => {
     }
   ]);
 
-  // Get unique values for filter options
-  const uniqueTypes = [...new Set(equipment.map(item => item.type))];
-  const uniqueLocations = [...new Set(equipment.map(item => item.location))];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'maintenance': return 'bg-yellow-100 text-yellow-800';
-      case 'offline': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const {
+    searchTerm,
+    setSearchTerm,
+    filters,
+    updateFilter,
+    showFilters,
+    setShowFilters,
+    filteredData: filteredEquipment,
+    clearAllFilters,
+    hasActiveFilters
+  } = useDataFiltering({
+    data: equipment,
+    searchFields: ['name', 'location', 'type', 'room'],
+    filterConfigs: {
+      status: 'Status',
+      type: 'Type',
+      location: 'Location'
     }
-  };
-
-  const filteredEquipment = equipment.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.type.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    const matchesType = typeFilter === 'all' || item.type === typeFilter;
-    const matchesLocation = locationFilter === 'all' || item.location === locationFilter;
-
-    return matchesSearch && matchesStatus && matchesType && matchesLocation;
   });
 
-  const clearAllFilters = () => {
-    setStatusFilter('all');
-    setTypeFilter('all');
-    setLocationFilter('all');
-    setSearchTerm('');
-  };
+  // Get unique values for filter options
+  const uniqueLocations = [...new Set(equipment.map(item => item.location))];
 
   const handleEdit = (equipmentItem: Equipment) => {
     setEditingEquipment(equipmentItem);
@@ -143,7 +131,85 @@ const EquipmentManagement = () => {
     ));
   };
 
-  const hasActiveFilters = statusFilter !== 'all' || typeFilter !== 'all' || locationFilter !== 'all' || searchTerm !== '';
+  const columns = [
+    {
+      key: 'name',
+      label: 'Name',
+      render: (item: Equipment) => (
+        <div className="font-medium">{item.name}</div>
+      )
+    },
+    {
+      key: 'type',
+      label: 'Type'
+    },
+    {
+      key: 'location',
+      label: 'Location'
+    },
+    {
+      key: 'room',
+      label: 'Room'
+    },
+    {
+      key: 'tmaxConnection',
+      label: 'TMAX',
+      render: (item: Equipment) => (
+        <span>{item.tmaxConnection || 'Not specified'}</span>
+      )
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (item: Equipment) => (
+        <StatusBadge status={item.status} variant="equipment" />
+      )
+    },
+    {
+      key: 'lastService',
+      label: 'Last Service'
+    },
+    {
+      key: 'media',
+      label: 'Media',
+      render: (item: Equipment) => (
+        <div className="flex gap-1">
+          {item.equipmentPhoto && <Image size={14} className="text-slate-400" />}
+          {item.documentation && item.documentation.length > 0 && <FileText size={14} className="text-slate-400" />}
+          {item.warrantyDocumentation && item.warrantyDocumentation.length > 0 && <Shield size={14} className="text-slate-400" />}
+          {item.roomLayout && <Layout size={14} className="text-slate-400" />}
+        </div>
+      )
+    }
+  ];
+
+  const filterConfigs = [
+    {
+      key: 'status',
+      label: 'Status',
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'maintenance', label: 'Maintenance' },
+        { value: 'offline', label: 'Offline' }
+      ],
+      value: filters.status,
+      onChange: (value: string) => updateFilter('status', value)
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      options: settings.equipmentTypes.map(type => ({ value: type, label: type })),
+      value: filters.type,
+      onChange: (value: string) => updateFilter('type', value)
+    },
+    {
+      key: 'location',
+      label: 'Location',
+      options: uniqueLocations.map(location => ({ value: location, label: location })),
+      value: filters.location,
+      onChange: (value: string) => updateFilter('location', value)
+    }
+  ];
 
   const renderCardView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -156,14 +222,8 @@ const EquipmentManagement = () => {
                 <p className="text-sm text-slate-600">{item.type}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Badge className={getStatusColor(item.status)}>
-                  {item.status}
-                </Badge>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleEdit(item)}
-                >
+                <StatusBadge status={item.status} variant="equipment" />
+                <Button size="sm" variant="ghost" onClick={() => handleEdit(item)}>
                   <Edit size={16} />
                 </Button>
               </div>
@@ -240,62 +300,6 @@ const EquipmentManagement = () => {
     </div>
   );
 
-  const renderListView = () => (
-    <Card>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Room</TableHead>
-              <TableHead>TMAX</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Service</TableHead>
-              <TableHead>Media</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredEquipment.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.name}</TableCell>
-                <TableCell>{item.type}</TableCell>
-                <TableCell>{item.location}</TableCell>
-                <TableCell>{item.room}</TableCell>
-                <TableCell>{item.tmaxConnection || 'Not specified'}</TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(item.status)}>
-                    {item.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>{item.lastService}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    {item.equipmentPhoto && <Image size={14} className="text-slate-400" />}
-                    {item.documentation && item.documentation.length > 0 && <FileText size={14} className="text-slate-400" />}
-                    {item.warrantyDocumentation && item.warrantyDocumentation.length > 0 && <Shield size={14} className="text-slate-400" />}
-                    {item.roomLayout && <Layout size={14} className="text-slate-400" />}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleEdit(item)}
-                  >
-                    <Edit size={16} />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-
   return (
     <div className="p-6 space-y-6">
       <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-6 rounded-lg text-white">
@@ -314,112 +318,31 @@ const EquipmentManagement = () => {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-            <Input
-              placeholder="Search equipment, location, or type..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowFilters(!showFilters)}
-            className={showFilters ? 'bg-blue-50 border-blue-300' : ''}
-          >
-            <Filter size={20} className="mr-2" />
-            Filter
-          </Button>
-          {hasActiveFilters && (
-            <Button variant="outline" onClick={clearAllFilters}>
-              <X size={20} className="mr-2" />
-              Clear
-            </Button>
-          )}
-        </div>
+      <FilterBar
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search equipment, location, or type..."
+        filters={filterConfigs}
+        showFilters={showFilters}
+        onToggleFilters={() => setShowFilters(!showFilters)}
+        onClearAll={clearAllFilters}
+        hasActiveFilters={hasActiveFilters}
+        resultCount={filteredEquipment.length}
+        totalCount={equipment.length}
+      />
 
-        {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-lg">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Status</label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="offline">Offline</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {uniqueTypes.map(type => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Location</label>
-              <Select value={locationFilter} onValueChange={setLocationFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All locations" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
-                  {uniqueLocations.map(location => (
-                    <SelectItem key={location} value={location}>{location}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-
-        {hasActiveFilters && (
-          <div className="flex items-center gap-2 text-sm text-slate-600">
-            <span>Showing {filteredEquipment.length} of {equipment.length} items</span>
-            <div className="flex gap-2">
-              {statusFilter !== 'all' && (
-                <Badge variant="secondary" className="text-xs">
-                  Status: {statusFilter}
-                </Badge>
-              )}
-              {typeFilter !== 'all' && (
-                <Badge variant="secondary" className="text-xs">
-                  Type: {typeFilter}
-                </Badge>
-              )}
-              {locationFilter !== 'all' && (
-                <Badge variant="secondary" className="text-xs">
-                  Location: {locationFilter}
-                </Badge>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {view === 'card' ? renderCardView() : renderListView()}
+      {view === 'card' ? renderCardView() : (
+        <DataTable
+          data={filteredEquipment}
+          columns={columns}
+          onEdit={handleEdit}
+        />
+      )}
 
       {filteredEquipment.length === 0 && (
         <div className="text-center py-12">
           <div className="text-slate-400 mb-2">
-            <Filter size={48} className="mx-auto" />
+            <Wrench size={48} className="mx-auto" />
           </div>
           <h3 className="text-lg font-medium text-slate-600 mb-2">No equipment found</h3>
           <p className="text-slate-500">Try adjusting your search or filter criteria</p>

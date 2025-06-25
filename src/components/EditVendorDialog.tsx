@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface Vendor {
   id: string;
@@ -35,6 +35,7 @@ const EditVendorDialog: React.FC<EditVendorDialogProps> = ({
   onOpenChange, 
   onUpdateVendor 
 }) => {
+  const { settings } = useSettings();
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -98,9 +99,9 @@ const EditVendorDialog: React.FC<EditVendorDialogProps> = ({
                 <SelectValue placeholder="Select vendor type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="electrician">Electrician</SelectItem>
-                <SelectItem value="plumber">Plumber</SelectItem>
-                <SelectItem value="handyman">Handyman</SelectItem>
+                {settings.vendorTypes.map(type => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

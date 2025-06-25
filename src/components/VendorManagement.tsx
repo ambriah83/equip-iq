@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { Package, Search, Filter, X, Edit, Phone, MessageSquare, Star, Mail, Info } from 'lucide-react';
+import { Package, Edit, Phone, MessageSquare, Star, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useDataFiltering } from '@/hooks/useDataFiltering';
+import { useViewToggle } from '@/hooks/useViewToggle';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import DataTable from '@/components/shared/DataTable';
+import FilterBar from '@/components/shared/FilterBar';
+import StatusBadge from '@/components/shared/StatusBadge';
 import ViewToggle from './ViewToggle';
 import AddVendorDialog from './AddVendorDialog';
 import EditVendorDialog from './EditVendorDialog';
@@ -36,17 +40,13 @@ interface Vendor {
   communicationLog: CommunicationLog[];
 }
 
-const VENDOR_TYPES = ['electrician', 'plumber', 'handyman'];
-
 const VendorManagement = () => {
-  const [view, setView] = useState<'card' | 'list'>('card');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [showFilters, setShowFilters] = useState(false);
+  const { view, setView } = useViewToggle();
+  const { settings } = useSettings();
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   
-  const [vendors, setVendors] = useState<Vendor[]>([
+  const [vendors, setVendors] = useLocalStorage<Vendor[]>('vendors', [
     {
       id: '1',
       name: 'Elite Electric Services',
@@ -59,16 +59,14 @@ const VendorManagement = () => {
       rating: 5,
       lastContacted: '2024-01-20',
       preferredContact: 'phone',
-      communicationLog: [
-        {
-          id: '1',
-          type: 'call',
-          date: '2024-01-20',
-          duration: '15 min',
-          notes: 'Discussed electrical issue in bed #3',
-          issueId: 'eq-001'
-        }
-      ]
+      communicationLog: [{
+        id: '1',
+        type: 'call',
+        date: '2024-01-20',
+        duration: '15 min',
+        notes: 'Discussed electrical issue in bed #3',
+        issueId: 'eq-001'
+      }]
     },
     {
       id: '2',
@@ -100,20 +98,23 @@ const VendorManagement = () => {
     }
   ]);
 
-  const filteredVendors = vendors.filter(vendor => {
-    const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vendor.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vendor.notes.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesType = typeFilter === 'all' || vendor.type === typeFilter;
-
-    return matchesSearch && matchesType;
+  const {
+    searchTerm,
+    setSearchTerm,
+    filters,
+    updateFilter,
+    showFilters,
+    setShowFilters,
+    filteredData: filteredVendors,
+    clearAllFilters,
+    hasActiveFilters
+  } = useDataFiltering({
+    data: vendors,
+    searchFields: ['name', 'type', 'notes'],
+    filterConfigs: {
+      type: 'Type'
+    }
   });
-
-  const clearAllFilters = () => {
-    setTypeFilter('all');
-    setSearchTerm('');
-  };
 
   const handleEdit = (vendor: Vendor) => {
     setEditingVendor(vendor);
@@ -177,8 +178,6 @@ const VendorManagement = () => {
     ));
   };
 
-  const hasActiveFilters = typeFilter !== 'all' || searchTerm !== '';
-
   const getPreferredContactIcon = (preferredContact: string) => {
     switch (preferredContact) {
       case 'phone': return <Phone size={14} className="text-blue-600" />;
@@ -198,6 +197,94 @@ const VendorManagement = () => {
       />
     ));
   };
+
+  const columns = [
+    {
+      key: 'name',
+      label: 'Name',
+      render: (vendor: Vendor) => (
+        <div className="font-medium">{vendor.name}</div>
+      )
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      render: (vendor: Vendor) => (
+        <Badge variant="outline">{vendor.type}</Badge>
+      )
+    },
+    {
+      key: 'phone',
+      label: 'Phone'
+    },
+    {
+      key: 'preferredContact',
+      label: 'Preferred Contact',
+      render: (vendor: Vendor) => (
+        <div className="flex items-center gap-2">
+          {getPreferredContactIcon(vendor.preferredContact)}
+          <span className="capitalize">{vendor.preferredContact}</span>
+        </div>
+      )
+    },
+    {
+      key: 'rating',
+      label: 'Rating',
+      render: (vendor: Vendor) => (
+        <div className="flex items-center gap-1">
+          {renderStars(vendor.rating, vendor.id, true)}
+        </div>
+      )
+    },
+    {
+      key: 'isFirstChoice',
+      label: 'Top Choice',
+      render: (vendor: Vendor) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                {vendor.isFirstChoice && (
+                  <Star className="fill-yellow-400 text-yellow-400" size={16} />
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Top Choice Vendor</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    {
+      key: 'lastContacted',
+      label: 'Last Contacted'
+    }
+  ];
+
+  const renderActions = (vendor: Vendor) => (
+    <div className="flex gap-1">
+      <Button size="sm" variant="ghost" onClick={() => handleCall(vendor)}>
+        <Phone size={16} />
+      </Button>
+      <Button size="sm" variant="ghost" onClick={() => handleText(vendor)}>
+        <MessageSquare size={16} />
+      </Button>
+      <Button size="sm" variant="ghost" onClick={() => handleEmail(vendor)}>
+        <Mail size={16} />
+      </Button>
+    </div>
+  );
+
+  const filterConfigs = [
+    {
+      key: 'type',
+      label: 'Type',
+      options: settings.vendorTypes.map(type => ({ value: type, label: type })),
+      value: filters.type,
+      onChange: (value: string) => updateFilter('type', value)
+    }
+  ];
 
   const renderCardView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -233,11 +320,7 @@ const VendorManagement = () => {
                   <span className="text-sm capitalize">{vendor.preferredContact}</span>
                 </div>
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleEdit(vendor)}
-              >
+              <Button size="sm" variant="ghost" onClick={() => handleEdit(vendor)}>
                 <Edit size={16} />
               </Button>
             </div>
@@ -269,30 +352,15 @@ const VendorManagement = () => {
                 <p className="text-xs text-slate-500">Last contacted: {vendor.lastContacted}</p>
               </div>
               <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => handleCall(vendor)}
-                >
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => handleCall(vendor)}>
                   <Phone size={16} className="mr-1" />
                   Call
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => handleText(vendor)}
-                >
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => handleText(vendor)}>
                   <MessageSquare size={16} className="mr-1" />
                   Text
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => handleEmail(vendor)}
-                >
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => handleEmail(vendor)}>
                   <Mail size={16} className="mr-1" />
                   Email
                 </Button>
@@ -320,98 +388,6 @@ const VendorManagement = () => {
     </div>
   );
 
-  const renderListView = () => (
-    <Card>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Preferred Contact</TableHead>
-              <TableHead>Rating</TableHead>
-              <TableHead>Top Choice</TableHead>
-              <TableHead>Last Contacted</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredVendors.map((vendor) => (
-              <TableRow key={vendor.id}>
-                <TableCell className="font-medium">{vendor.name}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{vendor.type}</Badge>
-                </TableCell>
-                <TableCell>{vendor.phone}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {getPreferredContactIcon(vendor.preferredContact)}
-                    <span className="capitalize">{vendor.preferredContact}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    {renderStars(vendor.rating, vendor.id, true)}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          {vendor.isFirstChoice && (
-                            <Star className="fill-yellow-400 text-yellow-400" size={16} />
-                          )}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Top Choice Vendor</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </TableCell>
-                <TableCell>{vendor.lastContacted}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleCall(vendor)}
-                    >
-                      <Phone size={16} />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleText(vendor)}
-                    >
-                      <MessageSquare size={16} />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEmail(vendor)}
-                    >
-                      <Mail size={16} />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEdit(vendor)}
-                    >
-                      <Edit size={16} />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-
   return (
     <div className="p-6 space-y-6">
       <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-6 rounded-lg text-white">
@@ -430,54 +406,27 @@ const VendorManagement = () => {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-            <Input
-              placeholder="Search vendors by name, type, or notes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowFilters(!showFilters)}
-            className={showFilters ? 'bg-blue-50 border-blue-300' : ''}
-          >
-            <Filter size={20} className="mr-2" />
-            Filter
-          </Button>
-          {hasActiveFilters && (
-            <Button variant="outline" onClick={clearAllFilters}>
-              <X size={20} className="mr-2" />
-              Clear
-            </Button>
-          )}
-        </div>
+      <FilterBar
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search vendors by name, type, or notes..."
+        filters={filterConfigs}
+        showFilters={showFilters}
+        onToggleFilters={() => setShowFilters(!showFilters)}
+        onClearAll={clearAllFilters}
+        hasActiveFilters={hasActiveFilters}
+        resultCount={filteredVendors.length}
+        totalCount={vendors.length}
+      />
 
-        {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-lg">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {VENDOR_TYPES.map(type => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {view === 'card' ? renderCardView() : renderListView()}
+      {view === 'card' ? renderCardView() : (
+        <DataTable
+          data={filteredVendors}
+          columns={columns}
+          onEdit={handleEdit}
+          actions={renderActions}
+        />
+      )}
 
       {filteredVendors.length === 0 && (
         <div className="text-center py-12">
