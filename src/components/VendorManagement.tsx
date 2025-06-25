@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Package, Search, Filter, X, Edit, Phone, MessageSquare, Star, Mail, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import ViewToggle from './ViewToggle';
+import AddVendorDialog from './AddVendorDialog';
+import EditVendorDialog from './EditVendorDialog';
+import VendorChatbot from './VendorChatbot';
 
 interface CommunicationLog {
   id: string;
@@ -41,7 +43,8 @@ const VendorManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   
   const [vendors, setVendors] = useState<Vendor[]>([
     {
@@ -112,8 +115,19 @@ const VendorManagement = () => {
     setSearchTerm('');
   };
 
-  const handleEdit = (id: string) => {
-    setEditingId(id);
+  const handleEdit = (vendor: Vendor) => {
+    setEditingVendor(vendor);
+    setShowEditDialog(true);
+  };
+
+  const handleAddVendor = (newVendor: Vendor) => {
+    setVendors(prev => [...prev, newVendor]);
+  };
+
+  const handleUpdateVendor = (updatedVendor: Vendor) => {
+    setVendors(prev => prev.map(vendor => 
+      vendor.id === updatedVendor.id ? updatedVendor : vendor
+    ));
   };
 
   const toggleFirstChoice = (id: string) => {
@@ -222,7 +236,7 @@ const VendorManagement = () => {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => handleEdit(vendor.id)}
+                onClick={() => handleEdit(vendor)}
               >
                 <Edit size={16} />
               </Button>
@@ -384,7 +398,7 @@ const VendorManagement = () => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleEdit(vendor.id)}
+                      onClick={() => handleEdit(vendor)}
                     >
                       <Edit size={16} />
                     </Button>
@@ -411,7 +425,7 @@ const VendorManagement = () => {
           </div>
           <div className="flex items-center gap-4">
             <ViewToggle view={view} onViewChange={setView} />
-            <Button>Add Vendor</Button>
+            <AddVendorDialog onAddVendor={handleAddVendor} />
           </div>
         </div>
       </div>
@@ -474,6 +488,15 @@ const VendorManagement = () => {
           <p className="text-slate-500">Try adjusting your search or filter criteria</p>
         </div>
       )}
+
+      <EditVendorDialog
+        vendor={editingVendor}
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        onUpdateVendor={handleUpdateVendor}
+      />
+
+      <VendorChatbot />
     </div>
   );
 };
