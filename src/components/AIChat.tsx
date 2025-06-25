@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { MessageSquare, Send, Upload, Mic, Image as ImageIcon, ThumbsUp, ThumbsDown } from 'lucide-react';
+
+import React, { useState, useRef } from 'react';
+import { MessageSquare, Send, Upload, Mic, Image as ImageIcon, ThumbsUp, ThumbsDown, Video, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -11,6 +12,7 @@ interface Message {
   sender: 'user' | 'ai';
   timestamp: Date;
   image?: string;
+  video?: string;
 }
 
 interface FeedbackData {
@@ -26,7 +28,7 @@ const AIChat = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hello! I'm your AI troubleshooting assistant. I can help you diagnose equipment issues, guide you through repairs, and escalate complex problems to our support team. How can I assist you today?",
+      text: "Hello! I'm your AI troubleshooting assistant. I can help you diagnose equipment issues, guide you through repairs, and escalate complex problems to our support team. You can share images, videos, or start a live video call for real-time assistance. How can I help you today?",
       sender: 'ai',
       timestamp: new Date(),
     }
@@ -34,7 +36,9 @@ const AIChat = () => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [sessionId] = useState(Date.now().toString());
+  const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
 
   const handleSendMessage = async () => {
@@ -55,7 +59,7 @@ const AIChat = () => {
     setTimeout(() => {
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: "I understand you're experiencing an issue. Can you please tell me which location and equipment this relates to? If possible, please upload an image of the equipment or describe the specific problem you're seeing.",
+        text: "I understand you're experiencing an issue. Can you please tell me which location and equipment this relates to? If possible, please upload an image or video of the equipment, or we can start a live video call for real-time troubleshooting.",
         sender: 'ai',
         timestamp: new Date(),
       };
@@ -106,8 +110,8 @@ const AIChat = () => {
     if (conversation.includes('location') && !conversation.includes('which location')) {
       suggestions.push("Improve location identification prompts");
     }
-    if (conversation.includes('image') || conversation.includes('picture')) {
-      suggestions.push("Enhance image analysis capabilities");
+    if (conversation.includes('image') || conversation.includes('picture') || conversation.includes('video')) {
+      suggestions.push("Enhance image and video analysis capabilities");
     }
     if (conversation.length < 200) {
       suggestions.push("Provide more detailed troubleshooting steps");
@@ -136,6 +140,74 @@ const AIChat = () => {
     }
   };
 
+  const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const videoMessage: Message = {
+          id: Date.now().toString(),
+          text: "Video uploaded for analysis",
+          sender: 'user',
+          timestamp: new Date(),
+          video: e.target?.result as string,
+        };
+        setMessages(prev => [...prev, videoMessage]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const startVideoCall = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: true, 
+        audio: true 
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      
+      setIsVideoCallActive(true);
+      
+      const callMessage: Message = {
+        id: Date.now().toString(),
+        text: "Live video call started. I can now see your equipment and provide real-time guidance.",
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, callMessage]);
+      
+      toast({
+        title: "Video Call Started",
+        description: "Share your screen or point your camera at the equipment for real-time assistance.",
+      });
+    } catch (error) {
+      toast({
+        title: "Camera Access Required",
+        description: "Please allow camera access to start the video call.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const endVideoCall = () => {
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
+    setIsVideoCallActive(false);
+    
+    const endCallMessage: Message = {
+      id: Date.now().toString(),
+      text: "Video call ended. Thank you for using live troubleshooting assistance!",
+      sender: 'ai',
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, endCallMessage]);
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-6 text-white">
@@ -143,10 +215,31 @@ const AIChat = () => {
           <MessageSquare size={24} />
           <div>
             <h2 className="text-xl font-bold">AI Troubleshooting Assistant</h2>
-            <p className="text-blue-100">Get instant help with equipment issues</p>
+            <p className="text-blue-100">Get instant help with equipment issues - now with video support!</p>
           </div>
         </div>
       </div>
+
+      {/* Live Video Call Interface */}
+      {isVideoCallActive && (
+        <div className="bg-slate-900 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-white font-semibold">Live Video Call Active</h3>
+            <Button onClick={endVideoCall} variant="destructive" size="sm">
+              End Call
+            </Button>
+          </div>
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            className="w-full max-w-md h-48 bg-black rounded-lg"
+          />
+          <p className="text-slate-300 text-sm mt-2">
+            Point your camera at the equipment for real-time analysis and guidance.
+          </p>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((message) => (
@@ -164,6 +257,13 @@ const AIChat = () => {
                   src={message.image} 
                   alt="Uploaded" 
                   className="w-full h-48 object-cover rounded-lg mb-3"
+                />
+              )}
+              {message.video && (
+                <video 
+                  src={message.video} 
+                  controls 
+                  className="w-full h-48 rounded-lg mb-3"
                 />
               )}
               <p className="text-sm">{message.text}</p>
@@ -185,7 +285,7 @@ const AIChat = () => {
                   <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                   <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                 </div>
-                <span className="text-sm text-slate-500">AI is thinking...</span>
+                <span className="text-sm text-slate-500">AI is analyzing...</span>
               </div>
             </Card>
           </div>
@@ -229,7 +329,7 @@ const AIChat = () => {
       )}
 
       <div className="border-t border-slate-200 p-6">
-        <div className="flex gap-3 mb-4">
+        <div className="flex gap-3 mb-4 flex-wrap">
           <label className="cursor-pointer">
             <input
               type="file"
@@ -242,6 +342,30 @@ const AIChat = () => {
               Upload Image
             </Button>
           </label>
+          
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              accept="video/*"
+              onChange={handleVideoUpload}
+              className="hidden"
+            />
+            <Button variant="outline" size="sm" className="gap-2">
+              <Video size={16} />
+              Upload Video
+            </Button>
+          </label>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2"
+            onClick={isVideoCallActive ? endVideoCall : startVideoCall}
+          >
+            <Phone size={16} />
+            {isVideoCallActive ? 'End Video Call' : 'Start Video Call'}
+          </Button>
+          
           <Button variant="outline" size="sm" className="gap-2">
             <Mic size={16} />
             Voice
