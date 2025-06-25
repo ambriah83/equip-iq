@@ -4,16 +4,18 @@ export interface Equipment {
   name: string;
   type: string;
   location: string;
-  locationId: string;
-  roomId: string;
+  room: string;
   serialNumber: string;
   status: 'active' | 'maintenance' | 'offline';
   lastService: string;
-  warranty: string;
+  warranty: {
+    status: 'active' | 'inactive';
+    expiryDate?: string;
+    documentation?: string[];
+  };
   tmaxConnection?: 'Wired' | 'Wireless';
   equipmentPhoto?: string;
   documentation?: string[];
-  warrantyDocumentation?: string[];
   roomLayout?: string;
   roomPhoto?: string;
 }

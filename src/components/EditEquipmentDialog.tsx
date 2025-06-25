@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import FileUpload from './FileUpload';
+import WarrantySection from './equipment/WarrantySection';
 
 interface Equipment {
   id: string;
@@ -17,11 +17,14 @@ interface Equipment {
   serialNumber: string;
   status: 'active' | 'maintenance' | 'offline';
   lastService: string;
-  warranty: string;
+  warranty: {
+    status: 'active' | 'inactive';
+    expiryDate?: string;
+    documentation?: string[];
+  };
   tmaxConnection?: 'Wired' | 'Wireless';
   equipmentPhoto?: string;
   documentation?: string[];
-  warrantyDocumentation?: string[];
   roomLayout?: string;
   roomPhoto?: string;
 }
@@ -48,7 +51,11 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
     serialNumber: '',
     status: 'active' as 'active' | 'maintenance' | 'offline',
     lastService: '',
-    warranty: '',
+    warranty: {
+      status: 'inactive' as 'active' | 'inactive',
+      expiryDate: '',
+      documentation: [] as string[]
+    },
     tmaxConnection: ''
   });
 
@@ -73,7 +80,11 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
         serialNumber: equipment.serialNumber,
         status: equipment.status,
         lastService: equipment.lastService,
-        warranty: equipment.warranty,
+        warranty: equipment.warranty || {
+          status: 'inactive',
+          expiryDate: '',
+          documentation: []
+        },
         tmaxConnection: equipment.tmaxConnection || ''
       });
     }
@@ -81,6 +92,10 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleWarrantyChange = (warranty: { status: 'active' | 'inactive'; expiryDate?: string; documentation?: string[] }) => {
+    setFormData(prev => ({ ...prev, warranty }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -205,11 +220,10 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="warranty">Warranty</Label>
-              <Input
-                id="warranty"
-                value={formData.warranty}
-                onChange={(e) => handleInputChange('warranty', e.target.value)}
-                placeholder="e.g. Active until 2025-06-30"
+              <WarrantySection
+                warranty={formData.warranty}
+                onWarrantyChange={handleWarrantyChange}
+                onWarrantyDocsChange={setWarrantyDocumentation}
               />
             </div>
           </div>
@@ -248,15 +262,6 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
               type="document"
               onFilesChange={setDocumentation}
               existingFiles={equipment.documentation || []}
-            />
-            
-            <FileUpload
-              label="Warranty Documentation"
-              accept=".pdf,.doc,.docx,.txt"
-              multiple
-              type="document"
-              onFilesChange={setWarrantyDocumentation}
-              existingFiles={equipment.warrantyDocumentation || []}
             />
             
             <FileUpload

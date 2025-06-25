@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import FileUpload from './FileUpload';
+import WarrantySection from './equipment/WarrantySection';
 
 const AddEquipmentDialog = () => {
   const [open, setOpen] = useState(false);
@@ -18,7 +18,11 @@ const AddEquipmentDialog = () => {
     location: '',
     room: '',
     serialNumber: '',
-    warranty: '',
+    warranty: {
+      status: 'inactive' as 'active' | 'inactive',
+      expiryDate: '',
+      documentation: [] as string[]
+    },
     tmaxConnection: '',
   });
   
@@ -54,6 +58,10 @@ const AddEquipmentDialog = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleWarrantyChange = (warranty: { status: 'active' | 'inactive'; expiryDate?: string; documentation?: string[] }) => {
+    setFormData(prev => ({ ...prev, warranty }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Here you would typically send the data to your backend
@@ -78,7 +86,11 @@ const AddEquipmentDialog = () => {
       location: '',
       room: '',
       serialNumber: '',
-      warranty: '',
+      warranty: {
+        status: 'inactive',
+        expiryDate: '',
+        documentation: []
+      },
       tmaxConnection: '',
     });
     setEquipmentPhoto([]);
@@ -169,15 +181,7 @@ const AddEquipmentDialog = () => {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="warranty">Warranty Expiry</Label>
-              <Input
-                id="warranty"
-                type="date"
-                value={formData.warranty}
-                onChange={(e) => handleInputChange('warranty', e.target.value)}
-              />
-            </div>
+            
           </div>
 
           <div className="space-y-2">
@@ -196,6 +200,12 @@ const AddEquipmentDialog = () => {
             </Select>
           </div>
 
+          <WarrantySection
+            warranty={formData.warranty}
+            onWarrantyChange={handleWarrantyChange}
+            onWarrantyDocsChange={setWarrantyDocumentation}
+          />
+
           <div className="space-y-4 border-t pt-4">
             <h3 className="text-lg font-medium">Media & Documentation</h3>
             
@@ -212,14 +222,6 @@ const AddEquipmentDialog = () => {
               multiple
               type="document"
               onFilesChange={setDocumentation}
-            />
-            
-            <FileUpload
-              label="Warranty Documentation"
-              accept=".pdf,.doc,.docx,.txt"
-              multiple
-              type="document"
-              onFilesChange={setWarrantyDocumentation}
             />
             
             <FileUpload
