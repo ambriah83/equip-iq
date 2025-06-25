@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -59,7 +60,14 @@ const AddEquipmentDialog = () => {
   };
 
   const handleWarrantyChange = (warranty: { status: 'active' | 'inactive'; expiryDate?: string; documentation?: string[] }) => {
-    setFormData(prev => ({ ...prev, warranty }));
+    setFormData(prev => ({ 
+      ...prev, 
+      warranty: {
+        status: warranty.status,
+        expiryDate: warranty.expiryDate || undefined,
+        documentation: warranty.documentation || []
+      }
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {

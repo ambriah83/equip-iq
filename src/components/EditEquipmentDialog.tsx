@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -80,7 +81,11 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
         serialNumber: equipment.serialNumber,
         status: equipment.status,
         lastService: equipment.lastService,
-        warranty: equipment.warranty,
+        warranty: {
+          status: equipment.warranty.status,
+          expiryDate: equipment.warranty.expiryDate || undefined,
+          documentation: equipment.warranty.documentation || []
+        },
         tmaxConnection: equipment.tmaxConnection || ''
       });
     }
@@ -91,7 +96,14 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
   };
 
   const handleWarrantyChange = (warranty: { status: 'active' | 'inactive'; expiryDate?: string; documentation?: string[] }) => {
-    setFormData(prev => ({ ...prev, warranty }));
+    setFormData(prev => ({ 
+      ...prev, 
+      warranty: {
+        status: warranty.status,
+        expiryDate: warranty.expiryDate || undefined,
+        documentation: warranty.documentation || []
+      }
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
