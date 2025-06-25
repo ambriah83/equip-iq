@@ -1,13 +1,23 @@
 
 import React, { useState } from 'react';
-import { Package, Search, Filter, X, Edit, Phone, MessageSquare, Star } from 'lucide-react';
+import { Package, Search, Filter, X, Edit, Phone, MessageSquare, Star, Mail, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import ViewToggle from './ViewToggle';
+
+interface CommunicationLog {
+  id: string;
+  type: 'call' | 'text' | 'email';
+  date: string;
+  duration?: string;
+  notes: string;
+  issueId?: string;
+}
 
 interface Vendor {
   id: string;
@@ -20,6 +30,8 @@ interface Vendor {
   isFirstChoice: boolean;
   rating: number;
   lastContacted: string;
+  preferredContact: 'phone' | 'text' | 'email';
+  communicationLog: CommunicationLog[];
 }
 
 const VENDOR_TYPES = ['electrician', 'plumber', 'handyman'];
@@ -42,7 +54,18 @@ const VendorManagement = () => {
       notes: 'Excellent work on tanning bed electrical systems. Very reliable and prompt.',
       isFirstChoice: true,
       rating: 5,
-      lastContacted: '2024-01-20'
+      lastContacted: '2024-01-20',
+      preferredContact: 'phone',
+      communicationLog: [
+        {
+          id: '1',
+          type: 'call',
+          date: '2024-01-20',
+          duration: '15 min',
+          notes: 'Discussed electrical issue in bed #3',
+          issueId: 'eq-001'
+        }
+      ]
     },
     {
       id: '2',
@@ -54,7 +77,9 @@ const VendorManagement = () => {
       notes: 'Good for emergency repairs. Available 24/7.',
       isFirstChoice: false,
       rating: 4,
-      lastContacted: '2024-01-15'
+      lastContacted: '2024-01-15',
+      preferredContact: 'email',
+      communicationLog: []
     },
     {
       id: '3',
@@ -66,7 +91,9 @@ const VendorManagement = () => {
       notes: 'Great for general maintenance and small repairs.',
       isFirstChoice: true,
       rating: 4,
-      lastContacted: '2024-01-18'
+      lastContacted: '2024-01-18',
+      preferredContact: 'text',
+      communicationLog: []
     }
   ]);
 
@@ -95,22 +122,65 @@ const VendorManagement = () => {
     ));
   };
 
-  const handleCall = (phone: string) => {
-    window.open(`tel:${phone}`);
+  const logCommunication = (vendorId: string, type: 'call' | 'text' | 'email', contact: string) => {
+    const newLog: CommunicationLog = {
+      id: Date.now().toString(),
+      type,
+      date: new Date().toISOString().split('T')[0],
+      notes: `${type} to ${contact}`,
+      duration: type === 'call' ? 'Unknown' : undefined
+    };
+
+    setVendors(prev => prev.map(vendor => 
+      vendor.id === vendorId 
+        ? { 
+            ...vendor, 
+            communicationLog: [newLog, ...vendor.communicationLog],
+            lastContacted: newLog.date
+          }
+        : vendor
+    ));
   };
 
-  const handleText = (phone: string) => {
-    window.open(`sms:${phone}`);
+  const handleCall = (vendor: Vendor) => {
+    window.open(`tel:${vendor.phone}`);
+    logCommunication(vendor.id, 'call', vendor.phone);
+  };
+
+  const handleText = (vendor: Vendor) => {
+    window.open(`sms:${vendor.phone}`);
+    logCommunication(vendor.id, 'text', vendor.phone);
+  };
+
+  const handleEmail = (vendor: Vendor) => {
+    window.open(`mailto:${vendor.email}`);
+    logCommunication(vendor.id, 'email', vendor.email);
+  };
+
+  const updateVendorRating = (vendorId: string, newRating: number) => {
+    setVendors(prev => prev.map(vendor => 
+      vendor.id === vendorId ? { ...vendor, rating: newRating } : vendor
+    ));
   };
 
   const hasActiveFilters = typeFilter !== 'all' || searchTerm !== '';
 
-  const renderStars = (rating: number) => {
+  const getPreferredContactIcon = (preferredContact: string) => {
+    switch (preferredContact) {
+      case 'phone': return <Phone size={14} className="text-blue-600" />;
+      case 'text': return <MessageSquare size={14} className="text-green-600" />;
+      case 'email': return <Mail size={14} className="text-orange-600" />;
+      default: return <Phone size={14} className="text-gray-600" />;
+    }
+  };
+
+  const renderStars = (rating: number, vendorId?: string, editable: boolean = false) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
         size={16}
-        className={i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
+        className={`${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} ${editable ? 'cursor-pointer hover:text-yellow-400' : ''}`}
+        onClick={editable && vendorId ? () => updateVendorRating(vendorId, i + 1) : undefined}
       />
     ));
   };
@@ -120,9 +190,18 @@ const VendorManagement = () => {
       {filteredVendors.map((vendor) => (
         <Card key={vendor.id} className="hover:shadow-lg transition-shadow relative">
           {vendor.isFirstChoice && (
-            <div className="absolute top-2 right-2 z-10">
-              <Star className="fill-yellow-400 text-yellow-400" size={20} />
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="absolute top-2 right-2 z-10">
+                    <Star className="fill-yellow-400 text-yellow-400" size={20} />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Top Choice Vendor</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
           <CardHeader>
             <div className="flex items-start justify-between">
@@ -132,7 +211,12 @@ const VendorManagement = () => {
                   {vendor.type}
                 </Badge>
                 <div className="flex items-center gap-1 mb-2">
-                  {renderStars(vendor.rating)}
+                  {renderStars(vendor.rating, vendor.id, true)}
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm text-slate-600">Preferred:</span>
+                  {getPreferredContactIcon(vendor.preferredContact)}
+                  <span className="text-sm capitalize">{vendor.preferredContact}</span>
                 </div>
               </div>
               <Button
@@ -159,6 +243,14 @@ const VendorManagement = () => {
                 <p className="text-sm text-slate-600">Notes</p>
                 <p className="text-sm">{vendor.notes}</p>
               </div>
+              {vendor.communicationLog.length > 0 && (
+                <div>
+                  <p className="text-sm text-slate-600">Recent Contact</p>
+                  <p className="text-xs text-slate-500">
+                    {vendor.communicationLog[0].type} on {vendor.communicationLog[0].date}
+                  </p>
+                </div>
+              )}
               <div className="pt-2 border-t">
                 <p className="text-xs text-slate-500">Last contacted: {vendor.lastContacted}</p>
               </div>
@@ -167,7 +259,7 @@ const VendorManagement = () => {
                   size="sm" 
                   variant="outline" 
                   className="flex-1"
-                  onClick={() => handleCall(vendor.phone)}
+                  onClick={() => handleCall(vendor)}
                 >
                   <Phone size={16} className="mr-1" />
                   Call
@@ -176,18 +268,36 @@ const VendorManagement = () => {
                   size="sm" 
                   variant="outline" 
                   className="flex-1"
-                  onClick={() => handleText(vendor.phone)}
+                  onClick={() => handleText(vendor)}
                 >
                   <MessageSquare size={16} className="mr-1" />
                   Text
                 </Button>
-                <Button
-                  size="sm"
-                  variant={vendor.isFirstChoice ? "default" : "outline"}
-                  onClick={() => toggleFirstChoice(vendor.id)}
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => handleEmail(vendor)}
                 >
-                  <Star size={16} />
+                  <Mail size={16} className="mr-1" />
+                  Email
                 </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant={vendor.isFirstChoice ? "default" : "outline"}
+                        onClick={() => toggleFirstChoice(vendor.id)}
+                      >
+                        <Star size={16} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{vendor.isFirstChoice ? 'Remove from Top Choice' : 'Make Top Choice'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           </CardContent>
@@ -205,8 +315,9 @@ const VendorManagement = () => {
               <TableHead>Name</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Phone</TableHead>
+              <TableHead>Preferred Contact</TableHead>
               <TableHead>Rating</TableHead>
-              <TableHead>First Choice</TableHead>
+              <TableHead>Top Choice</TableHead>
               <TableHead>Last Contacted</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -220,14 +331,31 @@ const VendorManagement = () => {
                 </TableCell>
                 <TableCell>{vendor.phone}</TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-1">
-                    {renderStars(vendor.rating)}
+                  <div className="flex items-center gap-2">
+                    {getPreferredContactIcon(vendor.preferredContact)}
+                    <span className="capitalize">{vendor.preferredContact}</span>
                   </div>
                 </TableCell>
                 <TableCell>
-                  {vendor.isFirstChoice && (
-                    <Star className="fill-yellow-400 text-yellow-400" size={16} />
-                  )}
+                  <div className="flex items-center gap-1">
+                    {renderStars(vendor.rating, vendor.id, true)}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          {vendor.isFirstChoice && (
+                            <Star className="fill-yellow-400 text-yellow-400" size={16} />
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Top Choice Vendor</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </TableCell>
                 <TableCell>{vendor.lastContacted}</TableCell>
                 <TableCell>
@@ -235,16 +363,23 @@ const VendorManagement = () => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleCall(vendor.phone)}
+                      onClick={() => handleCall(vendor)}
                     >
                       <Phone size={16} />
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleText(vendor.phone)}
+                      onClick={() => handleText(vendor)}
                     >
                       <MessageSquare size={16} />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleEmail(vendor)}
+                    >
+                      <Mail size={16} />
                     </Button>
                     <Button
                       size="sm"
