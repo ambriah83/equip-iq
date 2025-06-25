@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Edit, Plus, User, CreditCard, Settings as SettingsIcon, List } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface User {
   id: string;
@@ -25,6 +25,26 @@ interface DropdownField {
   value: string;
 }
 
+interface DropdownFields {
+  types: DropdownField[];
+  statuses: DropdownField[];
+  priorities: DropdownField[];
+}
+
+interface VendorDropdownFields {
+  types: DropdownField[];
+  specialties: DropdownField[];
+}
+
+// Phone number formatting utility
+const formatPhoneNumber = (value: string) => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length >= 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  }
+  return value;
+};
+
 const Settings = () => {
   const { toast } = useToast();
   
@@ -35,8 +55,8 @@ const Settings = () => {
     { id: '3', name: 'Bob Wilson', email: 'bob@company.com', role: 'staff', status: 'inactive' },
   ]);
 
-  // Personal Information State
-  const [personalInfo, setPersonalInfo] = useState({
+  // Personal Information State with localStorage
+  const [personalInfo, setPersonalInfo] = useLocalStorage('personal-info', {
     firstName: 'Current',
     lastName: 'User',
     email: 'user@company.com',
@@ -45,16 +65,16 @@ const Settings = () => {
     position: 'Operations Manager'
   });
 
-  // Billing Information State
-  const [billingInfo, setBillingInfo] = useState({
+  // Billing Information State with localStorage
+  const [billingInfo, setBillingInfo] = useLocalStorage('billing-info', {
     plan: 'Professional',
     billingEmail: 'billing@company.com',
     cardLast4: '4242',
     nextBilling: '2024-01-15'
   });
 
-  // Equipment Dropdown Fields State
-  const [equipmentFields, setEquipmentFields] = useState({
+  // Equipment Dropdown Fields State with localStorage
+  const [equipmentFields, setEquipmentFields] = useLocalStorage<DropdownFields>('equipment-fields', {
     types: [
       { id: '1', label: 'HVAC System', value: 'hvac' },
       { id: '2', label: 'Elevator', value: 'elevator' },
@@ -74,8 +94,8 @@ const Settings = () => {
     ]
   });
 
-  // Vendor Dropdown Fields State
-  const [vendorFields, setVendorFields] = useState({
+  // Vendor Dropdown Fields State with localStorage
+  const [vendorFields, setVendorFields] = useLocalStorage<VendorDropdownFields>('vendor-fields', {
     types: [
       { id: '1', label: 'HVAC Contractor', value: 'hvac-contractor' },
       { id: '2', label: 'Electrical Contractor', value: 'electrical' },
@@ -108,6 +128,11 @@ const Settings = () => {
       title: "Billing Information Updated",
       description: "Your billing information has been saved successfully.",
     });
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPersonalInfo({ ...personalInfo, phone: formatted });
   };
 
   const handleSaveUser = (userData: Partial<User>) => {
@@ -349,7 +374,7 @@ const Settings = () => {
                 <Input
                   id="phone"
                   value={personalInfo.phone}
-                  onChange={(e) => setPersonalInfo({...personalInfo, phone: e.target.value})}
+                  onChange={handlePhoneChange}
                 />
               </div>
               <div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface Vendor {
   id: string;
@@ -20,6 +23,7 @@ interface Vendor {
   rating: number;
   lastContacted: string;
   communicationLog: any[];
+  serviceLocations?: string[];
 }
 
 interface EditVendorDialogProps {
@@ -36,6 +40,10 @@ const EditVendorDialog: React.FC<EditVendorDialogProps> = ({
   onUpdateVendor 
 }) => {
   const { settings } = useSettings();
+  
+  // Get locations from localStorage
+  const [locations] = useLocalStorage('locations', []);
+  
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -43,7 +51,8 @@ const EditVendorDialog: React.FC<EditVendorDialogProps> = ({
     email: '',
     address: '',
     notes: '',
-    preferredContact: 'phone'
+    preferredContact: 'phone',
+    serviceLocations: [] as string[]
   });
 
   useEffect(() => {
@@ -55,10 +64,25 @@ const EditVendorDialog: React.FC<EditVendorDialogProps> = ({
         email: vendor.email,
         address: vendor.address,
         notes: vendor.notes,
-        preferredContact: vendor.preferredContact
+        preferredContact: vendor.preferredContact,
+        serviceLocations: vendor.serviceLocations || []
       });
     }
   }, [vendor]);
+
+  const handleLocationToggle = (locationId: string, checked: boolean) => {
+    if (checked) {
+      setFormData(prev => ({
+        ...prev,
+        serviceLocations: [...prev.serviceLocations, locationId]
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        serviceLocations: prev.serviceLocations.filter(id => id !== locationId)
+      }));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +101,7 @@ const EditVendorDialog: React.FC<EditVendorDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Vendor</DialogTitle>
         </DialogHeader>
@@ -150,6 +174,28 @@ const EditVendorDialog: React.FC<EditVendorDialogProps> = ({
                 <SelectItem value="email">Email</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <Label>Service Locations</Label>
+            <div className="border rounded-lg p-3 space-y-2 max-h-32 overflow-y-auto">
+              {locations.length > 0 ? (
+                locations.map((location: any) => (
+                  <div key={location.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`location-${location.id}`}
+                      checked={formData.serviceLocations.includes(location.id)}
+                      onCheckedChange={(checked) => handleLocationToggle(location.id, checked as boolean)}
+                    />
+                    <Label htmlFor={`location-${location.id}`} className="text-sm font-normal">
+                      {location.name} {location.abbreviation && `(${location.abbreviation})`}
+                    </Label>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">No locations available. Add locations first.</p>
+              )}
+            </div>
           </div>
 
           <div>
