@@ -39,11 +39,16 @@ const permissionDescriptions: Record<EscalationPermission, string> = {
 };
 
 const UserDialog: React.FC<UserDialogProps> = ({ user, onSave, onClose }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    email: string;
+    role: 'admin' | 'owner' | 'manager' | 'staff';
+    status: 'active' | 'inactive';
+  }>({
     name: '',
     email: '',
-    role: 'staff' as const,
-    status: 'active' as const
+    role: 'staff',
+    status: 'active'
   });
 
   const {
@@ -118,7 +123,7 @@ const UserDialog: React.FC<UserDialogProps> = ({ user, onSave, onClose }) => {
           </div>
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select value={formData.role} onValueChange={(value: any) => setFormData({...formData, role: value})}>
+            <Select value={formData.role} onValueChange={(value: 'admin' | 'owner' | 'manager' | 'staff') => setFormData({...formData, role: value})}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -132,7 +137,7 @@ const UserDialog: React.FC<UserDialogProps> = ({ user, onSave, onClose }) => {
           </div>
           <div>
             <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value: any) => setFormData({...formData, status: value})}>
+            <Select value={formData.status} onValueChange={(value: 'active' | 'inactive') => setFormData({...formData, status: value})}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
