@@ -9,16 +9,98 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      role_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_allowed: boolean
+          permission: Database["public"]["Enums"]["escalation_permission"]
+          role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_allowed?: boolean
+          permission: Database["public"]["Enums"]["escalation_permission"]
+          role: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_allowed?: boolean
+          permission?: Database["public"]["Enums"]["escalation_permission"]
+          role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: []
+      }
+      user_permissions: {
+        Row: {
+          created_at: string | null
+          custom_permissions_applied: boolean
+          id: string
+          is_allowed: boolean
+          permission: Database["public"]["Enums"]["escalation_permission"]
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          custom_permissions_applied?: boolean
+          id?: string
+          is_allowed?: boolean
+          permission: Database["public"]["Enums"]["escalation_permission"]
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          custom_permissions_applied?: boolean
+          id?: string
+          is_allowed?: boolean
+          permission?: Database["public"]["Enums"]["escalation_permission"]
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_permissions: {
+        Args: {
+          target_user_id: string
+          user_role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: {
+          permission: Database["public"]["Enums"]["escalation_permission"]
+          is_allowed: boolean
+          is_custom: boolean
+        }[]
+      }
+      initialize_user_permissions: {
+        Args: {
+          target_user_id: string
+          user_role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      escalation_permission:
+        | "can_use_ladder"
+        | "can_handle_electrical"
+        | "can_disassemble_parts"
+        | "can_work_at_height"
+        | "can_handle_chemicals"
+        | "can_operate_heavy_equipment"
+        | "can_access_restricted_areas"
+        | "can_perform_emergency_shutdowns"
+      user_role: "owner" | "admin" | "manager" | "staff" | "vendor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +215,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      escalation_permission: [
+        "can_use_ladder",
+        "can_handle_electrical",
+        "can_disassemble_parts",
+        "can_work_at_height",
+        "can_handle_chemicals",
+        "can_operate_heavy_equipment",
+        "can_access_restricted_areas",
+        "can_perform_emergency_shutdowns",
+      ],
+      user_role: ["owner", "admin", "manager", "staff", "vendor"],
+    },
   },
 } as const

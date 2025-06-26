@@ -7,9 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Edit, Plus, User, CreditCard, Settings as SettingsIcon, List } from 'lucide-react';
+import { Trash2, Edit, Plus, User, CreditCard, Settings as SettingsIcon, List, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { PermissionsManager } from '@/components/permissions';
+import { Database } from '@/integrations/supabase/types';
 
 interface User {
   id: string;
@@ -35,6 +37,8 @@ interface VendorDropdownFields {
   types: DropdownField[];
   specialties: DropdownField[];
 }
+
+type UserRole = Database['public']['Enums']['user_role'];
 
 // Phone number formatting utility
 const formatPhoneNumber = (value: string) => {
@@ -244,10 +248,14 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <User size={16} />
             Users
+          </TabsTrigger>
+          <TabsTrigger value="permissions" className="flex items-center gap-2">
+            <Shield size={16} />
+            Permissions
           </TabsTrigger>
           <TabsTrigger value="personal" className="flex items-center gap-2">
             <SettingsIcon size={16} />
@@ -328,6 +336,31 @@ const Settings = () => {
                       </Button>
                     </div>
                   </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Permissions Management Tab */}
+        <TabsContent value="permissions">
+          <Card>
+            <CardHeader>
+              <CardTitle>Permission Management</CardTitle>
+              <CardDescription>
+                Manage escalation permissions for safety-critical tasks by user
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {users.map((user) => (
+                  <PermissionsManager
+                    key={user.id}
+                    userId={user.id}
+                    userRole={user.role as UserRole}
+                    userName={user.name}
+                    isCurrentUser={user.email === 'user@company.com'} // This would come from actual auth
+                  />
                 ))}
               </div>
             </CardContent>
