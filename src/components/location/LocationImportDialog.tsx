@@ -15,7 +15,7 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
   onLocationsImported
 }) => {
   const sampleData = {
-    name: 'Glo Tanning - Sample Location',
+    'Location Name': 'Glo Tanning - Sample Location',
     abbreviation: 'GL_Sample',
     address: '123 Main St, City, State 12345',
     manager_name: 'Jane Smith',
@@ -24,10 +24,10 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
     status: 'active'
   };
 
-  const requiredFields = ['name', 'abbreviation', 'address'];
+  const requiredFields = ['Location Name', 'abbreviation', 'address'];
 
   const fieldDescriptions = {
-    name: 'Full name of the location (e.g., "Glo Tanning - City Name")',
+    'Location Name': 'Full name of the location (e.g., "Glo Tanning - City Name")',
     abbreviation: 'Location code/abbreviation (e.g., "FL_Tampa")',
     address: 'Complete street address',
     manager_name: 'Name of the location manager (optional)',
@@ -48,9 +48,9 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
       console.log(`Processing location row ${rowNum}:`, row);
       console.log(`Available columns in row ${rowNum}:`, Object.keys(row));
 
-      // Enhanced column mapping - try many more variations for location name
-      const locationName = row.name || row.Name || row.NAME || 
-                          row['Location Name'] || row['location name'] || row['LOCATION NAME'] ||
+      // Enhanced column mapping - prioritize exact matches first, then try variations
+      const locationName = row['Location Name'] || row['LocationName'] || row.name || row.Name || row.NAME || 
+                          row['location name'] || row['LOCATION NAME'] ||
                           row['location'] || row['Location'] || row['LOCATION'] ||
                           row['Store Name'] || row['store name'] || row['STORE NAME'] ||
                           row['Store'] || row['store'] || row['STORE'] ||
@@ -62,17 +62,26 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
                           // Try using the first column if it looks like a name
                           Object.values(row)[0] || '';
 
-      const abbreviation = row.abbreviation || row.Abbreviation || row.ABBREVIATION ||
-                          row['Location Code'] || row['location code'] || row['LOCATION CODE'] ||
-                          row['Store Code'] || row['store code'] || row['STORE CODE'] ||
-                          row.code || row.Code || row.CODE ||
-                          row.abbrev || row.Abbrev || row.ABBREV ||
-                          row['Short Name'] || row['short name'] || row['SHORT NAME'] ||
-                          row.id || row.ID || row.Id ||
-                          // Try using the second column as abbreviation if first is name
-                          Object.values(row)[1] || '';
+      // For abbreviation, try to use Location Name as fallback by creating abbreviation from it
+      let abbreviation = row.abbreviation || row.Abbreviation || row.ABBREVIATION ||
+                        row['Location Code'] || row['location code'] || row['LOCATION CODE'] ||
+                        row['Store Code'] || row['store code'] || row['STORE CODE'] ||
+                        row.code || row.Code || row.CODE ||
+                        row.abbrev || row.Abbrev || row.ABBREV ||
+                        row['Short Name'] || row['short name'] || row['SHORT NAME'] ||
+                        row.id || row.ID || row.Id ||
+                        // Try using the second column as abbreviation if first is name
+                        Object.values(row)[1] || '';
 
-      const address = row.address || row.Address || row.ADDRESS ||
+      // If no abbreviation found, try to create one from the location name
+      if (!abbreviation && locationName) {
+        // Extract parts before hyphen and create abbreviation
+        const nameParts = locationName.toString().split('-')[0].trim().split(' ');
+        abbreviation = nameParts.map(part => part.charAt(0).toUpperCase()).join('') + '_' + 
+                      (nameParts[nameParts.length - 1] || 'LOC');
+      }
+
+      const address = row.Address || row.address || row.ADDRESS ||
                      row['Street Address'] || row['street address'] || row['STREET ADDRESS'] ||
                      row['Full Address'] || row['full address'] || row['FULL ADDRESS'] ||
                      row.location_address || row['Location Address'] || row['LOCATION ADDRESS'] ||
@@ -82,13 +91,16 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
                        key.toLowerCase().includes('address') && value
                      )?.[1] || '';
 
-      const managerName = row.manager_name || row['Manager Name'] || row['manager name'] || 
+      // Map STORE MANAGER column to manager_name
+      const managerName = row['STORE MANAGER'] || row['Store Manager'] || row['store manager'] ||
+                         row.manager_name || row['Manager Name'] || row['manager name'] || 
                          row.manager || row.Manager || row.MANAGER ||
                          row['Area Manager'] || row['area manager'] || row['AREA MANAGER'] ||
-                         row['Store Manager'] || row['store manager'] || row['STORE MANAGER'] ||
                          row['Branch Manager'] || row['branch manager'] || row['BRANCH MANAGER'] || '';
 
-      const phone = row.phone || row.Phone || row.PHONE ||
+      // Map Direct Store Line to phone
+      const phone = row['Direct Store Line'] || row['direct store line'] || row['DIRECT STORE LINE'] ||
+                   row.phone || row.Phone || row.PHONE ||
                    row['Phone Number'] || row['phone number'] || row['PHONE NUMBER'] ||
                    row.telephone || row.Telephone || row.TELEPHONE || '';
 
@@ -101,7 +113,9 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
       console.log(`Mapped values for row ${rowNum}:`, {
         locationName: locationName?.toString()?.substring(0, 50),
         abbreviation: abbreviation?.toString()?.substring(0, 20),
-        address: address?.toString()?.substring(0, 50)
+        address: address?.toString()?.substring(0, 50),
+        managerName: managerName?.toString()?.substring(0, 30),
+        phone: phone?.toString()?.substring(0, 20)
       });
 
       // Validate required fields with better error messages
@@ -114,7 +128,7 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
 
       if (!abbreviation || !abbreviation.toString().trim()) {
         const availableColumns = Object.keys(row).join(', ');
-        errors.push(`Row ${rowNum}: Location abbreviation/code is required but not found. Available columns: ${availableColumns}. Try adding a column like 'abbreviation', 'code', or 'Location Code'`);
+        errors.push(`Row ${rowNum}: Location abbreviation/code is required but not found or could not be generated. Available columns: ${availableColumns}. Try adding a column like 'abbreviation', 'code', or 'Location Code'`);
         continue;
       }
 
