@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Wrench, MapPin, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +7,8 @@ import { useViewToggle } from '@/hooks/useViewToggle';
 import { useEquipment, EquipmentWithDetails } from '@/hooks/useEquipment';
 import { useLocations } from '@/hooks/useLocations';
 import { DataTable, FilterBar, StatusBadge } from '@/components/shared';
-import { EquipmentCard, WarrantyAlert, AddEquipmentDialog, EditEquipmentDialog } from '@/components/equipment';
+import { EquipmentCard, WarrantyAlert, AddEquipmentDialog } from '@/components/equipment';
+import EditEquipmentDialog from './EditEquipmentDialog';
 import ViewToggle from './ViewToggle';
 
 const EquipmentManagement = () => {
@@ -229,12 +229,9 @@ const EquipmentManagement = () => {
 
       <EditEquipmentDialog
         equipment={selectedEquipment}
-        isOpen={isEditDialogOpen}
-        onClose={() => {
-          setIsEditDialogOpen(false);
-          setSelectedEquipment(null);
-        }}
-        onSave={handleSaveEquipment}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onUpdateEquipment={handleSaveEquipment}
       />
     </div>
   );
