@@ -12,7 +12,6 @@ import { LocationCard, AddLocationDialog, LocationDetailsModal } from '@/compone
 import { AddRoomDialog } from '@/components/room';
 import { Database } from '@/integrations/supabase/types';
 import ViewToggle from './ViewToggle';
-import { Location } from '@/types/Location';
 
 type DatabaseLocation = Database['public']['Tables']['locations']['Row'];
 
@@ -104,7 +103,7 @@ const LocationManagement = () => {
       key: 'status',
       label: 'Status',
       render: (location: DatabaseLocation) => (
-        <StatusBadge status={location.status} variant="location" />
+        <StatusBadge status={location.status as 'active' | 'maintenance' | 'closed'} variant="location" />
       )
     },
     {
@@ -146,7 +145,7 @@ const LocationManagement = () => {
       {filteredLocations.map((location) => (
         <LocationCard
           key={location.id}
-          location={location}
+          location={location as any}
           onViewDetails={handleViewDetails}
           onManage={handleManage}
           roomCount={rooms.filter(room => room.location_id === location.id).length}
@@ -173,7 +172,7 @@ const LocationManagement = () => {
           <div className="flex items-center gap-4">
             <ViewToggle view={view} onViewChange={setView} />
             <AddRoomDialog locations={locations} />
-            <AddLocationDialog onLocationCreate={createLocation} />
+            <AddLocationDialog />
           </div>
         </div>
       </div>

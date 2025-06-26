@@ -1,40 +1,21 @@
+
 import React from 'react';
 import { Edit, Image, FileText, Layout, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import StatusBadge from '@/components/shared/StatusBadge';
-
-interface Equipment {
-  id: string;
-  name: string;
-  type: string;
-  location: string;
-  room: string;
-  serialNumber: string;
-  status: 'active' | 'maintenance' | 'offline';
-  lastService: string;
-  warranty: {
-    status: 'active' | 'inactive';
-    expiryDate?: string;
-    documentation?: string[];
-  };
-  tmaxConnection?: 'Wired' | 'Wireless';
-  equipmentPhoto?: string;
-  documentation?: string[];
-  roomLayout?: string;
-  roomPhoto?: string;
-}
+import { EquipmentWithDetails } from '@/hooks/useEquipment';
 
 interface EquipmentCardProps {
-  equipment: Equipment;
-  onEdit: (equipment: Equipment) => void;
+  equipment: EquipmentWithDetails;
+  onEdit: (equipment: EquipmentWithDetails) => void;
 }
 
 const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onEdit }) => {
-  const isWarrantyActive = equipment.warranty.status === 'active';
-  const isExpiringSoon = equipment.warranty.expiryDate && 
-    new Date(equipment.warranty.expiryDate) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const isWarrantyActive = equipment.warranty_status === 'active';
+  const isExpiringSoon = equipment.warranty_expiry_date && 
+    new Date(equipment.warranty_expiry_date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -44,7 +25,7 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onEdit }) => {
             <CardTitle className="text-lg flex items-center gap-2">
               {equipment.name}
             </CardTitle>
-            <p className="text-sm text-slate-600">{equipment.type}</p>
+            <p className="text-sm text-slate-600">{equipment.equipment_types?.name}</p>
           </div>
           <div className="flex items-center gap-2">
             <StatusBadge status={equipment.status} variant="equipment" />
@@ -58,23 +39,23 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onEdit }) => {
         <div className="space-y-3">
           <div className="flex justify-between">
             <span className="text-sm text-slate-600">Location:</span>
-            <span className="text-sm font-medium">{equipment.location}</span>
+            <span className="text-sm font-medium">{equipment.locations?.name}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-slate-600">Room:</span>
-            <span className="text-sm font-medium">{equipment.room}</span>
+            <span className="text-sm font-medium">{equipment.rooms?.name || 'N/A'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-slate-600">Serial:</span>
-            <span className="text-sm font-medium">{equipment.serialNumber}</span>
+            <span className="text-sm font-medium">{equipment.serial_number || 'N/A'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-slate-600">TMAX:</span>
-            <span className="text-sm font-medium">{equipment.tmaxConnection || 'Not specified'}</span>
+            <span className="text-sm font-medium">{equipment.tmax_connection || 'Not specified'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-slate-600">Last Service:</span>
-            <span className="text-sm font-medium">{equipment.lastService}</span>
+            <span className="text-sm font-medium">{equipment.last_service_date ? new Date(equipment.last_service_date).toLocaleDateString() : 'Never'}</span>
           </div>
           
           <div className="pt-2 border-t">
@@ -86,46 +67,34 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onEdit }) => {
                   className={`text-xs ${isWarrantyActive ? (isExpiringSoon ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600') : ''}`}
                 >
                   <Shield size={12} className="mr-1" />
-                  {equipment.warranty.status === 'active' ? (isExpiringSoon ? 'Expiring Soon' : 'Active') : 'Inactive'}
+                  {equipment.warranty_status === 'active' ? (isExpiringSoon ? 'Expiring Soon' : 'Active') : 'Inactive'}
                 </Badge>
-                {equipment.warranty.expiryDate && isWarrantyActive && (
+                {equipment.warranty_expiry_date && isWarrantyActive && (
                   <span className="text-sm font-medium">
-                    Until {new Date(equipment.warranty.expiryDate).toLocaleDateString()}
+                    Until {new Date(equipment.warranty_expiry_date).toLocaleDateString()}
                   </span>
                 )}
               </div>
             </div>
           </div>
           
-          {(equipment.equipmentPhoto || equipment.documentation || equipment.warranty.documentation || equipment.roomLayout || equipment.roomPhoto) && (
+          {(equipment.equipment_photo_url || equipment.room_layout_url || equipment.room_photo_url) && (
             <div className="pt-2 border-t">
               <p className="text-xs text-slate-500 mb-2">Media & Documents:</p>
               <div className="flex gap-2 flex-wrap">
-                {equipment.equipmentPhoto && (
+                {equipment.equipment_photo_url && (
                   <Badge variant="outline" className="text-xs">
                     <Image size={12} className="mr-1" />
                     Equipment
                   </Badge>
                 )}
-                {equipment.documentation && equipment.documentation.length > 0 && (
-                  <Badge variant="outline" className="text-xs">
-                    <FileText size={12} className="mr-1" />
-                    Docs ({equipment.documentation.length})
-                  </Badge>
-                )}
-                {equipment.warranty.documentation && equipment.warranty.documentation.length > 0 && (
-                  <Badge variant="outline" className="text-xs">
-                    <Shield size={12} className="mr-1" />
-                    Warranty ({equipment.warranty.documentation.length})
-                  </Badge>
-                )}
-                {equipment.roomLayout && (
+                {equipment.room_layout_url && (
                   <Badge variant="outline" className="text-xs">
                     <Layout size={12} className="mr-1" />
                     Layout
                   </Badge>
                 )}
-                {equipment.roomPhoto && (
+                {equipment.room_photo_url && (
                   <Badge variant="outline" className="text-xs">
                     <Image size={12} className="mr-1" />
                     Room

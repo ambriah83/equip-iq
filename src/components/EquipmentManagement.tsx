@@ -7,8 +7,7 @@ import { useViewToggle } from '@/hooks/useViewToggle';
 import { useEquipment, EquipmentWithDetails } from '@/hooks/useEquipment';
 import { useLocations } from '@/hooks/useLocations';
 import { DataTable, FilterBar, StatusBadge } from '@/components/shared';
-import { EquipmentCard, WarrantyAlert } from '@/components/equipment';
-import { AddEquipmentDialog, EditEquipmentDialog } from '@/components';
+import { EquipmentCard, WarrantyAlert, AddEquipmentDialog, EditEquipmentDialog } from '@/components/equipment';
 import ViewToggle from './ViewToggle';
 
 const EquipmentManagement = () => {
