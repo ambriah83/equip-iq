@@ -16,9 +16,27 @@ interface User {
 
 const PermissionsTab = () => {
   const [users] = useState<User[]>([
-    { id: '1', name: 'John Doe', email: 'john@company.com', role: 'admin', status: 'active' },
-    { id: '2', name: 'Jane Smith', email: 'jane@company.com', role: 'manager', status: 'active' },
-    { id: '3', name: 'Bob Wilson', email: 'bob@company.com', role: 'staff', status: 'inactive' },
+    { 
+      id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 
+      name: 'John Doe', 
+      email: 'john@company.com', 
+      role: 'admin', 
+      status: 'active' 
+    },
+    { 
+      id: 'b1ffcd99-9c0b-4ef8-bb6d-6bb9bd380a22', 
+      name: 'Jane Smith', 
+      email: 'jane@company.com', 
+      role: 'manager', 
+      status: 'active' 
+    },
+    { 
+      id: 'c2aaee99-9c0b-4ef8-bb6d-6bb9bd380a33', 
+      name: 'Bob Wilson', 
+      email: 'bob@company.com', 
+      role: 'staff', 
+      status: 'inactive' 
+    },
   ]);
 
   return (
