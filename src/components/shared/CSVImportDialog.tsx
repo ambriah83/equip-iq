@@ -1,12 +1,13 @@
+
 import React, { useState, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, Download, HelpCircle, CheckCircle, XCircle, FileSpreadsheet, FileText, Camera, Loader2 } from 'lucide-react';
+import { Upload, Download, HelpCircle, CheckCircle, XCircle, FileSpreadsheet, FileText, Camera, Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -340,36 +341,70 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
             <DialogTitle>Import {title}</DialogTitle>
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger>
-                  <HelpCircle size={16} className="text-slate-500" />
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-auto p-1">
+                    <Info size={16} className="text-blue-500" />
+                  </Button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-md">
-                  <div className="space-y-2">
-                    <p className="font-semibold">Import Options:</p>
-                    <div className="text-sm space-y-1">
-                      <div className="flex items-center gap-2">
-                        <FileText size={14} />
-                        <span><strong>CSV/Excel:</strong> Upload files directly</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Camera size={14} />
-                        <span><strong>Image:</strong> AI extracts data from photos/screenshots</span>
+                <TooltipContent className="max-w-md p-4" side="bottom">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="font-semibold text-base mb-2">Import Options:</p>
+                      <div className="text-sm space-y-2">
+                        <div className="flex items-start gap-2">
+                          <FileText size={14} className="mt-0.5 flex-shrink-0" />
+                          <div>
+                            <span className="font-medium">CSV/Excel:</span> Upload files directly from your computer
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Camera size={14} className="mt-0.5 flex-shrink-0" />
+                          <div>
+                            <span className="font-medium">Image:</span> AI extracts data from photos/screenshots of spreadsheets
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <p className="font-semibold mt-3">Required Fields:</p>
-                    <div className="text-sm space-y-1">
-                      {requiredFields.map(field => (
-                        <div key={field}>
-                          <strong>{field}:</strong> {fieldDescriptions[field]}
-                        </div>
-                      ))}
+                    <div>
+                      <p className="font-semibold text-base mb-2">Required Fields:</p>
+                      <div className="text-sm space-y-1">
+                        {requiredFields.map(field => (
+                          <div key={field} className="border-l-2 border-blue-200 pl-2">
+                            <span className="font-medium">{field}:</span> {fieldDescriptions[field]}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-600 mt-3 p-2 bg-blue-50 rounded">
+                      <strong>Tip:</strong> The AI image extraction works great with screenshots of spreadsheets, tables, or any organized data.
                     </div>
                   </div>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
+          <DialogDescription className="text-sm text-gray-600">
+            Import {title.toLowerCase()} from CSV files or extract data from images using AI
+          </DialogDescription>
         </DialogHeader>
+
+        {/* Show required fields prominently */}
+        <Alert className="border-blue-200 bg-blue-50">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <p className="font-medium">Required fields for {title}:</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                {requiredFields.map(field => (
+                  <div key={field} className="flex items-start gap-2">
+                    <span className="font-medium min-w-0 text-blue-700">{field}:</span>
+                    <span className="text-gray-700">{fieldDescriptions[field]}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
 
         <Tabs defaultValue="file" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
