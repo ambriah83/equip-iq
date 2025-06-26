@@ -336,7 +336,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                 <>
                   <Upload size={16} className="mr-2" />
                   Import
-                </Button>
+                </>
               )}
             </Button>
           </div>
