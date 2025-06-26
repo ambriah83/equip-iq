@@ -19,7 +19,11 @@ export interface EquipmentWithDetails extends Equipment {
   warrantyStatus: 'active' | 'inactive';
   lastServiceDate: string;
   lastService: string;
-  warranty: 'active' | 'inactive';
+  warranty: {
+    status: 'active' | 'inactive';
+    expiryDate?: string;
+    documentation?: string[];
+  };
   // Override status to have proper typing
   status: 'active' | 'maintenance' | 'offline';
 }
@@ -54,7 +58,11 @@ export const useEquipment = () => {
         warrantyStatus: (item.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
         lastServiceDate: item.last_service_date || '',
         lastService: item.last_service_date || '',
-        warranty: (item.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
+        warranty: {
+          status: (item.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
+          expiryDate: item.warranty_expiry_date || undefined,
+          documentation: []
+        },
         status: (item.status === 'active' || item.status === 'maintenance' || item.status === 'offline') 
           ? item.status as 'active' | 'maintenance' | 'offline'
           : 'active' as 'active' | 'maintenance' | 'offline'
@@ -93,7 +101,11 @@ export const useEquipment = () => {
         warrantyStatus: (data.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
         lastServiceDate: data.last_service_date || '',
         lastService: data.last_service_date || '',
-        warranty: (data.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
+        warranty: {
+          status: (data.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
+          expiryDate: data.warranty_expiry_date || undefined,
+          documentation: []
+        },
         status: (data.status === 'active' || data.status === 'maintenance' || data.status === 'offline') 
           ? data.status as 'active' | 'maintenance' | 'offline'
           : 'active' as 'active' | 'maintenance' | 'offline'
@@ -132,7 +144,11 @@ export const useEquipment = () => {
         warrantyStatus: (data.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
         lastServiceDate: data.last_service_date || '',
         lastService: data.last_service_date || '',
-        warranty: (data.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
+        warranty: {
+          status: (data.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
+          expiryDate: data.warranty_expiry_date || undefined,
+          documentation: []
+        },
         status: (data.status === 'active' || data.status === 'maintenance' || data.status === 'offline') 
           ? data.status as 'active' | 'maintenance' | 'offline'
           : 'active' as 'active' | 'maintenance' | 'offline'

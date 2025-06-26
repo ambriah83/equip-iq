@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Building2, MapPin, Users, Edit, Home } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,24 +70,20 @@ const LocationManagement = () => {
     {
       key: 'name',
       label: 'Name',
-      render: (location: Location) => {
-        // Convert back to DatabaseLocation for display
-        const dbLocation = locations.find(l => l.id === location.id);
-        return (
-          <div>
-            <div className="font-medium flex items-center gap-2">
-              {location.name}
-              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                {location.abbreviation}
-              </span>
-            </div>
-            <div className="text-sm text-slate-600 flex items-center gap-1">
-              <MapPin size={12} />
-              {location.address}
-            </div>
+      render: (location: Location) => (
+        <div>
+          <div className="font-medium flex items-center gap-2">
+            {location.name}
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+              {location.abbreviation}
+            </span>
           </div>
-        );
-      }
+          <div className="text-sm text-slate-600 flex items-center gap-1">
+            <MapPin size={12} />
+            {location.address}
+          </div>
+        </div>
+      )
     },
     {
       key: 'manager_name',
@@ -119,16 +116,18 @@ const LocationManagement = () => {
   ];
 
   const renderActions = (location: Location) => {
-    // Find the original database location for actions
-    const dbLocation = locations.find(l => l.id === location.id);
-    if (!dbLocation) return null;
+    // Convert Location to DatabaseLocation for actions
+    const dbLocation: DatabaseLocation = {
+      ...location,
+      status: location.status
+    };
     
     return (
       <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => handleViewDetails(dbLocation as DatabaseLocation)}>
+        <Button size="sm" variant="outline" onClick={() => handleViewDetails(dbLocation)}>
           View
         </Button>
-        <Button size="sm" onClick={() => handleManage(dbLocation as DatabaseLocation)}>
+        <Button size="sm" onClick={() => handleManage(dbLocation)}>
           <Edit size={16} />
         </Button>
       </div>
@@ -152,14 +151,16 @@ const LocationManagement = () => {
   const renderCardView = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
       {filteredLocations.map((location) => {
-        // Find the original database location for the card
-        const dbLocation = locations.find(l => l.id === location.id);
-        if (!dbLocation) return null;
+        // Convert Location to DatabaseLocation for the card
+        const dbLocation: DatabaseLocation = {
+          ...location,
+          status: location.status
+        };
         
         return (
           <LocationCard
             key={location.id}
-            location={dbLocation as DatabaseLocation}
+            location={dbLocation}
             onViewDetails={handleViewDetails}
             onManage={handleManage}
             roomCount={rooms.filter(room => room.location_id === location.id).length}
@@ -186,7 +187,7 @@ const LocationManagement = () => {
           </div>
           <div className="flex items-center gap-4">
             <ViewToggle view={view} onViewChange={setView} />
-            <AddRoomDialog locations={locations as DatabaseLocation[]} />
+            <AddRoomDialog locations={locations.map(loc => ({ ...loc, status: loc.status }))} />
             <AddLocationDialog />
           </div>
         </div>
@@ -210,8 +211,11 @@ const LocationManagement = () => {
           data={filteredLocations}
           columns={columns}
           onEdit={(location) => {
-            const dbLocation = locations.find(l => l.id === location.id);
-            if (dbLocation) handleManage(dbLocation as DatabaseLocation);
+            const dbLocation: DatabaseLocation = {
+              ...location,
+              status: location.status
+            };
+            handleManage(dbLocation);
           }}
           actions={renderActions}
         />
