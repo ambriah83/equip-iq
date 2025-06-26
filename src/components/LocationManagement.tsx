@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Building2, MapPin, Users, Edit, Home } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +11,7 @@ import { LocationCard, AddLocationDialog, LocationDetailsModal } from '@/compone
 import { AddRoomDialog } from '@/components/room';
 import { Database } from '@/integrations/supabase/types';
 import ViewToggle from './ViewToggle';
+import { Location } from '@/types/Location';
 
 type DatabaseLocation = Database['public']['Tables']['locations']['Row'];
 
@@ -24,9 +24,18 @@ const LocationManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Transform database locations to match the filtering hook's expected type
-  const transformedLocations = locations.map(location => ({
-    ...location,
-    status: location.status as 'active' | 'maintenance' | 'closed'
+  const transformedLocations: Location[] = locations.map(location => ({
+    id: location.id,
+    name: location.name,
+    abbreviation: location.abbreviation,
+    address: location.address,
+    manager_name: location.manager_name,
+    phone: location.phone,
+    email: location.email,
+    notes: location.notes,
+    status: location.status as 'active' | 'maintenance' | 'closed',
+    created_at: location.created_at,
+    updated_at: location.updated_at
   }));
 
   const {
@@ -76,20 +85,24 @@ const LocationManagement = () => {
     {
       key: 'name',
       label: 'Name',
-      render: (location: DatabaseLocation) => (
-        <div>
-          <div className="font-medium flex items-center gap-2">
-            {location.name}
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-              {location.abbreviation}
-            </span>
+      render: (location: Location) => {
+        // Convert back to DatabaseLocation for display
+        const dbLocation = locations.find(l => l.id === location.id);
+        return (
+          <div>
+            <div className="font-medium flex items-center gap-2">
+              {location.name}
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                {location.abbreviation}
+              </span>
+            </div>
+            <div className="text-sm text-slate-600 flex items-center gap-1">
+              <MapPin size={12} />
+              {location.address}
+            </div>
           </div>
-          <div className="text-sm text-slate-600 flex items-center gap-1">
-            <MapPin size={12} />
-            {location.address}
-          </div>
-        </div>
-      )
+        );
+      }
     },
     {
       key: 'manager_name',
@@ -98,7 +111,7 @@ const LocationManagement = () => {
     {
       key: 'rooms',
       label: 'Rooms',
-      render: (location: DatabaseLocation) => (
+      render: (location: Location) => (
         <div className="flex items-center gap-1">
           <Home size={14} />
           <span>{rooms.filter(room => room.location_id === location.id).length}</span>
@@ -108,29 +121,35 @@ const LocationManagement = () => {
     {
       key: 'status',
       label: 'Status',
-      render: (location: DatabaseLocation) => (
-        <StatusBadge status={location.status as 'active' | 'maintenance' | 'closed'} variant="location" />
+      render: (location: Location) => (
+        <StatusBadge status={location.status} variant="location" />
       )
     },
     {
       key: 'created_at',
       label: 'Created',
-      render: (location: DatabaseLocation) => (
+      render: (location: Location) => (
         <span>{new Date(location.created_at).toLocaleDateString()}</span>
       )
     }
   ];
 
-  const renderActions = (location: DatabaseLocation) => (
-    <div className="flex gap-1">
-      <Button size="sm" variant="outline" onClick={() => handleViewDetails(location)}>
-        View
-      </Button>
-      <Button size="sm" onClick={() => handleManage(location)}>
-        <Edit size={16} />
-      </Button>
-    </div>
-  );
+  const renderActions = (location: Location) => {
+    // Find the original database location for actions
+    const dbLocation = locations.find(l => l.id === location.id);
+    if (!dbLocation) return null;
+    
+    return (
+      <div className="flex gap-1">
+        <Button size="sm" variant="outline" onClick={() => handleViewDetails(dbLocation)}>
+          View
+        </Button>
+        <Button size="sm" onClick={() => handleManage(dbLocation)}>
+          <Edit size={16} />
+        </Button>
+      </div>
+    );
+  };
 
   const filterConfigs = [
     {
@@ -148,15 +167,21 @@ const LocationManagement = () => {
 
   const renderCardView = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-      {filteredLocations.map((location) => (
-        <LocationCard
-          key={location.id}
-          location={location as DatabaseLocation}
-          onViewDetails={handleViewDetails}
-          onManage={handleManage}
-          roomCount={rooms.filter(room => room.location_id === location.id).length}
-        />
-      ))}
+      {filteredLocations.map((location) => {
+        // Find the original database location for the card
+        const dbLocation = locations.find(l => l.id === location.id);
+        if (!dbLocation) return null;
+        
+        return (
+          <LocationCard
+            key={location.id}
+            location={dbLocation}
+            onViewDetails={handleViewDetails}
+            onManage={handleManage}
+            roomCount={rooms.filter(room => room.location_id === location.id).length}
+          />
+        );
+      })}
     </div>
   );
 
@@ -200,7 +225,10 @@ const LocationManagement = () => {
         <DataTable
           data={filteredLocations}
           columns={columns}
-          onEdit={handleManage}
+          onEdit={(location) => {
+            const dbLocation = locations.find(l => l.id === location.id);
+            if (dbLocation) handleManage(dbLocation);
+          }}
           actions={renderActions}
         />
       )}

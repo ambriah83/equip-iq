@@ -11,6 +11,13 @@ export interface EquipmentWithDetails extends Equipment {
   locations?: { name: string; abbreviation: string; };
   equipment_types?: { name: string; };
   rooms?: { name: string; };
+  // Add missing properties for compatibility
+  type?: string;
+  location?: string;
+  room?: string;
+  serialNumber?: string;
+  warrantyStatus?: string;
+  lastServiceDate?: string;
 }
 
 export const useEquipment = () => {
@@ -32,7 +39,19 @@ export const useEquipment = () => {
         .order('name');
       
       if (error) throw error;
-      setEquipment(data || []);
+      
+      // Transform the data to include compatibility properties
+      const transformedData = (data || []).map(item => ({
+        ...item,
+        type: item.equipment_types?.name,
+        location: item.locations?.name,
+        room: item.rooms?.name,
+        serialNumber: item.serial_number,
+        warrantyStatus: item.warranty_status,
+        lastServiceDate: item.last_service_date
+      }));
+      
+      setEquipment(transformedData);
     } catch (err) {
       console.error('Error fetching equipment:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch equipment');
@@ -56,8 +75,18 @@ export const useEquipment = () => {
       
       if (error) throw error;
       
-      setEquipment(prev => [...prev, data]);
-      return data;
+      const transformedData = {
+        ...data,
+        type: data.equipment_types?.name,
+        location: data.locations?.name,
+        room: data.rooms?.name,
+        serialNumber: data.serial_number,
+        warrantyStatus: data.warranty_status,
+        lastServiceDate: data.last_service_date
+      };
+      
+      setEquipment(prev => [...prev, transformedData]);
+      return transformedData;
     } catch (err) {
       console.error('Error creating equipment:', err);
       throw err;
@@ -80,8 +109,18 @@ export const useEquipment = () => {
       
       if (error) throw error;
       
-      setEquipment(prev => prev.map(eq => eq.id === id ? data : eq));
-      return data;
+      const transformedData = {
+        ...data,
+        type: data.equipment_types?.name,
+        location: data.locations?.name,
+        room: data.rooms?.name,
+        serialNumber: data.serial_number,
+        warrantyStatus: data.warranty_status,
+        lastServiceDate: data.last_service_date
+      };
+      
+      setEquipment(prev => prev.map(eq => eq.id === id ? transformedData : eq));
+      return transformedData;
     } catch (err) {
       console.error('Error updating equipment:', err);
       throw err;
