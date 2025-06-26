@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ const PrivacyPolicy = () => {
           <Button 
             variant="outline" 
             onClick={() => navigate(-1)}
-            className="border-slate-600 text-slate-200 hover:bg-slate-700"
+            className="border-slate-600 text-white bg-slate-800 hover:bg-slate-700 hover:text-white"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
@@ -32,7 +31,7 @@ const PrivacyPolicy = () => {
               <Shield className="h-6 w-6 text-blue-400" />
               Privacy Policy
             </CardTitle>
-            <p className="text-slate-400">Last updated: December 26, 2024</p>
+            <p className="text-slate-400">Last updated: December 26, 2025</p>
           </CardHeader>
           <CardContent className="space-y-6 text-slate-200">
             <section>
@@ -144,8 +143,6 @@ const PrivacyPolicy = () => {
               </h3>
               <p>
                 If you have any questions about this Privacy Policy, please contact us at:
-                <br />
-                <span className="text-blue-400">privacy@equipiq.com</span>
                 <br />
                 <span className="text-blue-400">support@equipiq.com</span>
               </p>
