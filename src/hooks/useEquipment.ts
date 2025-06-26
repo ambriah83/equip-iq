@@ -11,16 +11,15 @@ export interface EquipmentWithDetails extends Equipment {
   locations?: { name: string; abbreviation: string; };
   equipment_types?: { name: string; };
   rooms?: { name: string; };
-  // Add missing properties for compatibility
-  type?: string;
-  location?: string;
-  room?: string;
-  serialNumber?: string;
-  warrantyStatus?: string;
-  lastServiceDate?: string;
-  // Add the missing required properties
-  lastService?: string;
-  warranty?: string;
+  // Add compatibility properties that are always defined
+  type: string;
+  location: string;
+  room: string;
+  serialNumber: string;
+  warrantyStatus: string;
+  lastServiceDate: string;
+  lastService: string;
+  warranty: string;
 }
 
 export const useEquipment = () => {
@@ -46,12 +45,14 @@ export const useEquipment = () => {
       // Transform the data to include compatibility properties
       const transformedData = (data || []).map(item => ({
         ...item,
-        type: item.equipment_types?.name,
-        location: item.locations?.name,
-        room: item.rooms?.name,
-        serialNumber: item.serial_number,
-        warrantyStatus: item.warranty_status,
-        lastServiceDate: item.last_service_date
+        type: item.equipment_types?.name || 'Unknown',
+        location: item.locations?.name || 'Unknown',
+        room: item.rooms?.name || 'Unassigned',
+        serialNumber: item.serial_number || '',
+        warrantyStatus: item.warranty_status || 'inactive',
+        lastServiceDate: item.last_service_date || '',
+        lastService: item.last_service_date || '',
+        warranty: item.warranty_status || 'inactive'
       }));
       
       setEquipment(transformedData);
@@ -80,12 +81,14 @@ export const useEquipment = () => {
       
       const transformedData = {
         ...data,
-        type: data.equipment_types?.name,
-        location: data.locations?.name,
-        room: data.rooms?.name,
-        serialNumber: data.serial_number,
-        warrantyStatus: data.warranty_status,
-        lastServiceDate: data.last_service_date
+        type: data.equipment_types?.name || 'Unknown',
+        location: data.locations?.name || 'Unknown',
+        room: data.rooms?.name || 'Unassigned',
+        serialNumber: data.serial_number || '',
+        warrantyStatus: data.warranty_status || 'inactive',
+        lastServiceDate: data.last_service_date || '',
+        lastService: data.last_service_date || '',
+        warranty: data.warranty_status || 'inactive'
       };
       
       setEquipment(prev => [...prev, transformedData]);
@@ -114,12 +117,14 @@ export const useEquipment = () => {
       
       const transformedData = {
         ...data,
-        type: data.equipment_types?.name,
-        location: data.locations?.name,
-        room: data.rooms?.name,
-        serialNumber: data.serial_number,
-        warrantyStatus: data.warranty_status,
-        lastServiceDate: data.last_service_date
+        type: data.equipment_types?.name || 'Unknown',
+        location: data.locations?.name || 'Unknown',
+        room: data.rooms?.name || 'Unassigned',
+        serialNumber: data.serial_number || '',
+        warrantyStatus: data.warranty_status || 'inactive',
+        lastServiceDate: data.last_service_date || '',
+        lastService: data.last_service_date || '',
+        warranty: data.warranty_status || 'inactive'
       };
       
       setEquipment(prev => prev.map(eq => eq.id === id ? transformedData : eq));

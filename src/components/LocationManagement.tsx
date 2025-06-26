@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Building2, MapPin, Users, Edit, Home } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +34,9 @@ const LocationManagement = () => {
     phone: location.phone,
     email: location.email,
     notes: location.notes,
-    status: location.status as 'active' | 'maintenance' | 'closed',
+    status: (location.status === 'active' || location.status === 'maintenance' || location.status === 'closed') 
+      ? location.status 
+      : 'active' as 'active' | 'maintenance' | 'closed',
     created_at: location.created_at,
     updated_at: location.updated_at
   }));
