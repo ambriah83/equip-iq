@@ -313,6 +313,48 @@ export type Database = {
           },
         ]
       }
+      subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_tier:
+            | Database["public"]["Enums"]["subscription_tier_enum"]
+            | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?:
+            | Database["public"]["Enums"]["subscription_tier_enum"]
+            | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?:
+            | Database["public"]["Enums"]["subscription_tier_enum"]
+            | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_location_access: {
         Row: {
           access_level: string
@@ -457,6 +499,7 @@ export type Database = {
         | "can_operate_heavy_equipment"
         | "can_access_restricted_areas"
         | "can_perform_emergency_shutdowns"
+      subscription_tier_enum: "basic" | "professional" | "enterprise"
       user_role: "owner" | "admin" | "manager" | "staff" | "vendor"
     }
     CompositeTypes: {
@@ -583,6 +626,7 @@ export const Constants = {
         "can_access_restricted_areas",
         "can_perform_emergency_shutdowns",
       ],
+      subscription_tier_enum: ["basic", "professional", "enterprise"],
       user_role: ["owner", "admin", "manager", "staff", "vendor"],
     },
   },
