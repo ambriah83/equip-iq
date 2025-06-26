@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Edit, Image, FileText, Layout, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,6 +38,21 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onEdit }) => {
   const isExpiringSoon = equipment.warranty.expiryDate && 
     new Date(equipment.warranty.expiryDate) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
+  const getWarrantyBadge = () => {
+    if (!isWarrantyActive) return null;
+    
+    const isExpiring = isExpiringSoon;
+    return (
+      <Badge 
+        variant={isExpiring ? "destructive" : "default"} 
+        className={`text-xs ${isExpiring ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+      >
+        <Shield size={12} className="mr-1" />
+        {isExpiring ? 'Warranty Expiring Soon' : 'Under Warranty'}
+      </Badge>
+    );
+  };
+
   return (
     <div className="space-y-3">
       {isWarrantyActive && (
@@ -49,12 +65,7 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onEdit }) => {
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
                 {equipment.name}
-                {isWarrantyActive && (
-                  <Badge variant={isExpiringSoon ? "destructive" : "default"} className="text-xs">
-                    <Shield size={12} className="mr-1" />
-                    Under Warranty
-                  </Badge>
-                )}
+                {getWarrantyBadge()}
               </CardTitle>
               <p className="text-sm text-slate-600">{equipment.type}</p>
             </div>
@@ -91,12 +102,16 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onEdit }) => {
             
             <div className="pt-2 border-t">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-600">Warranty:</span>
+                <span className="text-sm text-slate-600">Warranty Status:</span>
                 <div className="flex items-center gap-2">
-                  <Badge variant={isWarrantyActive ? "default" : "secondary"} className="text-xs">
-                    {equipment.warranty.status === 'active' ? 'Active' : 'Inactive'}
+                  <Badge 
+                    variant={isWarrantyActive ? "default" : "secondary"} 
+                    className={`text-xs ${isWarrantyActive ? (isExpiringSoon ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600') : ''}`}
+                  >
+                    <Shield size={12} className="mr-1" />
+                    {equipment.warranty.status === 'active' ? (isExpiringSoon ? 'Expiring Soon' : 'Active') : 'Inactive'}
                   </Badge>
-                  {equipment.warranty.expiryDate && (
+                  {equipment.warranty.expiryDate && isWarrantyActive && (
                     <span className="text-sm font-medium">
                       Until {new Date(equipment.warranty.expiryDate).toLocaleDateString()}
                     </span>
