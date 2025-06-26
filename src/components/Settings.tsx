@@ -1,10 +1,10 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { PersonalInfoTab, BillingTab, UserManagementTab, PermissionsTab, DropdownFieldsTab, OwnerBillingTab } from '@/components/settings';
 import LocationsBillingTab from '@/components/settings/LocationsBillingTab';
-import LogoGeneratorTab from './settings/LogoGeneratorTab';
 import { Settings as SettingsIcon, User, CreditCard, Users, Shield, ChevronDown, Building, MapPin } from 'lucide-react';
 
 const Settings = () => {
@@ -18,13 +18,12 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="personal" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
           <TabsTrigger value="personal">Personal</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="permissions">Permissions</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="fields">Fields</TabsTrigger>
-          <TabsTrigger value="logo">Logo</TabsTrigger>
         </TabsList>
 
         <TabsContent value="personal">
@@ -53,10 +52,6 @@ const Settings = () => {
         
         <TabsContent value="fields">
           <DropdownFieldsTab />
-        </TabsContent>
-        
-        <TabsContent value="logo">
-          <LogoGeneratorTab />
         </TabsContent>
       </Tabs>
     </div>
