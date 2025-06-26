@@ -17,12 +17,9 @@ export function useDataFiltering<T>({
   filterConfigs = {} 
 }: UseDataFilteringProps<T>) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState<FilterConfig>(
-    Object.keys(filterConfigs).reduce((acc, key) => {
-      acc[key] = 'all';
-      return acc;
-    }, {} as FilterConfig)
-  );
+  
+  // Initialize filters with the provided default values instead of 'all'
+  const [filters, setFilters] = useState<FilterConfig>(filterConfigs);
   const [showFilters, setShowFilters] = useState(false);
 
   const filteredData = useMemo(() => {
@@ -55,7 +52,10 @@ export function useDataFiltering<T>({
     }, {} as FilterConfig));
   };
 
-  const hasActiveFilters = searchTerm !== '' || Object.values(filters).some(value => value !== 'all');
+  const hasActiveFilters = searchTerm !== '' || Object.entries(filters).some(([key, value]) => {
+    const defaultValue = filterConfigs[key] || 'all';
+    return value !== defaultValue && value !== 'all';
+  });
 
   return {
     searchTerm,

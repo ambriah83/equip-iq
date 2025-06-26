@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,11 +47,11 @@ const UserManagementTab = () => {
     searchFields: ['name', 'email'],
     filterConfigs: {
       role: 'all',
-      status: 'all'
+      status: 'active' // Default to active users
     }
   });
 
-  const handleSaveUser = (userData: Partial<User>) => {
+  function handleSaveUser(userData: Partial<User>) {
     if (editingUser) {
       setUsers(users.map(user => user.id === editingUser.id ? { ...user, ...userData } : user));
       toast({
@@ -75,25 +74,25 @@ const UserManagementTab = () => {
     }
     setIsUserDialogOpen(false);
     setEditingUser(null);
-  };
+  }
 
-  const handleDeleteUser = (userId: string) => {
+  function handleDeleteUser(userId: string) {
     setUsers(users.filter(user => user.id !== userId));
     toast({
       title: "User Removed",
       description: "User has been removed successfully.",
     });
-  };
+  }
 
-  const handleEditUser = (user: User) => {
+  function handleEditUser(user: User) {
     setEditingUser(user);
     setIsUserDialogOpen(true);
-  };
+  }
 
-  const handleAddUser = () => {
+  function handleAddUser() {
     setEditingUser(null);
     setIsUserDialogOpen(true);
-  };
+  }
 
   return (
     <Card>
