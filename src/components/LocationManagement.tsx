@@ -23,7 +23,7 @@ const LocationManagement = () => {
   const [modalMode, setModalMode] = useState<'view' | 'manage'>('view');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Transform database locations to match the filtering hook's expected type
+  // Transform database locations to match the filtering hook's expected type with proper type casting
   const transformedLocations: Location[] = locations.map(location => ({
     id: location.id,
     name: location.name,

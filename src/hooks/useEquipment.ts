@@ -18,6 +18,9 @@ export interface EquipmentWithDetails extends Equipment {
   serialNumber?: string;
   warrantyStatus?: string;
   lastServiceDate?: string;
+  // Add the missing required properties
+  lastService?: string;
+  warranty?: string;
 }
 
 export const useEquipment = () => {
