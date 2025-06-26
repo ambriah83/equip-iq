@@ -26,8 +26,8 @@ const Sidebar = ({ activeSection, onSectionChange, userRole }: SidebarProps) => 
   return (
     <div className="w-64 bg-gradient-to-b from-slate-900 to-slate-800 h-screen p-6 border-r border-slate-700">
       <div className="mb-8">
-        <h1 className="text-xl font-bold text-white mb-1">Operations Hub</h1>
-        <p className="text-slate-400 text-sm">AI-Powered Support</p>
+        <h1 className="text-xl font-bold text-white mb-1">EquipIQ</h1>
+        <p className="text-slate-400 text-sm">AI-Powered Equipment Management</p>
       </div>
       
       <nav className="space-y-2">

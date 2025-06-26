@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Building2 } from 'lucide-react';
+import { Eye, EyeOff, Brain } from 'lucide-react';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -109,10 +109,10 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Building2 className="h-8 w-8 text-blue-400" />
-            <h1 className="text-2xl font-bold text-white">Operations Hub</h1>
+            <Brain className="h-8 w-8 text-blue-400" />
+            <h1 className="text-2xl font-bold text-white">EquipIQ</h1>
           </div>
-          <p className="text-slate-400">AI-Powered Equipment Support</p>
+          <p className="text-slate-400">Smart Equipment Management with AI</p>
         </div>
 
         <Card className="bg-slate-800 border-slate-700">
@@ -123,52 +123,11 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs defaultValue="signup" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="signup">Start Free Trial</TabsTrigger>
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
               </TabsList>
-
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div>
-                    <Label htmlFor="signin-email" className="text-slate-200">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="bg-slate-700 border-slate-600 text-white"
-                      placeholder="Enter your email"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="signin-password" className="text-slate-200">Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="signin-password"
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="bg-slate-700 border-slate-600 text-white pr-10"
-                        placeholder="Enter your password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-200"
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Signing In...' : 'Sign In'}
-                  </Button>
-                </form>
-              </TabsContent>
 
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
@@ -254,8 +213,52 @@ const Auth = () => {
                       placeholder="Confirm your password"
                     />
                   </div>
+                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                    {loading ? 'Creating Account...' : 'Start Free Trial'}
+                  </Button>
+                  <p className="text-xs text-slate-400 text-center">
+                    Free 14-day trial • No credit card required
+                  </p>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="signin">
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div>
+                    <Label htmlFor="signin-email" className="text-slate-200">Email</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="bg-slate-700 border-slate-600 text-white"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="signin-password" className="text-slate-200">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="signin-password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="bg-slate-700 border-slate-600 text-white pr-10"
+                        placeholder="Enter your password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Creating Account...' : 'Create Account'}
+                    {loading ? 'Signing In...' : 'Sign In'}
                   </Button>
                 </form>
               </TabsContent>
