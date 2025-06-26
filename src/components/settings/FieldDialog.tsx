@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,35 @@ const FieldDialog: React.FC<FieldDialogProps> = ({ field, onSave, onClose }) => 
     label: field?.label || '',
     value: field?.value || ''
   });
+  const [isValueManuallyChanged, setIsValueManuallyChanged] = useState(false);
+
+  // Auto-format value based on label when label changes (only if value hasn't been manually edited)
+  useEffect(() => {
+    if (!isValueManuallyChanged && formData.label) {
+      const formattedValue = formData.label
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '') // Remove special characters except spaces
+        .replace(/\s+/g, '_') // Replace spaces with underscores
+        .replace(/_+/g, '_') // Replace multiple underscores with single underscore
+        .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+      
+      setFormData(prev => ({ ...prev, value: formattedValue }));
+    }
+  }, [formData.label, isValueManuallyChanged]);
+
+  // Reset manual change tracking when field changes (for edit mode)
+  useEffect(() => {
+    setIsValueManuallyChanged(false);
+  }, [field]);
+
+  const handleLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, label: e.target.value });
+  };
+
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, value: e.target.value });
+    setIsValueManuallyChanged(true);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +71,7 @@ const FieldDialog: React.FC<FieldDialogProps> = ({ field, onSave, onClose }) => 
           <Input
             id="label"
             value={formData.label}
-            onChange={(e) => setFormData({...formData, label: e.target.value})}
+            onChange={handleLabelChange}
             placeholder="Display name"
             required
           />
@@ -52,10 +81,13 @@ const FieldDialog: React.FC<FieldDialogProps> = ({ field, onSave, onClose }) => 
           <Input
             id="value"
             value={formData.value}
-            onChange={(e) => setFormData({...formData, value: e.target.value})}
+            onChange={handleValueChange}
             placeholder="Internal value (lowercase, no spaces)"
             required
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Auto-generated from label. You can edit this manually if needed.
+          </p>
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
