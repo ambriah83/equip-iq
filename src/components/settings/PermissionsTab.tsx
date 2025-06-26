@@ -1,19 +1,11 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Shield, Users, Settings, Search, Filter } from 'lucide-react';
+import { Shield, Users, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useDataFiltering } from '@/hooks/useDataFiltering';
-import { Dialog, DialogTrigger } from '@/components/ui/dialog';
-import RoleDialog from './RoleDialog';
-import PermissionDialog from './PermissionDialog';
+import RolePermissionMatrix from './RolePermissionMatrix';
+import RolesList from './RolesList';
+import PermissionsList from './PermissionsList';
 import { Database } from '@/integrations/supabase/types';
 
 type UserRole = Database['public']['Enums']['user_role'];
@@ -48,14 +40,6 @@ const permissionDescriptions: Record<EscalationPermission, string> = {
   can_operate_heavy_equipment: 'Permission to operate heavy machinery',
   can_access_restricted_areas: 'Permission to access restricted facility areas',
   can_perform_emergency_shutdowns: 'Permission to perform emergency system shutdowns'
-};
-
-const roleColors: Record<UserRole, string> = {
-  owner: 'bg-purple-100 text-purple-800 border-purple-200',
-  admin: 'bg-blue-100 text-blue-800 border-blue-200',
-  manager: 'bg-green-100 text-green-800 border-green-200',
-  staff: 'bg-orange-100 text-orange-800 border-orange-200',
-  vendor: 'bg-gray-100 text-gray-800 border-gray-200'
 };
 
 const PermissionsTab = () => {
@@ -135,25 +119,6 @@ const PermissionsTab = () => {
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>('staff');
 
-  // Filtering for permissions
-  const {
-    searchTerm: permissionSearchTerm,
-    setSearchTerm: setPermissionSearchTerm,
-    filters: permissionFilters,
-    updateFilter: updatePermissionFilter,
-    showFilters: showPermissionFilters,
-    setShowFilters: setShowPermissionFilters,
-    filteredData: filteredPermissions,
-    clearAllFilters: clearPermissionFilters,
-    hasActiveFilters: hasActivePermissionFilters
-  } = useDataFiltering({
-    data: permissions,
-    searchFields: ['name', 'description'],
-    filterConfigs: {
-      category: 'all'
-    }
-  });
-
   const handlePermissionToggle = (role: UserRole, permission: EscalationPermission, newValue: boolean) => {
     setRolePermissions(prev => 
       prev.map(rp => 
@@ -167,15 +132,6 @@ const PermissionsTab = () => {
       title: "Permission Updated",
       description: `${permission.replace('can_', '').replace('_', ' ')} permission for ${role} has been ${newValue ? 'granted' : 'revoked'}.`,
     });
-  };
-
-  const getPermissionForRole = (role: UserRole, permission: EscalationPermission) => {
-    const rolePermission = rolePermissions.find(rp => rp.role === role && rp.permission === permission);
-    return rolePermission?.is_allowed || false;
-  };
-
-  const getUniqueCategories = () => {
-    return Array.from(new Set(permissions.map(p => p.category)));
   };
 
   return (
@@ -205,227 +161,30 @@ const PermissionsTab = () => {
           </TabsList>
 
           <TabsContent value="assignments" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">Role Permission Assignments</h3>
-                <p className="text-sm text-muted-foreground">Configure which permissions each role has</p>
-              </div>
-              <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole)}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.name}>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${roleColors[role.name].split(' ')[0]}`} />
-                        {role.name.toUpperCase()}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className={`px-3 py-1 rounded text-sm font-medium border ${roleColors[selectedRole]}`}>
-                    {selectedRole.toUpperCase()}
-                  </div>
-                  <div>
-                    <h4 className="font-medium">Role Permissions</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {roles.find(r => r.name === selectedRole)?.description}
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {permissions.map((permission) => {
-                    const isAllowed = getPermissionForRole(selectedRole, permission.name);
-                    
-                    return (
-                      <div key={permission.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <Label className="font-medium text-sm">
-                              {permission.name.replace('can_', '').replace(/_/g, ' ').toUpperCase()}
-                            </Label>
-                            <Badge variant="outline" className="text-xs">
-                              {permission.category}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-gray-600 mt-1">
-                            {permission.description}
-                          </p>
-                        </div>
-                        <Switch
-                          checked={isAllowed}
-                          onCheckedChange={(checked) => 
-                            handlePermissionToggle(selectedRole, permission.name, checked)
-                          }
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+            <RolePermissionMatrix
+              roles={roles}
+              permissions={permissions}
+              rolePermissions={rolePermissions}
+              selectedRole={selectedRole}
+              onRoleChange={setSelectedRole}
+              onPermissionToggle={handlePermissionToggle}
+            />
           </TabsContent>
 
           <TabsContent value="roles" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">Manage Roles</h3>
-                <p className="text-sm text-muted-foreground">Add, edit, and delete user roles</p>
-              </div>
-              <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus size={16} className="mr-2" />
-                    Add Role
-                  </Button>
-                </DialogTrigger>
-                <RoleDialog onClose={() => setIsRoleDialogOpen(false)} />
-              </Dialog>
-            </div>
-
-            <div className="grid gap-4">
-              {roles.map((role) => (
-                <Card key={role.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`px-3 py-1 rounded text-sm font-medium border ${roleColors[role.name]}`}>
-                          {role.name.toUpperCase()}
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{role.description}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {role.userCount} users assigned to this role
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Edit size={16} />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <RolesList
+              roles={roles}
+              isRoleDialogOpen={isRoleDialogOpen}
+              onRoleDialogOpenChange={setIsRoleDialogOpen}
+            />
           </TabsContent>
 
           <TabsContent value="permissions" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">Manage Permissions</h3>
-                <p className="text-sm text-muted-foreground">Add, edit, and delete system permissions</p>
-              </div>
-              <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus size={16} className="mr-2" />
-                    Add Permission
-                  </Button>
-                </DialogTrigger>
-                <PermissionDialog onClose={() => setIsPermissionDialogOpen(false)} />
-              </Dialog>
-            </div>
-
-            {/* Search and Filter Controls for Permissions */}
-            <div className="flex gap-4 items-center">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search permissions..."
-                  value={permissionSearchTerm}
-                  onChange={(e) => setPermissionSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => setShowPermissionFilters(!showPermissionFilters)}
-                className="gap-2"
-              >
-                <Filter size={16} />
-                Filters
-              </Button>
-              {hasActivePermissionFilters && (
-                <Button variant="ghost" onClick={clearPermissionFilters} className="text-sm">
-                  Clear Filters
-                </Button>
-              )}
-            </div>
-
-            {showPermissionFilters && (
-              <div className="flex gap-4 pt-4 border-t">
-                <div className="flex-1 max-w-sm">
-                  <Select value={permissionFilters.category} onValueChange={(value) => updatePermissionFilter('category', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Filter by category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {getUniqueCategories().map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-
-            <div className="grid gap-4">
-              {filteredPermissions.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {hasActivePermissionFilters ? 'No permissions match your search criteria' : 'No permissions found'}
-                </div>
-              ) : (
-                filteredPermissions.map((permission) => (
-                  <Card key={permission.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <Shield size={20} className="text-blue-600" />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium">
-                                {permission.name.replace('can_', '').replace(/_/g, ' ').toUpperCase()}
-                              </h4>
-                              <Badge variant="outline">
-                                {permission.category}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {permission.description}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <Edit size={16} />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Trash2 size={16} />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
+            <PermissionsList
+              permissions={permissions}
+              isPermissionDialogOpen={isPermissionDialogOpen}
+              onPermissionDialogOpenChange={setIsPermissionDialogOpen}
+            />
           </TabsContent>
         </Tabs>
       </CardContent>
