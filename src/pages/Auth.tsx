@@ -32,6 +32,23 @@ const Auth = () => {
     checkAuth();
   }, [navigate]);
 
+  const validatePassword = (password: string) => {
+    const minLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    
+    if (!minLength) {
+      return 'Password must be at least 8 characters long';
+    }
+    if (!hasUpperCase) {
+      return 'Password must contain at least one uppercase letter';
+    }
+    if (!hasSpecialChar) {
+      return 'Password must contain at least one special character';
+    }
+    return null;
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -40,8 +57,9 @@ const Auth = () => {
       return;
     }
 
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      toast.error(passwordError);
       return;
     }
 
@@ -190,7 +208,7 @@ const Auth = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         className="bg-slate-700 border-slate-600 text-white pr-10"
-                        placeholder="At least 6 characters"
+                        placeholder="8+ chars, 1 uppercase, 1 special char"
                       />
                       <button
                         type="button"
@@ -200,6 +218,9 @@ const Auth = () => {
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Must be 8+ characters with uppercase letter and special character
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="confirm-password" className="text-slate-200">Confirm Password</Label>
