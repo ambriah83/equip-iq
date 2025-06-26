@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -42,9 +41,86 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
   const [extractingFromImage, setExtractingFromImage] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [extractedData, setExtractedData] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isImageDragOver, setIsImageDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  const handleDragOver = (e: React.DragEvent, isImage: boolean = false) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isImage) {
+      setIsImageDragOver(true);
+    } else {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent, isImage: boolean = false) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isImage) {
+      setIsImageDragOver(false);
+    } else {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, isImage: boolean = false) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isImage) {
+      setIsImageDragOver(false);
+    } else {
+      setIsDragOver(false);
+    }
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length === 0) return;
+
+    const droppedFile = droppedFiles[0];
+
+    if (isImage) {
+      const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (validImageTypes.includes(droppedFile.type)) {
+        setImageFile(droppedFile);
+        setResult(null);
+        setExtractedData(null);
+        console.log('Valid image dropped:', droppedFile.name);
+      } else {
+        toast({
+          title: "Invalid File",
+          description: "Please drop an image file (.jpg, .jpeg, .png, .webp).",
+          variant: "destructive"
+        });
+      }
+    } else {
+      const validTypes = [
+        'text/csv',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ];
+      
+      const isValidType = validTypes.includes(droppedFile.type) || 
+                         droppedFile.name.endsWith('.csv') ||
+                         droppedFile.name.endsWith('.xlsx') ||
+                         droppedFile.name.endsWith('.xls');
+      
+      if (isValidType) {
+        setFile(droppedFile);
+        setResult(null);
+        console.log('Valid file dropped:', droppedFile.name);
+      } else {
+        toast({
+          title: "Invalid File",
+          description: "Please drop a CSV or Excel file (.csv, .xlsx, .xls).",
+          variant: "destructive"
+        });
+      }
+    }
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -434,19 +510,44 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
 
             <div className="space-y-2">
               <Label>Upload File</Label>
-              <div className="flex gap-2">
+              <div 
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                  isDragOver 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+                onDragOver={(e) => handleDragOver(e, false)}
+                onDragLeave={(e) => handleDragLeave(e, false)}
+                onDrop={(e) => handleDrop(e, false)}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Upload size={32} className={isDragOver ? 'text-blue-500' : 'text-gray-400'} />
+                  <div>
+                    <p className="text-sm font-medium">
+                      {isDragOver ? 'Drop your file here' : 'Drag and drop your file here, or click to browse'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Supports CSV, Excel (.xlsx, .xls)
+                    </p>
+                  </div>
+                </div>
                 <Input
                   ref={fileInputRef}
                   type="file"
                   accept=".csv,.xlsx,.xls"
                   onChange={handleFileChange}
-                  className="flex-1"
+                  className="hidden"
                 />
-                <Button variant="outline" onClick={downloadSample}>
+              </div>
+              
+              <div className="flex justify-center">
+                <Button variant="outline" onClick={downloadSample} size="sm">
                   <Download size={16} className="mr-2" />
-                  Sample CSV
+                  Download Sample CSV
                 </Button>
               </div>
+              
               <div className="text-xs text-slate-500">
                 <strong>Google Sheets users:</strong> File → Download → CSV (.csv)
                 <br />
@@ -506,13 +607,37 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
 
             <div className="space-y-2">
               <Label>Upload Image</Label>
-              <Input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="w-full"
-              />
+              <div 
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                  isImageDragOver 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+                onDragOver={(e) => handleDragOver(e, true)}
+                onDragLeave={(e) => handleDragLeave(e, true)}
+                onDrop={(e) => handleDrop(e, true)}
+                onClick={() => imageInputRef.current?.click()}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Camera size={32} className={isImageDragOver ? 'text-blue-500' : 'text-gray-400'} />
+                  <div>
+                    <p className="text-sm font-medium">
+                      {isImageDragOver ? 'Drop your image here' : 'Drag and drop your image here, or click to browse'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Supports JPG, PNG, WebP
+                    </p>
+                  </div>
+                </div>
+                <Input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </div>
+              
               <div className="text-xs text-slate-500">
                 <strong>Tips:</strong> Ensure text is clear and readable. Screenshots of spreadsheets work well.
               </div>
