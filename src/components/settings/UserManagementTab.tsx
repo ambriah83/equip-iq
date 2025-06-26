@@ -1,14 +1,14 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
+import { Plus, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
 import UserDialog from './UserDialog';
 import UserFilters from './UserFilters';
 import UserList from './UserList';
+import UserImportDialog from './UserImportDialog';
 
 interface User {
   id: string;
@@ -31,6 +31,8 @@ const UserManagementTab = () => {
 
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const {
     searchTerm,
@@ -94,6 +96,10 @@ const UserManagementTab = () => {
     setIsUserDialogOpen(true);
   }
 
+  function handleUsersImported() {
+    console.log('Users imported successfully');
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -102,19 +108,28 @@ const UserManagementTab = () => {
             <CardTitle>User Management</CardTitle>
             <CardDescription>Add, edit, and manage user accounts</CardDescription>
           </div>
-          <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={handleAddUser}>
-                <Plus size={16} className="mr-2" />
-                Add User
-              </Button>
-            </DialogTrigger>
-            <UserDialog
-              user={editingUser}
-              onSave={handleSaveUser}
-              onClose={() => setIsUserDialogOpen(false)}
-            />
-          </Dialog>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsImportDialogOpen(true)}
+            >
+              <Upload size={16} className="mr-2" />
+              Import Users
+            </Button>
+            <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={handleAddUser}>
+                  <Plus size={16} className="mr-2" />
+                  Add User
+                </Button>
+              </DialogTrigger>
+              <UserDialog
+                user={editingUser}
+                onSave={handleSaveUser}
+                onClose={() => setIsUserDialogOpen(false)}
+              />
+            </Dialog>
+          </div>
         </div>
         
         <UserFilters
@@ -139,6 +154,12 @@ const UserManagementTab = () => {
           hasActiveFilters={hasActiveFilters}
         />
       </CardContent>
+
+      <UserImportDialog
+        isOpen={isImportDialogOpen}
+        onClose={() => setIsImportDialogOpen(false)}
+        onUsersImported={handleUsersImported}
+      />
     </Card>
   );
 };

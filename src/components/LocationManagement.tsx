@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Building2, MapPin, Users, Edit, Home } from 'lucide-react';
+import { Building2, MapPin, Users, Edit, Home, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
@@ -8,7 +7,7 @@ import { useViewToggle } from '@/hooks/useViewToggle';
 import { useLocations, Location } from '@/hooks/useLocations';
 import { useSupabaseRooms } from '@/hooks/useSupabaseRooms';
 import { DataTable, FilterBar, StatusBadge } from '@/components/shared';
-import { LocationCard, AddLocationDialog, LocationDetailsModal } from '@/components/location';
+import { LocationCard, AddLocationDialog, LocationDetailsModal, LocationImportDialog } from '@/components/location';
 import { AddRoomDialog } from '@/components/room';
 import { Database } from '@/integrations/supabase/types';
 import ViewToggle from './ViewToggle';
@@ -22,6 +21,7 @@ const LocationManagement = () => {
   const [selectedLocation, setSelectedLocation] = useState<DatabaseLocation | null>(null);
   const [modalMode, setModalMode] = useState<'view' | 'manage'>('view');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const {
     searchTerm,
@@ -64,6 +64,11 @@ const LocationManagement = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedLocation(null);
+  };
+
+  const handleLocationsImported = () => {
+    // Refresh the locations data
+    window.location.reload(); // Simple refresh for now
   };
 
   const columns = [
@@ -187,6 +192,13 @@ const LocationManagement = () => {
           </div>
           <div className="flex items-center gap-4">
             <ViewToggle view={view} onViewChange={setView} />
+            <button
+              onClick={() => setIsImportDialogOpen(true)}
+              className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <Upload size={16} />
+              Import
+            </button>
             <AddRoomDialog locations={locations.map(loc => ({ ...loc, status: loc.status }))} />
             <AddLocationDialog />
           </div>
@@ -242,6 +254,12 @@ const LocationManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      <LocationImportDialog
+        isOpen={isImportDialogOpen}
+        onClose={() => setIsImportDialogOpen(false)}
+        onLocationsImported={handleLocationsImported}
+      />
 
       <LocationDetailsModal
         isOpen={isModalOpen}

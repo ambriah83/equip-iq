@@ -1,4 +1,3 @@
-
 export { default as PersonalInfoTab } from './PersonalInfoTab';
 export { default as BillingTab } from './BillingTab';
 export { default as UserManagementTab } from './UserManagementTab';
@@ -14,3 +13,4 @@ export { default as UserList } from './UserList';
 export { default as RolePermissionMatrix } from './RolePermissionMatrix';
 export { default as RolesList } from './RolesList';
 export { default as PermissionsList } from './PermissionsList';
+export { default as UserImportDialog } from './UserImportDialog';
