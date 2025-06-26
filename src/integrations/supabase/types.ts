@@ -200,6 +200,53 @@ export type Database = {
           },
         ]
       }
+      location_billing: {
+        Row: {
+          billing_name: string | null
+          card_brand: string | null
+          card_last_four: string | null
+          created_at: string
+          id: string
+          is_default: boolean
+          location_id: string
+          stripe_customer_id: string | null
+          stripe_payment_method_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_name?: string | null
+          card_brand?: string | null
+          card_last_four?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          location_id: string
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_name?: string | null
+          card_brand?: string | null
+          card_last_four?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          location_id?: string
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_billing_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: true
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locations: {
         Row: {
           abbreviation: string
