@@ -2,6 +2,7 @@
 import React from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Database } from '@/integrations/supabase/types';
 
@@ -33,6 +34,17 @@ const permissionDescriptions: Record<EscalationPermission, string> = {
   can_perform_emergency_shutdowns: 'Permission to perform emergency system shutdowns'
 };
 
+const permissionCategories: Record<EscalationPermission, string> = {
+  can_use_ladder: 'Safety Equipment',
+  can_handle_electrical: 'Electrical Work',
+  can_disassemble_parts: 'Mechanical Work',
+  can_work_at_height: 'Safety Equipment',
+  can_handle_chemicals: 'Hazardous Materials',
+  can_operate_heavy_equipment: 'Equipment Operation',
+  can_access_restricted_areas: 'Access Control',
+  can_perform_emergency_shutdowns: 'Emergency Procedures'
+};
+
 const UserPermissions: React.FC<UserPermissionsProps> = ({
   user,
   userRole,
@@ -58,6 +70,10 @@ const UserPermissions: React.FC<UserPermissionsProps> = ({
     }
   };
 
+  const formatPermissionName = (permission: string) => {
+    return permission.replace('can_', '').replace(/_/g, ' ').toUpperCase();
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">User Permissions</h3>
@@ -69,17 +85,22 @@ const UserPermissions: React.FC<UserPermissionsProps> = ({
       {loading && user ? (
         <div className="text-center py-4">Loading permissions...</div>
       ) : (
-        <div className="space-y-3 max-h-60 overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
           {Object.entries(permissionDescriptions).map(([permission, description]) => {
             const permStatus = getEffectivePermissionStatus(permission as EscalationPermission);
             
             return (
               <div key={permission} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex-1">
-                  <div className="font-medium text-sm">
-                    {permission.replace('can_', '').replace(/_/g, ' ').toUpperCase()}
+                  <div className="flex items-center gap-2">
+                    <Label className="font-medium text-sm">
+                      {formatPermissionName(permission)}
+                    </Label>
+                    <Badge variant="outline" className="text-xs">
+                      {permissionCategories[permission as EscalationPermission]}
+                    </Badge>
                   </div>
-                  <div className="text-xs text-gray-600">{description}</div>
+                  <p className="text-xs text-gray-600 mt-1">{description}</p>
                   {user && permStatus.is_custom && (
                     <div className="text-xs text-blue-600 mt-1">Custom override applied</div>
                   )}

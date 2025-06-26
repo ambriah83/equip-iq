@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 
@@ -27,7 +27,9 @@ export const usePermissions = (userId?: string, userRole?: UserRole) => {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch role default permissions
-  const fetchRoleDefaults = async (role: UserRole) => {
+  const fetchRoleDefaults = useCallback(async (role?: UserRole) => {
+    if (!role) return;
+    
     try {
       const { data, error } = await supabase
         .from('role_permissions')
@@ -40,10 +42,10 @@ export const usePermissions = (userId?: string, userRole?: UserRole) => {
       console.error('Error fetching role defaults:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     }
-  };
+  }, []);
 
   // Fetch user-specific permissions
-  const fetchUserPermissions = async (targetUserId: string, role: UserRole) => {
+  const fetchUserPermissions = useCallback(async (targetUserId: string, role: UserRole) => {
     try {
       const { data, error } = await supabase.rpc('get_user_permissions', {
         target_user_id: targetUserId,
@@ -56,7 +58,7 @@ export const usePermissions = (userId?: string, userRole?: UserRole) => {
       console.error('Error fetching user permissions:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     }
-  };
+  }, []);
 
   // Initialize user permissions from role defaults
   const initializeUserPermissions = async (targetUserId: string, role: UserRole) => {
@@ -122,23 +124,22 @@ export const usePermissions = (userId?: string, userRole?: UserRole) => {
 
   useEffect(() => {
     const loadPermissions = async () => {
-      if (!userId || !userRole) {
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       setError(null);
 
       try {
-        // First initialize user permissions if they don't exist
-        await initializeUserPermissions(userId, userRole);
-        
-        // Then fetch both role defaults and user-specific permissions
-        await Promise.all([
-          fetchRoleDefaults(userRole),
-          fetchUserPermissions(userId, userRole)
-        ]);
+        // Always fetch role defaults if userRole is provided
+        if (userRole) {
+          await fetchRoleDefaults(userRole);
+        }
+
+        // If user ID is provided, also fetch user-specific permissions
+        if (userId && userRole) {
+          // First initialize user permissions if they don't exist
+          await initializeUserPermissions(userId, userRole);
+          // Then fetch user-specific permissions
+          await fetchUserPermissions(userId, userRole);
+        }
       } catch (err) {
         console.error('Error loading permissions:', err);
       } finally {
@@ -147,7 +148,7 @@ export const usePermissions = (userId?: string, userRole?: UserRole) => {
     };
 
     loadPermissions();
-  }, [userId, userRole]);
+  }, [userId, userRole, fetchRoleDefaults, fetchUserPermissions]);
 
   return {
     permissions,
@@ -158,6 +159,6 @@ export const usePermissions = (userId?: string, userRole?: UserRole) => {
     getPermissionStatus,
     updateUserPermission,
     fetchUserPermissions: () => userId && userRole ? fetchUserPermissions(userId, userRole) : Promise.resolve(),
-    fetchRoleDefaults: () => userRole ? fetchRoleDefaults(userRole) : Promise.resolve()
+    fetchRoleDefaults: () => fetchRoleDefaults(userRole)
   };
 };
