@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, Download, Loader2, Zap, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Download, Loader2, Zap, CheckCircle, AlertCircle, Brain } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CSVParseResult } from '@/utils/csvParser';
 
@@ -21,6 +21,7 @@ interface FileUploadSectionProps {
   setAiProcessedData: (data: string | null) => void;
   onImportFromProcessed: (source: string) => void;
   parseResult?: CSVParseResult | null;
+  autoProcessingStatus?: string | null;
 }
 
 const FileUploadSection: React.FC<FileUploadSectionProps> = ({
@@ -36,7 +37,8 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   aiProcessedData,
   setAiProcessedData,
   onImportFromProcessed,
-  parseResult
+  parseResult,
+  autoProcessingStatus
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
@@ -135,14 +137,19 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
 
   return (
     <div className="space-y-4">
-      <Alert>
+      <Alert className="border-blue-200 bg-blue-50">
+        <Brain className="h-4 w-4" />
         <AlertDescription>
           <div className="space-y-2">
-            <p>Upload any CSV file - our advanced parser handles complex formatting including quoted fields, escaped characters, and various delimiters!</p>
-            <div className="text-sm text-slate-600">
-              <strong>Supported formats:</strong> CSV (.csv), Excel (.xlsx, .xls)*
-              <br />
-              <em>*Excel files: Please convert to CSV format for best results</em>
+            <p className="font-medium">🧠 AI-First CSV Processing</p>
+            <div className="text-sm">
+              New intelligent import system:
+              <ul className="list-disc list-inside mt-1 ml-2">
+                <li><strong>Auto-detects</strong> formatting issues and column name problems</li>
+                <li><strong>Auto-fixes</strong> CSV structure using AI before parsing</li>
+                <li><strong>Smart mapping</strong> of columns like "Location Name" → "name"</li>
+                <li><strong>Seamless experience</strong> - no manual intervention needed</li>
+              </ul>
             </div>
           </div>
         </AlertDescription>
@@ -251,6 +258,28 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         </div>
       )}
 
+      {autoProcessingStatus && (
+        <div className="space-y-2">
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+            <div className="flex items-center gap-2">
+              {processingWithAI ? (
+                <Loader2 size={16} className="animate-spin text-blue-600" />
+              ) : autoProcessingStatus.includes('✅') ? (
+                <CheckCircle size={16} className="text-green-600" />
+              ) : autoProcessingStatus.includes('⚠️') ? (
+                <AlertCircle size={16} className="text-amber-600" />
+              ) : autoProcessingStatus.includes('❌') ? (
+                <AlertCircle size={16} className="text-red-600" />
+              ) : (
+                <Brain size={16} className="text-blue-600" />
+              )}
+              <span className="text-sm font-medium text-blue-800">AI Auto-Processing</span>
+            </div>
+            <p className="text-xs text-blue-700 mt-1">{autoProcessingStatus}</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-end gap-2">
         <Button 
           onClick={onImport} 
@@ -259,17 +288,12 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
           {importing ? (
             <>
               <Loader2 size={16} className="mr-2 animate-spin" />
-              Processing...
-            </>
-          ) : processingWithAI ? (
-            <>
-              <Loader2 size={16} className="mr-2 animate-spin" />
-              AI Processing...
+              {processingWithAI ? 'AI Processing...' : 'Importing...'}
             </>
           ) : (
             <>
               <Upload size={16} className="mr-2" />
-              Import
+              Smart Import
             </>
           )}
         </Button>

@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileSpreadsheet, FileText, Camera, Info, Zap } from 'lucide-react';
+import { FileSpreadsheet, FileText, Camera, Info, Brain } from 'lucide-react';
 import { useCSVImport } from './useCSVImport';
 import FileUploadSection from './FileUploadSection';
 import ImageUploadSection from './ImageUploadSection';
@@ -50,6 +49,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
     aiProcessedData,
     setAiProcessedData,
     parseResult,
+    autoProcessingStatus,
     fileInputRef,
     imageInputRef,
     handleImport,
@@ -129,24 +129,24 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
             </TooltipProvider>
           </div>
           <DialogDescription className="text-sm text-gray-600">
-            Import {title.toLowerCase()} from any CSV format with advanced parsing or extract data from images using AI
+            AI-powered import with automatic format detection and fixing for any CSV structure
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto pr-2">
           <div className="space-y-4">
-            <Alert className="border-blue-200 bg-blue-50">
-              <Zap className="h-4 w-4" />
+            <Alert className="border-green-200 bg-green-50">
+              <Brain className="h-4 w-4" />
               <AlertDescription>
                 <div className="space-y-2">
-                  <p className="font-medium">✨ Advanced CSV Parser + AI-Powered Import</p>
+                  <p className="font-medium">🚀 AI-First Import System</p>
                   <div className="text-sm">
-                    Now featuring a robust CSV parser that handles:
+                    Your CSV will be automatically analyzed and fixed before import:
                     <ul className="list-disc list-inside mt-1 ml-2">
-                      <li>Quoted fields with commas, semicolons, and special characters</li>
-                      <li>Automatic delimiter detection (comma, semicolon, tab)</li>
-                      <li>Escaped quotes and complex CSV formatting</li>
-                      <li>AI backup for any remaining mapping issues</li>
+                      <li>Detects column mapping issues (like "Location Name" vs "name")</li>
+                      <li>Fixes formatting problems automatically</li>
+                      <li>Handles complex CSV structures seamlessly</li>
+                      <li>No manual intervention required</li>
                     </ul>
                   </div>
                 </div>
@@ -157,7 +157,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="file" className="flex items-center gap-2">
                   <FileSpreadsheet size={16} />
-                  File Upload
+                  Smart File Upload
                 </TabsTrigger>
                 <TabsTrigger value="image" className="flex items-center gap-2">
                   <Camera size={16} />
@@ -180,6 +180,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                   setAiProcessedData={setAiProcessedData}
                   onImportFromProcessed={handleImportFromProcessed}
                   parseResult={parseResult}
+                  autoProcessingStatus={autoProcessingStatus}
                 />
                 <div className="flex justify-end">
                   <Button variant="outline" onClick={handleClose}>

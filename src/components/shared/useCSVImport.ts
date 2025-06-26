@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CSVParser, CSVParseResult } from '@/utils/csvParser';
+import { CSVAIPreprocessor } from '@/utils/csvAIPreprocessor';
 
 interface ImportResult {
   success: boolean;
@@ -27,6 +28,7 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
   const [extractedData, setExtractedData] = useState<string | null>(null);
   const [aiProcessedData, setAiProcessedData] = useState<string | null>(null);
   const [parseResult, setParseResult] = useState<CSVParseResult | null>(null);
+  const [autoProcessingStatus, setAutoProcessingStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -37,11 +39,6 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
     const validation = CSVParser.validateCSV(text);
     if (!validation.isValid) {
       console.log('CSV validation failed:', validation.errors);
-      toast({
-        title: "CSV Format Issues",
-        description: `Found issues: ${validation.errors.join(', ')}. Try using AI processing to fix these issues.`,
-        variant: "destructive"
-      });
     }
 
     const parseResult = CSVParser.parse(text, {
@@ -57,13 +54,67 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
     });
 
     setParseResult(parseResult);
+    return parseResult.data;
+  };
 
-    if (parseResult.data.length === 0) {
-      console.log('No data found after advanced parsing');
-      return [];
+  const processCSVAutomatically = async (csvText: string): Promise<string> => {
+    console.log('Starting automatic CSV preprocessing...');
+    setAutoProcessingStatus('Analyzing CSV format...');
+    
+    // Step 1: Analyze if preprocessing is needed
+    const analysis = CSVAIPreprocessor.analyzeCSVForPreprocessing(
+      csvText, 
+      requiredFields, 
+      fieldDescriptions
+    );
+
+    console.log('CSV Analysis:', analysis);
+
+    if (!analysis.needsPreprocessing) {
+      console.log('CSV appears to be well-formatted, skipping AI preprocessing');
+      setAutoProcessingStatus(null);
+      return csvText;
     }
 
-    return parseResult.data;
+    // Step 2: Automatically preprocess with AI
+    setAutoProcessingStatus(`Detected formatting issues (${analysis.issues.join(', ')}). Auto-fixing with AI...`);
+    setProcessingWithAI(true);
+
+    try {
+      const preprocessResult = await CSVAIPreprocessor.preprocessWithAI(
+        csvText,
+        title,
+        requiredFields,
+        fieldDescriptions
+      );
+
+      if (preprocessResult.processedCSV) {
+        console.log('AI preprocessing successful');
+        setAutoProcessingStatus('✅ Auto-fixed CSV formatting with AI');
+        toast({
+          title: "CSV Auto-Fixed",
+          description: `Automatically corrected ${analysis.issues.length} formatting issues using AI.`,
+        });
+        return preprocessResult.processedCSV;
+      } else {
+        console.log('AI preprocessing failed, using original CSV');
+        setAutoProcessingStatus('⚠️ AI preprocessing failed, using original format');
+        toast({
+          title: "Auto-Fix Partially Failed",
+          description: "Some formatting issues detected but couldn't be auto-fixed. You may need to manually adjust the CSV.",
+          variant: "destructive"
+        });
+        return csvText;
+      }
+    } catch (error) {
+      console.error('Auto-preprocessing error:', error);
+      setAutoProcessingStatus('❌ Auto-fix failed, using original format');
+      return csvText;
+    } finally {
+      setProcessingWithAI(false);
+      // Clear status after 3 seconds
+      setTimeout(() => setAutoProcessingStatus(null), 3000);
+    }
   };
 
   const parseExcel = async (file: File): Promise<any[]> => {
@@ -72,28 +123,19 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
   };
 
   const processCSVWithAI = async (csvText: string) => {
-    console.log('Processing CSV with AI...');
+    console.log('Manual CSV processing with AI...');
     setProcessingWithAI(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('extract-data-from-image', {
-        body: {
-          imageData: null,
-          csvData: csvText,
-          dataType: title.toLowerCase(),
-          requiredFields,
-          fieldDescriptions
-        }
-      });
+      const result = await CSVAIPreprocessor.preprocessWithAI(
+        csvText,
+        title,
+        requiredFields,
+        fieldDescriptions
+      );
 
-      if (error) {
-        throw error;
-      }
-
-      console.log('AI processing result:', data);
-
-      if (data.success && data.csvData) {
-        setAiProcessedData(data.csvData);
+      if (result.processedCSV) {
+        setAiProcessedData(result.processedCSV);
         toast({
           title: "AI Processing Complete",
           description: "Successfully processed and mapped your CSV data. Review and import if correct.",
@@ -101,12 +143,12 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
       } else {
         toast({
           title: "AI Processing Failed",
-          description: data.message || "Could not process the CSV data with AI.",
+          description: result.error || "Could not process the CSV data with AI.",
           variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('AI processing error:', error);
+      console.error('Manual AI processing error:', error);
       toast({
         title: "Processing Failed",
         description: error instanceof Error ? error.message : "An error occurred while processing the CSV with AI.",
@@ -179,7 +221,7 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
       return;
     }
 
-    console.log('Starting import process with advanced CSV parser...');
+    console.log('Starting import process with AI-first preprocessing...');
     setImporting(true);
     
     try {
@@ -191,14 +233,17 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
       } else {
         csvText = await file.text();
         console.log('File content read successfully, length:', csvText.length);
-        data = parseCSVWithAdvancedParser(csvText);
+        
+        // AI-First Processing: Automatically preprocess if needed
+        const processedCSV = await processCSVAutomatically(csvText);
+        data = parseCSVWithAdvancedParser(processedCSV);
       }
       
       if (data.length === 0) {
         console.log('No data found in file after parsing');
         toast({
           title: "No Data Found",
-          description: "The file appears to be empty or could not be parsed. Try using AI processing to fix format issues.",
+          description: "The file appears to be empty or could not be parsed.",
           variant: "destructive"
         });
         return;
@@ -211,22 +256,6 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
       console.log('Import result:', result);
       
       setResult(result);
-
-      if (!result.success && result.errors.length > 0 && csvText) {
-        const hasFieldErrors = result.errors.some(error => 
-          error.includes('is required') || 
-          error.includes('Invalid') ||
-          error.includes('field') ||
-          error.includes('not found')
-        );
-        
-        if (hasFieldErrors) {
-          toast({
-            title: "Column Mapping Issues Detected",
-            description: "Some required fields weren't found. Would you like to use AI to automatically fix the column mapping?",
-          });
-        }
-      }
 
       if (result.success) {
         toast({
@@ -315,6 +344,7 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
     setAiProcessedData(null);
     setResult(null);
     setParseResult(null);
+    setAutoProcessingStatus(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -337,6 +367,7 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
     aiProcessedData,
     setAiProcessedData,
     parseResult,
+    autoProcessingStatus,
     fileInputRef,
     imageInputRef,
     handleImport,
