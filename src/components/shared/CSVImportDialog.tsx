@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, Download, HelpCircle, CheckCircle, XCircle, FileSpreadsheet, FileText, Camera, Loader2, Info } from 'lucide-react';
+import { Upload, Download, HelpCircle, CheckCircle, XCircle, FileSpreadsheet, FileText, Camera, Loader2, Info, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -39,8 +39,10 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [extractingFromImage, setExtractingFromImage] = useState(false);
+  const [processingWithAI, setProcessingWithAI] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [extractedData, setExtractedData] = useState<string | null>(null);
+  const [aiProcessedData, setAiProcessedData] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isImageDragOver, setIsImageDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -111,6 +113,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
       if (isValidType) {
         setFile(droppedFile);
         setResult(null);
+        setAiProcessedData(null);
         console.log('Valid file dropped:', droppedFile.name);
       } else {
         toast({
@@ -141,6 +144,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
       if (isValidType) {
         setFile(selectedFile);
         setResult(null);
+        setAiProcessedData(null);
         console.log('Valid file selected');
       } else {
         console.log('Invalid file type selected');
@@ -208,9 +212,53 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
 
   const parseExcel = async (file: File): Promise<any[]> => {
     console.log('Parsing Excel file...');
-    // For now, we'll show a helpful message about Excel files
-    // In a real implementation, you'd use a library like xlsx or similar
     throw new Error('Excel file parsing is not yet implemented. Please convert your Excel file to CSV format and try again.');
+  };
+
+  const processCSVWithAI = async (csvText: string) => {
+    console.log('Processing CSV with AI...');
+    setProcessingWithAI(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('extract-data-from-image', {
+        body: {
+          imageData: null,
+          csvData: csvText,
+          dataType: title.toLowerCase(),
+          requiredFields,
+          fieldDescriptions
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('AI processing result:', data);
+
+      if (data.success && data.csvData) {
+        setAiProcessedData(data.csvData);
+        toast({
+          title: "AI Processing Complete",
+          description: "Successfully processed and mapped your CSV data. Review and import if correct.",
+        });
+      } else {
+        toast({
+          title: "AI Processing Failed",
+          description: data.message || "Could not process the CSV data with AI.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('AI processing error:', error);
+      toast({
+        title: "Processing Failed",
+        description: error instanceof Error ? error.message : "An error occurred while processing the CSV with AI.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingWithAI(false);
+    }
   };
 
   const extractDataFromImage = async () => {
@@ -220,7 +268,6 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
     setExtractingFromImage(true);
 
     try {
-      // Convert image to base64
       const reader = new FileReader();
       const imageDataUrl = await new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
@@ -234,7 +281,8 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
         body: {
           imageData: imageDataUrl,
           dataType: title.toLowerCase(),
-          requiredFields
+          requiredFields,
+          fieldDescriptions
         }
       });
 
@@ -280,13 +328,14 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
     
     try {
       let data: any[] = [];
+      let csvText = '';
       
       if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
         data = await parseExcel(file);
       } else {
-        const text = await file.text();
+        csvText = await file.text();
         console.log('File content read successfully');
-        data = parseCSV(text);
+        data = parseCSV(csvText);
       }
       
       if (data.length === 0) {
@@ -304,6 +353,32 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
       console.log('Import result:', result);
       
       setResult(result);
+
+      // If there are errors and we have CSV text, offer AI processing
+      if (!result.success && result.errors.length > 0 && csvText) {
+        const hasFieldErrors = result.errors.some(error => 
+          error.includes('is required') || 
+          error.includes('Invalid') ||
+          error.includes('field')
+        );
+        
+        if (hasFieldErrors) {
+          toast({
+            title: "Format Issues Detected",
+            description: "Would you like to use AI to automatically fix the column mapping?",
+            action: (
+              <Button 
+                size="sm" 
+                onClick={() => processCSVWithAI(csvText)}
+                disabled={processingWithAI}
+              >
+                <Zap size={14} className="mr-1" />
+                Fix with AI
+              </Button>
+            )
+          });
+        }
+      }
 
       if (result.success) {
         toast({
@@ -329,26 +404,27 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
     }
   };
 
-  const handleImportFromExtracted = async () => {
-    if (!extractedData) return;
+  const handleImportFromProcessed = async (dataSource: string) => {
+    const dataToImport = dataSource === 'extracted' ? extractedData : aiProcessedData;
+    if (!dataToImport) return;
 
-    console.log('Importing extracted data...');
+    console.log('Importing processed data...');
     setImporting(true);
 
     try {
-      const data = parseCSV(extractedData);
+      const data = parseCSV(dataToImport);
       
       if (data.length === 0) {
-        console.log('No data found in extracted text');
+        console.log('No data found in processed text');
         toast({
           title: "No Data",
-          description: "The extracted data appears to be empty or invalid.",
+          description: "The processed data appears to be empty or invalid.",
           variant: "destructive"
         });
         return;
       }
 
-      console.log('Calling onImport with extracted data:', data.length, 'rows');
+      console.log('Calling onImport with processed data:', data.length, 'rows');
       const result = await onImport(data);
       console.log('Import result:', result);
       
@@ -357,7 +433,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
       if (result.success) {
         toast({
           title: "Import Successful",
-          description: `Successfully imported ${result.processed} records from image.`,
+          description: `Successfully imported ${result.processed} records.`,
         });
       } else {
         toast({
@@ -399,6 +475,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
     setFile(null);
     setImageFile(null);
     setExtractedData(null);
+    setAiProcessedData(null);
     setResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -430,13 +507,19 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                         <div className="flex items-start gap-2">
                           <FileText size={14} className="mt-0.5 flex-shrink-0" />
                           <div>
-                            <span className="font-medium">CSV/Excel:</span> Upload files directly from your computer
+                            <span className="font-medium">CSV/Excel:</span> Upload files in any format - AI can fix column mapping
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
                           <Camera size={14} className="mt-0.5 flex-shrink-0" />
                           <div>
                             <span className="font-medium">Image:</span> AI extracts data from photos/screenshots of spreadsheets
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Zap size={14} className="mt-0.5 flex-shrink-0" />
+                          <div>
+                            <span className="font-medium">AI Processing:</span> Automatically fixes format and mapping issues
                           </div>
                         </div>
                       </div>
@@ -452,7 +535,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                       </div>
                     </div>
                     <div className="text-xs text-gray-600 mt-3 p-2 bg-blue-50 rounded">
-                      <strong>Tip:</strong> The AI image extraction works great with screenshots of spreadsheets, tables, or any organized data.
+                      <strong>Tip:</strong> Don't worry about exact column names - our AI will automatically map your data!
                     </div>
                   </div>
                 </TooltipContent>
@@ -460,23 +543,22 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
             </TooltipProvider>
           </div>
           <DialogDescription className="text-sm text-gray-600">
-            Import {title.toLowerCase()} from CSV files or extract data from images using AI
+            Import {title.toLowerCase()} from any CSV format or extract data from images using AI
           </DialogDescription>
         </DialogHeader>
 
-        {/* Show required fields prominently */}
         <Alert className="border-blue-200 bg-blue-50">
-          <Info className="h-4 w-4" />
+          <Zap className="h-4 w-4" />
           <AlertDescription>
             <div className="space-y-2">
-              <p className="font-medium">Required fields for {title}:</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                {requiredFields.map(field => (
-                  <div key={field} className="flex items-start gap-2">
-                    <span className="font-medium min-w-0 text-blue-700">{field}:</span>
-                    <span className="text-gray-700">{fieldDescriptions[field]}</span>
-                  </div>
-                ))}
+              <p className="font-medium">✨ AI-Powered Import - Any Format Works!</p>
+              <div className="text-sm">
+                Upload your CSV in any format with any column names. If the standard import fails, our AI will automatically:
+                <ul className="list-disc list-inside mt-1 ml-2">
+                  <li>Understand your column structure</li>
+                  <li>Map fields to the required format</li>
+                  <li>Fix common formatting issues</li>
+                </ul>
               </div>
             </div>
           </AlertDescription>
@@ -498,7 +580,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
             <Alert>
               <AlertDescription>
                 <div className="space-y-2">
-                  <p>Upload a CSV file with the required columns. Required fields: {requiredFields.join(', ')}</p>
+                  <p>Upload any CSV file - don't worry about column names or format! Our AI will handle the mapping.</p>
                   <div className="text-sm text-slate-600">
                     <strong>Supported formats:</strong> CSV (.csv), Excel (.xlsx, .xls)*
                     <br />
@@ -528,7 +610,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                       {isDragOver ? 'Drop your file here' : 'Drag and drop your file here, or click to browse'}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Supports CSV, Excel (.xlsx, .xls)
+                      Any CSV format works - AI will handle the mapping!
                     </p>
                   </div>
                 </div>
@@ -549,9 +631,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
               </div>
               
               <div className="text-xs text-slate-500">
-                <strong>Google Sheets users:</strong> File → Download → CSV (.csv)
-                <br />
-                <strong>Excel users:</strong> Save As → CSV (Comma delimited)
+                <strong>Don't have the exact format?</strong> No problem! Upload any CSV and our AI will fix it automatically.
               </div>
             </div>
 
@@ -568,18 +648,56 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
               </div>
             )}
 
+            {aiProcessedData && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Zap size={16} className="text-blue-500" />
+                  AI-Processed Data Preview
+                </Label>
+                <div className="p-3 bg-slate-50 rounded max-h-40 overflow-y-auto">
+                  <pre className="text-xs whitespace-pre-wrap">{aiProcessedData}</pre>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setAiProcessedData(null)}>
+                    Clear
+                  </Button>
+                  <Button 
+                    onClick={() => handleImportFromProcessed('processed')} 
+                    disabled={importing}
+                  >
+                    {importing ? (
+                      <>
+                        <Loader2 size={16} className="mr-2 animate-spin" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={16} className="mr-2" />
+                        Import AI-Processed Data
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
               <Button 
                 onClick={handleImport} 
-                disabled={!file || importing}
+                disabled={!file || importing || processingWithAI}
               >
                 {importing ? (
                   <>
                     <Loader2 size={16} className="mr-2 animate-spin" />
                     Processing...
+                  </>
+                ) : processingWithAI ? (
+                  <>
+                    <Loader2 size={16} className="mr-2 animate-spin" />
+                    AI Processing...
                   </>
                 ) : (
                   <>
@@ -681,7 +799,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                     Clear
                   </Button>
                   <Button 
-                    onClick={handleImportFromExtracted} 
+                    onClick={() => handleImportFromProcessed('extracted')} 
                     disabled={importing}
                   >
                     {importing ? (
