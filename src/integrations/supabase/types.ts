@@ -9,6 +9,239 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      equipment: {
+        Row: {
+          created_at: string
+          equipment_photo_url: string | null
+          equipment_type_id: string
+          id: string
+          last_service_date: string | null
+          location_id: string
+          name: string
+          room_id: string | null
+          room_layout_url: string | null
+          room_photo_url: string | null
+          serial_number: string | null
+          status: string
+          tmax_connection: string | null
+          updated_at: string
+          warranty_expiry_date: string | null
+          warranty_status: string
+        }
+        Insert: {
+          created_at?: string
+          equipment_photo_url?: string | null
+          equipment_type_id: string
+          id?: string
+          last_service_date?: string | null
+          location_id: string
+          name: string
+          room_id?: string | null
+          room_layout_url?: string | null
+          room_photo_url?: string | null
+          serial_number?: string | null
+          status?: string
+          tmax_connection?: string | null
+          updated_at?: string
+          warranty_expiry_date?: string | null
+          warranty_status?: string
+        }
+        Update: {
+          created_at?: string
+          equipment_photo_url?: string | null
+          equipment_type_id?: string
+          id?: string
+          last_service_date?: string | null
+          location_id?: string
+          name?: string
+          room_id?: string | null
+          room_layout_url?: string | null
+          room_photo_url?: string | null
+          serial_number?: string | null
+          status?: string
+          tmax_connection?: string | null
+          updated_at?: string
+          warranty_expiry_date?: string | null
+          warranty_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_equipment_type_id_fkey"
+            columns: ["equipment_type_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_logs: {
+        Row: {
+          cost: number | null
+          created_at: string
+          description: string | null
+          equipment_id: string
+          id: string
+          log_type: string
+          next_service_date: string | null
+          parts_used: string[] | null
+          performed_by: string | null
+          title: string
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          equipment_id: string
+          id?: string
+          log_type: string
+          next_service_date?: string | null
+          parts_used?: string[] | null
+          performed_by?: string | null
+          title: string
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          equipment_id?: string
+          id?: string
+          log_type?: string
+          next_service_date?: string | null
+          parts_used?: string[] | null
+          performed_by?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_logs_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      knowledge_base: {
+        Row: {
+          content: string | null
+          created_at: string
+          document_type: string
+          equipment_id: string
+          file_url: string | null
+          id: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          document_type: string
+          equipment_id: string
+          file_url?: string | null
+          id?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          document_type?: string
+          equipment_id?: string
+          file_url?: string | null
+          id?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_base_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locations: {
+        Row: {
+          abbreviation: string
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          manager_name: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          abbreviation: string
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          manager_name?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          abbreviation?: string
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          manager_name?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string | null
@@ -32,6 +265,88 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
         }
         Relationships: []
+      }
+      rooms: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          description: string | null
+          floor_number: number | null
+          id: string
+          location_id: string
+          name: string
+          room_type: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          floor_number?: number | null
+          id?: string
+          location_id: string
+          name: string
+          room_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          floor_number?: number | null
+          id?: string
+          location_id?: string
+          name?: string
+          room_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rooms_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_location_access: {
+        Row: {
+          access_level: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          location_id: string
+          user_id: string
+        }
+        Insert: {
+          access_level?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          location_id: string
+          user_id: string
+        }
+        Update: {
+          access_level?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          location_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_location_access_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_permissions: {
         Row: {

@@ -1,111 +1,26 @@
 
 import React, { useState } from 'react';
-import { Wrench, Edit, Image, FileText, Layout, Shield } from 'lucide-react';
+import { Wrench, MapPin, AlertTriangle, Edit } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useSettings } from '@/contexts/SettingsContext';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
 import { useViewToggle } from '@/hooks/useViewToggle';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useEquipment } from '@/hooks/useEquipment';
+import { useLocations } from '@/hooks/useLocations';
 import { DataTable, FilterBar, StatusBadge } from '@/components/shared';
-import { EquipmentCard, AddEquipmentDialog, EditEquipmentDialog } from '@/components/equipment';
+import { EquipmentCard, WarrantyAlert } from '@/components/equipment';
+import { AddEquipmentDialog, EditEquipmentDialog } from '@/components';
+import { Database } from '@/integrations/supabase/types';
 import ViewToggle from './ViewToggle';
 
-interface Equipment {
-  id: string;
-  name: string;
-  type: string;
-  location: string;
-  room: string;
-  serialNumber: string;
-  status: 'active' | 'maintenance' | 'offline';
-  lastService: string;
-  warranty: {
-    status: 'active' | 'inactive';
-    expiryDate?: string;
-    documentation?: string[];
-  };
-  tmaxConnection?: 'Wired' | 'Wireless';
-  equipmentPhoto?: string;
-  documentation?: string[];
-  roomLayout?: string;
-  roomPhoto?: string;
-}
+type Equipment = Database['public']['Tables']['equipment']['Row'];
 
 const EquipmentManagement = () => {
   const { view, setView } = useViewToggle();
-  const { settings } = useSettings();
-  const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  
-  const [equipment, setEquipment] = useLocalStorage<Equipment[]>('equipment', [
-    {
-      id: '1',
-      name: 'Tanning Bed #3',
-      type: 'Sun',
-      location: 'Location A',
-      room: 'Room 3',
-      serialNumber: 'TB-2023-003',
-      status: 'active',
-      lastService: '2024-01-15',
-      warranty: {
-        status: 'active',
-        expiryDate: '2025-06-30',
-        documentation: ['warranty-2023.pdf']
-      },
-      tmaxConnection: 'Wired',
-      equipmentPhoto: 'tanning-bed-3.jpg',
-      documentation: ['manual.pdf', 'maintenance-guide.pdf'],
-      roomLayout: 'room-3-layout.jpg',
-      roomPhoto: 'room-3-photo.jpg'
-    },
-    {
-      id: '2',
-      name: 'HVAC Unit #1',
-      type: 'HVAC',
-      location: 'Location B',
-      room: 'Main Floor',
-      serialNumber: 'HVAC-2022-001',
-      status: 'maintenance',
-      lastService: '2024-01-10',
-      warranty: {
-        status: 'inactive',
-        documentation: ['warranty-expired-2022.pdf']
-      },
-      tmaxConnection: 'Wireless'
-    },
-    {
-      id: '3',
-      name: 'Water Heater',
-      type: 'Other',
-      location: 'Location C',
-      room: 'Utility Room',
-      serialNumber: 'WH-2023-001',
-      status: 'offline',
-      lastService: '2023-12-20',
-      warranty: {
-        status: 'active',
-        expiryDate: '2026-03-15',
-        documentation: ['warranty-2023.pdf', 'extended-warranty.pdf']
-      },
-      tmaxConnection: 'Wired'
-    },
-    {
-      id: '4',
-      name: 'Red Light Therapy Unit #2',
-      type: 'Red Light',
-      location: 'Location A',
-      room: 'Room 7',
-      serialNumber: 'LT-2023-002',
-      status: 'active',
-      lastService: '2024-01-20',
-      warranty: {
-        status: 'active',
-        expiryDate: '2025-12-31',
-        documentation: ['warranty-2023.pdf']
-      },
-      tmaxConnection: 'Wireless'
-    }
-  ]);
+  const { equipment, loading, createEquipment, updateEquipment, deleteEquipment } = useEquipment();
+  const { locations } = useLocations();
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const {
     searchTerm,
@@ -119,79 +34,88 @@ const EquipmentManagement = () => {
     hasActiveFilters
   } = useDataFiltering({
     data: equipment,
-    searchFields: ['name', 'location', 'type', 'room'],
+    searchFields: ['name', 'serial_number'],
     filterConfigs: {
       status: 'Status',
-      type: 'Type',
-      location: 'Location'
+      warranty_status: 'Warranty',
+      equipment_type: 'Type'
     }
   });
 
-  // Get unique values for filter options
-  const uniqueLocations = [...new Set(equipment.map(item => item.location))];
-
-  const handleEdit = (equipmentItem: Equipment) => {
-    setEditingEquipment(equipmentItem);
-    setEditDialogOpen(true);
+  const handleEditEquipment = (equipment: Equipment) => {
+    setSelectedEquipment(equipment);
+    setIsEditDialogOpen(true);
   };
 
-  const handleUpdateEquipment = (updatedEquipment: Equipment) => {
-    setEquipment(prev => prev.map(item => 
-      item.id === updatedEquipment.id ? updatedEquipment : item
-    ));
+  const handleSaveEquipment = async (equipmentData: any) => {
+    try {
+      if (selectedEquipment) {
+        await updateEquipment(selectedEquipment.id, equipmentData);
+      } else {
+        await createEquipment(equipmentData);
+      }
+      setIsEditDialogOpen(false);
+      setSelectedEquipment(null);
+    } catch (error) {
+      console.error('Failed to save equipment:', error);
+    }
   };
 
   const columns = [
     {
       key: 'name',
-      label: 'Name',
-      render: (item: Equipment) => (
-        <div className="font-medium">{item.name}</div>
+      label: 'Equipment',
+      render: (equipment: any) => (
+        <div>
+          <div className="font-medium">{equipment.name}</div>
+          <div className="text-sm text-slate-600">{equipment.equipment_types?.name}</div>
+          <div className="text-xs text-slate-500">{equipment.serial_number}</div>
+        </div>
       )
     },
     {
-      key: 'type',
-      label: 'Type'
-    },
-    {
       key: 'location',
-      label: 'Location'
-    },
-    {
-      key: 'room',
-      label: 'Room'
-    },
-    {
-      key: 'tmaxConnection',
-      label: 'TMAX',
-      render: (item: Equipment) => (
-        <span>{item.tmaxConnection || 'Not specified'}</span>
+      label: 'Location',
+      render: (equipment: any) => (
+        <div className="flex items-center gap-1">
+          <MapPin size={12} />
+          <span className="text-sm">{equipment.locations?.name}</span>
+          {equipment.rooms && (
+            <span className="text-xs text-slate-500">• {equipment.rooms.name}</span>
+          )}
+        </div>
       )
     },
     {
       key: 'status',
       label: 'Status',
-      render: (item: Equipment) => (
-        <StatusBadge status={item.status} variant="equipment" />
+      render: (equipment: Equipment) => (
+        <StatusBadge status={equipment.status} variant="equipment" />
       )
     },
     {
-      key: 'lastService',
-      label: 'Last Service'
+      key: 'warranty_status',
+      label: 'Warranty',
+      render: (equipment: Equipment) => (
+        <StatusBadge status={equipment.warranty_status} variant="warranty" />
+      )
     },
     {
-      key: 'media',
-      label: 'Media',
-      render: (item: Equipment) => (
-        <div className="flex gap-1">
-          {item.equipmentPhoto && <Image size={14} className="text-slate-400" />}
-          {item.documentation && item.documentation.length > 0 && <FileText size={14} className="text-slate-400" />}
-          {item.warranty.documentation && item.warranty.documentation.length > 0 && <Shield size={14} className="text-slate-400" />}
-          {item.roomLayout && <Layout size={14} className="text-slate-400" />}
-        </div>
+      key: 'last_service_date',
+      label: 'Last Service',
+      render: (equipment: Equipment) => (
+        <span>{equipment.last_service_date ? new Date(equipment.last_service_date).toLocaleDateString() : 'Never'}</span>
       )
     }
   ];
+
+  const renderActions = (equipment: Equipment) => (
+    <div className="flex gap-1">
+      <Button size="sm" variant="outline" onClick={() => handleEditEquipment(equipment)}>
+        <Edit size={16} />
+      </Button>
+    </div>
+  );
 
   const filterConfigs = [
     {
@@ -206,32 +130,32 @@ const EquipmentManagement = () => {
       onChange: (value: string) => updateFilter('status', value)
     },
     {
-      key: 'type',
-      label: 'Type',
-      options: settings.equipmentTypes.map(type => ({ value: type, label: type })),
-      value: filters.type,
-      onChange: (value: string) => updateFilter('type', value)
-    },
-    {
-      key: 'location',
-      label: 'Location',
-      options: uniqueLocations.map(location => ({ value: location, label: location })),
-      value: filters.location,
-      onChange: (value: string) => updateFilter('location', value)
+      key: 'warranty_status',
+      label: 'Warranty',
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' }
+      ],
+      value: filters.warranty_status,
+      onChange: (value: string) => updateFilter('warranty_status', value)
     }
   ];
 
   const renderCardView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filteredEquipment.map((item) => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      {filteredEquipment.map((equipment) => (
         <EquipmentCard
-          key={item.id}
-          equipment={item}
-          onEdit={handleEdit}
+          key={equipment.id}
+          equipment={equipment}
+          onEdit={handleEditEquipment}
         />
       ))}
     </div>
   );
+
+  if (loading) {
+    return <div className="p-6">Loading equipment...</div>;
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -241,20 +165,22 @@ const EquipmentManagement = () => {
             <Wrench size={24} />
             <div>
               <h2 className="text-xl font-bold">Equipment Management</h2>
-              <p className="text-blue-100">Monitor and manage all equipment across locations</p>
+              <p className="text-blue-100">Track and maintain all equipment across locations</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <ViewToggle view={view} onViewChange={setView} />
-            <AddEquipmentDialog />
+            <AddEquipmentDialog onEquipmentCreate={createEquipment} />
           </div>
         </div>
       </div>
 
+      <WarrantyAlert equipment={equipment} />
+
       <FilterBar
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Search equipment, location, or type..."
+        searchPlaceholder="Search equipment by name or serial number..."
         filters={filterConfigs}
         showFilters={showFilters}
         onToggleFilters={() => setShowFilters(!showFilters)}
@@ -268,25 +194,51 @@ const EquipmentManagement = () => {
         <DataTable
           data={filteredEquipment}
           columns={columns}
-          onEdit={handleEdit}
+          onEdit={handleEditEquipment}
+          actions={renderActions}
         />
       )}
 
-      {filteredEquipment.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-slate-400 mb-2">
-            <Wrench size={48} className="mx-auto" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Equipment Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-600">{equipment.length}</p>
+              <p className="text-sm text-slate-600">Total Equipment</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-600">
+                {equipment.filter(eq => eq.status === 'active').length}
+              </p>
+              <p className="text-sm text-slate-600">Active</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-yellow-600">
+                {equipment.filter(eq => eq.status === 'maintenance').length}
+              </p>
+              <p className="text-sm text-slate-600">In Maintenance</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-red-600">
+                {equipment.filter(eq => eq.warranty_status === 'active' && eq.warranty_expiry_date && new Date(eq.warranty_expiry_date) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)).length}
+              </p>
+              <p className="text-sm text-slate-600">Warranty Expiring</p>
+            </div>
           </div>
-          <h3 className="text-lg font-medium text-slate-600 mb-2">No equipment found</h3>
-          <p className="text-slate-500">Try adjusting your search or filter criteria</p>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
       <EditEquipmentDialog
-        equipment={editingEquipment}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        onUpdateEquipment={handleUpdateEquipment}
+        equipment={selectedEquipment}
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setSelectedEquipment(null);
+        }}
+        onSave={handleSaveEquipment}
       />
     </div>
   );
