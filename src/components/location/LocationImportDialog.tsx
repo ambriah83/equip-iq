@@ -47,25 +47,38 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
       const rowNum = i + 2; // Account for header row
       console.log(`Processing location row ${rowNum}:`, row);
 
+      // Try multiple possible column name mappings for better flexibility
+      const locationName = row.name || row.Name || row['Location Name'] || row['Store Name'] || row.location || row.store || '';
+      const abbreviation = row.abbreviation || row.Abbreviation || row['Location Code'] || row.code || row.abbrev || '';
+      const address = row.address || row.Address || row['Street Address'] || row.location_address || '';
+      const managerName = row.manager_name || row['Manager Name'] || row.manager || row['Area Manager'] || row['Store Manager'] || '';
+      const phone = row.phone || row.Phone || row['Phone Number'] || row.telephone || '';
+      const email = row.email || row.Email || row['Email Address'] || row.contact_email || '';
+      const status = row.status || row.Status || 'active';
+
       // Validate required fields
-      if (!row.name?.trim()) {
-        errors.push(`Row ${rowNum}: Name is required`);
+      if (!locationName.trim()) {
+        // Provide more helpful error message with suggestions
+        const availableColumns = Object.keys(row).join(', ');
+        errors.push(`Row ${rowNum}: Location name is required. Available columns: ${availableColumns}. Expected columns like: name, Name, Location Name, Store Name`);
         continue;
       }
 
-      if (!row.abbreviation?.trim()) {
-        errors.push(`Row ${rowNum}: Abbreviation is required`);
+      if (!abbreviation.trim()) {
+        const availableColumns = Object.keys(row).join(', ');
+        errors.push(`Row ${rowNum}: Location abbreviation/code is required. Available columns: ${availableColumns}. Expected columns like: abbreviation, Location Code, code`);
         continue;
       }
 
-      if (!row.address?.trim()) {
-        errors.push(`Row ${rowNum}: Address is required`);
+      if (!address.trim()) {
+        const availableColumns = Object.keys(row).join(', ');
+        errors.push(`Row ${rowNum}: Address is required. Available columns: ${availableColumns}. Expected columns like: address, Address, Street Address`);
         continue;
       }
 
       // Validate status if provided
-      if (row.status && !['active', 'maintenance', 'closed'].includes(row.status.toLowerCase())) {
-        errors.push(`Row ${rowNum}: Invalid status. Must be 'active', 'maintenance', or 'closed'`);
+      if (status && !['active', 'maintenance', 'closed'].includes(status.toLowerCase())) {
+        errors.push(`Row ${rowNum}: Invalid status "${status}". Must be 'active', 'maintenance', or 'closed'`);
         continue;
       }
 
@@ -76,13 +89,13 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
         const { error } = await supabase
           .from('locations')
           .insert({
-            name: row.name.trim(),
-            abbreviation: row.abbreviation.trim(),
-            address: row.address.trim(),
-            manager_name: row.manager_name?.trim() || null,
-            phone: row.phone?.trim() || null,
-            email: row.email?.trim() || null,
-            status: row.status?.toLowerCase() || 'active',
+            name: locationName.trim(),
+            abbreviation: abbreviation.trim(),
+            address: address.trim(),
+            manager_name: managerName?.trim() || null,
+            phone: phone?.trim() || null,
+            email: email?.trim() || null,
+            status: status?.toLowerCase() || 'active',
             notes: row.notes?.trim() || null
           });
 
