@@ -3,13 +3,12 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Edit, Plus, User, Search, Filter } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
 import UserDialog from './UserDialog';
+import UserFilters from './UserFilters';
+import UserList from './UserList';
 
 interface User {
   id: string;
@@ -23,11 +22,11 @@ const UserManagementTab = () => {
   const { toast } = useToast();
   
   const [users, setUsers] = useState<User[]>([
-    { id: '550e8400-e29b-41d4-a716-446655440001', name: 'John Doe', email: 'john@company.com', role: 'admin', status: 'active' },
-    { id: '550e8400-e29b-41d4-a716-446655440002', name: 'Jane Smith', email: 'jane@company.com', role: 'manager', status: 'active' },
-    { id: '550e8400-e29b-41d4-a716-446655440003', name: 'Bob Wilson', email: 'bob@company.com', role: 'staff', status: 'inactive' },
-    { id: '550e8400-e29b-41d4-a716-446655440004', name: 'Alice Johnson', email: 'alice@company.com', role: 'staff', status: 'active' },
-    { id: '550e8400-e29b-41d4-a716-446655440005', name: 'Mike Davis', email: 'mike@company.com', role: 'owner', status: 'active' },
+    { id: '6ba7b810-9dad-11d1-80b4-00c04fd430c8', name: 'John Doe', email: 'john@company.com', role: 'admin', status: 'active' },
+    { id: '6ba7b811-9dad-11d1-80b4-00c04fd430c8', name: 'Jane Smith', email: 'jane@company.com', role: 'manager', status: 'active' },
+    { id: '6ba7b812-9dad-11d1-80b4-00c04fd430c8', name: 'Bob Wilson', email: 'bob@company.com', role: 'staff', status: 'inactive' },
+    { id: '6ba7b813-9dad-11d1-80b4-00c04fd430c8', name: 'Alice Johnson', email: 'alice@company.com', role: 'staff', status: 'active' },
+    { id: '6ba7b814-9dad-11d1-80b4-00c04fd430c8', name: 'Mike Davis', email: 'mike@company.com', role: 'owner', status: 'active' },
   ]);
 
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
@@ -48,7 +47,7 @@ const UserManagementTab = () => {
     searchFields: ['name', 'email'],
     filterConfigs: {
       role: 'all',
-      status: 'active' // Default to active users
+      status: 'active'
     }
   });
 
@@ -118,110 +117,27 @@ const UserManagementTab = () => {
           </Dialog>
         </div>
         
-        {/* Search and Filter Controls */}
-        <div className="flex gap-4 items-center pt-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search users..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            className="gap-2"
-          >
-            <Filter size={16} />
-            Filters
-          </Button>
-          {hasActiveFilters && (
-            <Button variant="ghost" onClick={clearAllFilters} className="text-sm">
-              Clear Filters
-            </Button>
-          )}
-        </div>
-
-        {showFilters && (
-          <div className="flex gap-4 pt-4 border-t">
-            <div className="flex-1">
-              <Select value={filters.role} onValueChange={(value) => updateFilter('role', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="owner">Owner</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex-1">
-              <Select value={filters.status} onValueChange={(value) => updateFilter('status', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
+        <UserFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          roleFilter={filters.role}
+          onRoleFilterChange={(value) => updateFilter('role', value)}
+          statusFilter={filters.status}
+          onStatusFilterChange={(value) => updateFilter('status', value)}
+          showFilters={showFilters}
+          onToggleFilters={() => setShowFilters(!showFilters)}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={clearAllFilters}
+        />
       </CardHeader>
       
       <CardContent>
-        <div className="space-y-4">
-          {filteredData.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {hasActiveFilters ? 'No users match your search criteria' : 'No users found'}
-            </div>
-          ) : (
-            filteredData.map((user) => (
-              <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User size={20} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">{user.name}</h3>
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                    <div className="flex gap-2 mt-1">
-                      <Badge variant={user.role === 'admin' ? 'default' : user.role === 'manager' ? 'secondary' : 'outline'}>
-                        {user.role}
-                      </Badge>
-                      <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
-                        {user.status}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditUser(user)}
-                  >
-                    <Edit size={16} />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteUser(user.id)}
-                  >
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        <UserList
+          users={filteredData}
+          onEditUser={handleEditUser}
+          onDeleteUser={handleDeleteUser}
+          hasActiveFilters={hasActiveFilters}
+        />
       </CardContent>
     </Card>
   );
