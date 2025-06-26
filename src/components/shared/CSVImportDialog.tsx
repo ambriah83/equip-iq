@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Upload, Download, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Upload, Download, HelpCircle, CheckCircle, XCircle, FileSpreadsheet, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ImportResult {
@@ -44,17 +44,30 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
     const selectedFile = event.target.files?.[0];
     console.log('File selected:', selectedFile?.name, selectedFile?.type);
     
-    if (selectedFile && selectedFile.type === 'text/csv') {
-      setFile(selectedFile);
-      setResult(null);
-      console.log('Valid CSV file selected');
-    } else {
-      console.log('Invalid file type selected');
-      toast({
-        title: "Invalid File",
-        description: "Please select a valid CSV file.",
-        variant: "destructive"
-      });
+    if (selectedFile) {
+      const validTypes = [
+        'text/csv',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ];
+      
+      const isValidType = validTypes.includes(selectedFile.type) || 
+                         selectedFile.name.endsWith('.csv') ||
+                         selectedFile.name.endsWith('.xlsx') ||
+                         selectedFile.name.endsWith('.xls');
+      
+      if (isValidType) {
+        setFile(selectedFile);
+        setResult(null);
+        console.log('Valid file selected');
+      } else {
+        console.log('Invalid file type selected');
+        toast({
+          title: "Invalid File",
+          description: "Please select a CSV or Excel file (.csv, .xlsx, .xls).",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -88,6 +101,13 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
     return data;
   };
 
+  const parseExcel = async (file: File): Promise<any[]> => {
+    console.log('Parsing Excel file...');
+    // For now, we'll show a helpful message about Excel files
+    // In a real implementation, you'd use a library like xlsx or similar
+    throw new Error('Excel file parsing is not yet implemented. Please convert your Excel file to CSV format and try again.');
+  };
+
   const handleImport = async () => {
     if (!file) {
       console.log('No file selected');
@@ -98,16 +118,21 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
     setImporting(true);
     
     try {
-      const text = await file.text();
-      console.log('File content read successfully');
+      let data: any[] = [];
       
-      const data = parseCSV(text);
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        data = await parseExcel(file);
+      } else {
+        const text = await file.text();
+        console.log('File content read successfully');
+        data = parseCSV(text);
+      }
       
       if (data.length === 0) {
-        console.log('No data found in CSV');
+        console.log('No data found in file');
         toast({
           title: "No Data",
-          description: "The CSV file appears to be empty or invalid.",
+          description: "The file appears to be empty or invalid.",
           variant: "destructive"
         });
         return;
@@ -135,7 +160,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
       console.error('Import error:', error);
       toast({
         title: "Import Failed",
-        description: "An error occurred while importing the file.",
+        description: error instanceof Error ? error.message : "An error occurred while importing the file.",
         variant: "destructive"
       });
     } finally {
@@ -182,7 +207,23 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                 </TooltipTrigger>
                 <TooltipContent className="max-w-md">
                   <div className="space-y-2">
-                    <p className="font-semibold">Required Format:</p>
+                    <p className="font-semibold">File Format Support:</p>
+                    <div className="text-sm space-y-1">
+                      <div className="flex items-center gap-2">
+                        <FileText size={14} />
+                        <span><strong>CSV:</strong> Fully supported</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FileSpreadsheet size={14} />
+                        <span><strong>Excel:</strong> Convert to CSV first</span>
+                      </div>
+                      <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
+                        <strong>Google Sheets:</strong> File → Download → CSV (.csv)
+                        <br />
+                        <strong>Excel:</strong> Save As → CSV (Comma delimited)
+                      </div>
+                    </div>
+                    <p className="font-semibold mt-3">Required Fields:</p>
                     <div className="text-sm space-y-1">
                       {requiredFields.map(field => (
                         <div key={field}>
@@ -203,24 +244,36 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
         <div className="space-y-4">
           <Alert>
             <AlertDescription>
-              Upload a CSV file with the required columns. Required fields: {requiredFields.join(', ')}
+              <div className="space-y-2">
+                <p>Upload a CSV file with the required columns. Required fields: {requiredFields.join(', ')}</p>
+                <div className="text-sm text-slate-600">
+                  <strong>Supported formats:</strong> CSV (.csv), Excel (.xlsx, .xls)*
+                  <br />
+                  <em>*Excel files: Please convert to CSV format for best results</em>
+                </div>
+              </div>
             </AlertDescription>
           </Alert>
 
           <div className="space-y-2">
-            <Label>CSV File</Label>
+            <Label>Upload File</Label>
             <div className="flex gap-2">
               <Input
                 ref={fileInputRef}
                 type="file"
-                accept=".csv"
+                accept=".csv,.xlsx,.xls"
                 onChange={handleFileChange}
                 className="flex-1"
               />
               <Button variant="outline" onClick={downloadSample}>
                 <Download size={16} className="mr-2" />
-                Sample
+                Sample CSV
               </Button>
+            </div>
+            <div className="text-xs text-slate-500">
+              <strong>Google Sheets users:</strong> File → Download → CSV (.csv)
+              <br />
+              <strong>Excel users:</strong> Save As → CSV (Comma delimited)
             </div>
           </div>
 
@@ -229,6 +282,11 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
               <p className="text-sm">
                 <strong>Selected file:</strong> {file.name} ({(file.size / 1024).toFixed(1)} KB)
               </p>
+              {(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ Excel file detected. For best results, please convert to CSV format first.
+                </p>
+              )}
             </div>
           )}
 
@@ -278,7 +336,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                 <>
                   <Upload size={16} className="mr-2" />
                   Import
-                </>
+                </Button>
               )}
             </Button>
           </div>
