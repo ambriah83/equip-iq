@@ -15,7 +15,7 @@ const TermsOfService = () => {
           <Button 
             variant="outline" 
             onClick={() => navigate(-1)}
-            className="border-slate-600 text-slate-200 hover:bg-slate-700"
+            className="border-slate-600 text-white bg-slate-800 hover:bg-slate-700 hover:text-white"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
@@ -32,7 +32,7 @@ const TermsOfService = () => {
               <Scale className="h-6 w-6 text-blue-400" />
               Terms of Service
             </CardTitle>
-            <p className="text-slate-400">Last updated: December 26, 2024</p>
+            <p className="text-slate-400">Last updated: December 26, 2025</p>
           </CardHeader>
           <CardContent className="space-y-6 text-slate-200">
             <section>
