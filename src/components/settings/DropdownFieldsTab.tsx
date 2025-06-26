@@ -5,254 +5,186 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Trash2, Edit, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useEquipmentTypes } from '@/hooks/useEquipmentTypes';
+import { useLocations } from '@/hooks/useLocations';
 import FieldDialog from './FieldDialog';
-
-interface DropdownField {
-  id: string;
-  label: string;
-  value: string;
-}
-
-interface DropdownFields {
-  types: DropdownField[];
-  statuses: DropdownField[];
-  priorities: DropdownField[];
-}
-
-interface VendorDropdownFields {
-  types: DropdownField[];
-  specialties: DropdownField[];
-}
+import { supabase } from '@/integrations/supabase/client';
 
 const DropdownFieldsTab = () => {
   const { toast } = useToast();
+  const { equipmentTypes, refetch: refetchEquipmentTypes } = useEquipmentTypes();
+  const { locations, refetch: refetchLocations } = useLocations();
   
-  const [equipmentFields, setEquipmentFields] = useLocalStorage<DropdownFields>('equipment-fields', {
-    types: [
-      { id: '1', label: 'HVAC System', value: 'hvac' },
-      { id: '2', label: 'Elevator', value: 'elevator' },
-      { id: '3', label: 'Fire Safety', value: 'fire-safety' },
-      { id: '4', label: 'Security System', value: 'security' }
-    ],
-    statuses: [
-      { id: '1', label: 'Operational', value: 'operational' },
-      { id: '2', label: 'Maintenance Required', value: 'maintenance' },
-      { id: '3', label: 'Out of Service', value: 'out-of-service' }
-    ],
-    priorities: [
-      { id: '1', label: 'Low', value: 'low' },
-      { id: '2', label: 'Medium', value: 'medium' },
-      { id: '3', label: 'High', value: 'high' },
-      { id: '4', label: 'Critical', value: 'critical' }
-    ]
-  });
-
-  const [vendorFields, setVendorFields] = useLocalStorage<VendorDropdownFields>('vendor-fields', {
-    types: [
-      { id: '1', label: 'HVAC Contractor', value: 'hvac-contractor' },
-      { id: '2', label: 'Electrical Contractor', value: 'electrical' },
-      { id: '3', label: 'Plumbing Contractor', value: 'plumbing' },
-      { id: '4', label: 'General Maintenance', value: 'general' }
-    ],
-    specialties: [
-      { id: '1', label: 'Emergency Services', value: 'emergency' },
-      { id: '2', label: 'Preventive Maintenance', value: 'preventive' },
-      { id: '3', label: 'Installation', value: 'installation' },
-      { id: '4', label: 'Repair', value: 'repair' }
-    ]
-  });
-
   const [isFieldDialogOpen, setIsFieldDialogOpen] = useState(false);
-  const [editingField, setEditingField] = useState<{type: string, category: string, field: DropdownField | null}>({ type: '', category: '', field: null });
+  const [editingField, setEditingField] = useState<{type: string, category: string, field: any | null}>({ type: '', category: '', field: null });
 
-  const handleSaveField = (fieldData: { label: string; value: string }) => {
-    const { type, category, field } = editingField;
-    
-    if (field) {
-      // Edit existing field
-      if (type === 'equipment') {
-        setEquipmentFields(prev => ({
-          ...prev,
-          [category]: prev[category as keyof typeof prev].map(f => 
-            f.id === field.id ? { ...f, ...fieldData } : f
-          )
-        }));
+  const handleSaveEquipmentType = async (fieldData: { label: string; value: string }) => {
+    try {
+      if (editingField.field) {
+        // Update existing equipment type
+        const { error } = await supabase
+          .from('equipment_types')
+          .update({ name: fieldData.label, description: fieldData.value })
+          .eq('id', editingField.field.id);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Equipment Type Updated",
+          description: "Equipment type has been updated successfully.",
+        });
       } else {
-        setVendorFields(prev => ({
-          ...prev,
-          [category]: prev[category as keyof typeof prev].map(f => 
-            f.id === field.id ? { ...f, ...fieldData } : f
-          )
-        }));
+        // Create new equipment type
+        const { error } = await supabase
+          .from('equipment_types')
+          .insert({ name: fieldData.label, description: fieldData.value });
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Equipment Type Added",
+          description: "New equipment type has been added successfully.",
+        });
       }
-    } else {
-      // Add new field
-      const newField: DropdownField = {
-        id: Date.now().toString(),
-        ...fieldData
-      };
       
-      if (type === 'equipment') {
-        setEquipmentFields(prev => ({
-          ...prev,
-          [category]: [...prev[category as keyof typeof prev], newField]
-        }));
-      } else {
-        setVendorFields(prev => ({
-          ...prev,
-          [category]: [...prev[category as keyof typeof prev], newField]
-        }));
-      }
+      refetchEquipmentTypes();
+      setIsFieldDialogOpen(false);
+      setEditingField({ type: '', category: '', field: null });
+    } catch (error) {
+      console.error('Error saving equipment type:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save equipment type. Please try again.",
+        variant: "destructive"
+      });
     }
-    
-    toast({
-      title: field ? "Field Updated" : "Field Added",
-      description: `Dropdown field has been ${field ? 'updated' : 'added'} successfully.`,
-    });
-    
-    setIsFieldDialogOpen(false);
-    setEditingField({ type: '', category: '', field: null });
   };
 
-  const handleDeleteField = (type: string, category: string, fieldId: string) => {
-    if (type === 'equipment') {
-      setEquipmentFields(prev => ({
-        ...prev,
-        [category]: prev[category as keyof typeof prev].filter(f => f.id !== fieldId)
-      }));
-    } else {
-      setVendorFields(prev => ({
-        ...prev,
-        [category]: prev[category as keyof typeof prev].filter(f => f.id !== fieldId)
-      }));
+  const handleDeleteEquipmentType = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('equipment_types')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Equipment Type Removed",
+        description: "Equipment type has been removed successfully.",
+      });
+      
+      refetchEquipmentTypes();
+    } catch (error) {
+      console.error('Error deleting equipment type:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete equipment type. Please try again.",
+        variant: "destructive"
+      });
     }
-    
-    toast({
-      title: "Field Removed",
-      description: "Dropdown field has been removed successfully.",
-    });
   };
 
   return (
     <div className="space-y-6">
-      {/* Equipment Fields */}
+      {/* Equipment Types */}
       <Card>
         <CardHeader>
-          <CardTitle>Equipment Dropdown Fields</CardTitle>
-          <CardDescription>Configure dropdown options for equipment management</CardDescription>
+          <CardTitle>Equipment Types</CardTitle>
+          <CardDescription>Manage equipment type options for equipment management</CardDescription>
         </CardHeader>
         <CardContent>
-          {Object.entries(equipmentFields).map(([category, fields]) => (
-            <div key={category} className="mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="font-medium capitalize">{category.replace(/([A-Z])/g, ' $1')}</h4>
-                <Dialog open={isFieldDialogOpen} onOpenChange={setIsFieldDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingField({ type: 'equipment', category, field: null })}
-                    >
-                      <Plus size={14} className="mr-1" />
-                      Add
-                    </Button>
-                  </DialogTrigger>
-                  <FieldDialog
-                    field={editingField.field}
-                    onSave={handleSaveField}
-                    onClose={() => setIsFieldDialogOpen(false)}
-                  />
-                </Dialog>
-              </div>
-              <div className="space-y-2">
-                {fields.map((field) => (
-                  <div key={field.id} className="flex items-center justify-between p-2 border rounded">
-                    <span>{field.label}</span>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEditingField({ type: 'equipment', category, field });
-                          setIsFieldDialogOpen(true);
-                        }}
-                      >
-                        <Edit size={14} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteField('equipment', category, field.id)}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="font-medium">Equipment Types</h4>
+              <Dialog open={isFieldDialogOpen} onOpenChange={setIsFieldDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingField({ type: 'equipment', category: 'types', field: null })}
+                  >
+                    <Plus size={14} className="mr-1" />
+                    Add Equipment Type
+                  </Button>
+                </DialogTrigger>
+                <FieldDialog
+                  field={editingField.field}
+                  onSave={handleSaveEquipmentType}
+                  onClose={() => setIsFieldDialogOpen(false)}
+                />
+              </Dialog>
             </div>
-          ))}
+            <div className="space-y-2">
+              {equipmentTypes.map((type) => (
+                <div key={type.id} className="flex items-center justify-between p-2 border rounded">
+                  <div>
+                    <span className="font-medium">{type.name}</span>
+                    {type.description && (
+                      <p className="text-sm text-gray-600">{type.description}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingField({ 
+                          type: 'equipment', 
+                          category: 'types', 
+                          field: { id: type.id, label: type.name, value: type.description || '' }
+                        });
+                        setIsFieldDialogOpen(true);
+                      }}
+                    >
+                      <Edit size={14} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteEquipmentType(type.id)}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Vendor Fields */}
+      {/* Location Types - Static for now */}
       <Card>
         <CardHeader>
-          <CardTitle>Vendor Dropdown Fields</CardTitle>
-          <CardDescription>Configure dropdown options for vendor management</CardDescription>
+          <CardTitle>System Configuration</CardTitle>
+          <CardDescription>Other system dropdown configurations</CardDescription>
         </CardHeader>
         <CardContent>
-          {Object.entries(vendorFields).map(([category, fields]) => (
-            <div key={category} className="mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="font-medium capitalize">{category.replace(/([A-Z])/g, ' $1')}</h4>
-                <Dialog open={isFieldDialogOpen} onOpenChange={setIsFieldDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingField({ type: 'vendor', category, field: null })}
-                    >
-                      <Plus size={14} className="mr-1" />
-                      Add
-                    </Button>
-                  </DialogTrigger>
-                  <FieldDialog
-                    field={editingField.field}
-                    onSave={handleSaveField}
-                    onClose={() => setIsFieldDialogOpen(false)}
-                  />
-                </Dialog>
-              </div>
-              <div className="space-y-2">
-                {fields.map((field) => (
-                  <div key={field.id} className="flex items-center justify-between p-2 border rounded">
-                    <span>{field.label}</span>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEditingField({ type: 'vendor', category, field });
-                          setIsFieldDialogOpen(true);
-                        }}
-                      >
-                        <Edit size={14} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteField('vendor', category, field.id)}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-medium mb-2">Equipment Status Options</h4>
+              <div className="space-y-1 text-sm text-gray-600">
+                <div>• Active</div>
+                <div>• Maintenance</div>
+                <div>• Offline</div>
               </div>
             </div>
-          ))}
+            <div>
+              <h4 className="font-medium mb-2">Warranty Status Options</h4>
+              <div className="space-y-1 text-sm text-gray-600">
+                <div>• Active</div>
+                <div>• Inactive</div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">TMAX Connection Types</h4>
+              <div className="space-y-1 text-sm text-gray-600">
+                <div>• Wired</div>
+                <div>• Wireless</div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

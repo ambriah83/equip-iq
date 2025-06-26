@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,12 +7,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLocations } from '@/hooks/useLocations';
+import { useEquipmentTypes } from '@/hooks/useEquipmentTypes';
 import FileUpload from './FileUpload';
 import WarrantySection from './equipment/WarrantySection';
 
 const AddEquipmentDialog = () => {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const { locations } = useLocations();
+  const { equipmentTypes } = useEquipmentTypes();
+  
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -31,23 +37,6 @@ const AddEquipmentDialog = () => {
   const [warrantyDocumentation, setWarrantyDocumentation] = useState<File[]>([]);
   const [roomLayout, setRoomLayout] = useState<File[]>([]);
   const [roomPhoto, setRoomPhoto] = useState<File[]>([]);
-
-  const equipmentTypes = [
-    'Sun',
-    'Spray',
-    'Spa',
-    'Red Light',
-    'Other',
-    'HVAC',
-    'Washer',
-    'Dryer',
-  ];
-
-  const locations = [
-    'Location A',
-    'Location B', 
-    'Location C',
-  ];
 
   const tmaxConnections = [
     'Wired',
@@ -140,8 +129,8 @@ const AddEquipmentDialog = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {equipmentTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -158,8 +147,8 @@ const AddEquipmentDialog = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {locations.map((location) => (
-                    <SelectItem key={location} value={location}>
-                      {location}
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

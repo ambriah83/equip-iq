@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useLocations } from '@/hooks/useLocations';
+import { useEquipmentTypes } from '@/hooks/useEquipmentTypes';
 import FileUpload from './FileUpload';
 import WarrantySection from './equipment/WarrantySection';
 
@@ -44,6 +46,9 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
   onUpdateEquipment 
 }) => {
   const { toast } = useToast();
+  const { locations } = useLocations();
+  const { equipmentTypes } = useEquipmentTypes();
+  
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -66,8 +71,6 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
   const [roomLayout, setRoomLayout] = useState<File[]>([]);
   const [roomPhoto, setRoomPhoto] = useState<File[]>([]);
 
-  const equipmentTypes = ['Sun', 'Spray', 'Spa', 'Red Light', 'Other', 'HVAC', 'Washer', 'Dryer'];
-  const locations = ['Location A', 'Location B', 'Location C'];
   const tmaxConnections = ['Wired', 'Wireless'];
   const statuses = ['active', 'maintenance', 'offline'];
 
@@ -153,8 +156,8 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   {equipmentTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -171,8 +174,8 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   {locations.map((location) => (
-                    <SelectItem key={location} value={location}>
-                      {location}
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
