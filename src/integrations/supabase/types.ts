@@ -381,6 +381,48 @@ export type Database = {
         }
         Relationships: []
       }
+      vendors: {
+        Row: {
+          company_name: string
+          contact_name: string | null
+          created_at: string
+          equipment_name: string | null
+          equipment_type: string
+          id: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          vendor_department: string | null
+          website_email: string | null
+        }
+        Insert: {
+          company_name: string
+          contact_name?: string | null
+          created_at?: string
+          equipment_name?: string | null
+          equipment_type: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          vendor_department?: string | null
+          website_email?: string | null
+        }
+        Update: {
+          company_name?: string
+          contact_name?: string | null
+          created_at?: string
+          equipment_name?: string | null
+          equipment_type?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          vendor_department?: string | null
+          website_email?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
