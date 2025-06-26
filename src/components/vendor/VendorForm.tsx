@@ -19,10 +19,16 @@ interface VendorFormData {
 interface VendorFormProps {
   onSubmit: (vendor: VendorFormData & { id: string }) => void;
   onCancel: () => void;
-  initialData?: Partial<VendorFormData>;
+  initialData?: Partial<VendorFormData & { id: string }>;
+  isEditing?: boolean;
 }
 
-const VendorForm: React.FC<VendorFormProps> = ({ onSubmit, onCancel, initialData = {} }) => {
+const VendorForm: React.FC<VendorFormProps> = ({ 
+  onSubmit, 
+  onCancel, 
+  initialData = {},
+  isEditing = false 
+}) => {
   const [formData, setFormData] = useState<VendorFormData>({
     equipment_type: initialData.equipment_type || '',
     equipment_name: initialData.equipment_name || '',
@@ -37,22 +43,25 @@ const VendorForm: React.FC<VendorFormProps> = ({ onSubmit, onCancel, initialData
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const newVendor = {
-      id: Date.now().toString(),
+    const vendorData = {
+      id: initialData.id || Date.now().toString(),
       ...formData
     };
 
-    onSubmit(newVendor);
-    setFormData({
-      equipment_type: '',
-      equipment_name: '',
-      company_name: '',
-      vendor_department: '',
-      contact_name: '',
-      phone: '',
-      website_email: '',
-      notes: ''
-    });
+    onSubmit(vendorData);
+    
+    if (!isEditing) {
+      setFormData({
+        equipment_type: '',
+        equipment_name: '',
+        company_name: '',
+        vendor_department: '',
+        contact_name: '',
+        phone: '',
+        website_email: '',
+        notes: ''
+      });
+    }
   };
 
   return (
@@ -146,7 +155,9 @@ const VendorForm: React.FC<VendorFormProps> = ({ onSubmit, onCancel, initialData
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">Add Vendor</Button>
+        <Button type="submit">
+          {isEditing ? 'Update Vendor' : 'Add Vendor'}
+        </Button>
       </div>
     </form>
   );
