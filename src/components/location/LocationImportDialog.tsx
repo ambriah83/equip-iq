@@ -51,11 +51,11 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
       // Enhanced column mapping - try many more variations for location name
       const locationName = row.name || row.Name || row.NAME || 
                           row['Location Name'] || row['location name'] || row['LOCATION NAME'] ||
+                          row['location'] || row['Location'] || row['LOCATION'] ||
                           row['Store Name'] || row['store name'] || row['STORE NAME'] ||
                           row['Store'] || row['store'] || row['STORE'] ||
                           row['Business Name'] || row['business name'] || row['BUSINESS NAME'] ||
                           row['Company'] || row['company'] || row['COMPANY'] ||
-                          row['Location'] || row['location'] || row['LOCATION'] ||
                           row['Shop Name'] || row['shop name'] || row['SHOP NAME'] ||
                           row['Branch'] || row['branch'] || row['BRANCH'] ||
                           row['Site'] || row['site'] || row['SITE'] ||
