@@ -32,7 +32,7 @@ const TermsOfService = () => {
               <Scale className="h-6 w-6 text-blue-400" />
               Terms of Service
             </CardTitle>
-            <p className="text-slate-400">Last updated: December 26, 2025</p>
+            <p className="text-slate-400">Last updated: June 26, 2025</p>
           </CardHeader>
           <CardContent className="space-y-6 text-slate-200">
             <section>
