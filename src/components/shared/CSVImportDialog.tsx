@@ -49,6 +49,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
     setExtractedData,
     aiProcessedData,
     setAiProcessedData,
+    parseResult,
     fileInputRef,
     imageInputRef,
     handleImport,
@@ -92,7 +93,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                         <div className="flex items-start gap-2">
                           <FileText size={14} className="mt-0.5 flex-shrink-0" />
                           <div>
-                            <span className="font-medium">CSV/Excel:</span> Upload files in any format - AI can fix column mapping
+                            <span className="font-medium">CSV/Excel:</span> Advanced parser handles any CSV format including quoted fields and complex formatting
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
@@ -120,7 +121,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                       </div>
                     </div>
                     <div className="text-xs text-gray-600 mt-3 p-2 bg-blue-50 rounded">
-                      <strong>Tip:</strong> Don't worry about exact column names - our AI will automatically map your data!
+                      <strong>New:</strong> Advanced CSV parser automatically handles quoted fields, escaped characters, and various delimiters!
                     </div>
                   </div>
                 </TooltipContent>
@@ -128,7 +129,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
             </TooltipProvider>
           </div>
           <DialogDescription className="text-sm text-gray-600">
-            Import {title.toLowerCase()} from any CSV format or extract data from images using AI
+            Import {title.toLowerCase()} from any CSV format with advanced parsing or extract data from images using AI
           </DialogDescription>
         </DialogHeader>
 
@@ -138,13 +139,14 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
               <Zap className="h-4 w-4" />
               <AlertDescription>
                 <div className="space-y-2">
-                  <p className="font-medium">✨ AI-Powered Import - Any Format Works!</p>
+                  <p className="font-medium">✨ Advanced CSV Parser + AI-Powered Import</p>
                   <div className="text-sm">
-                    Upload your CSV in any format with any column names. If the standard import fails, our AI will automatically:
+                    Now featuring a robust CSV parser that handles:
                     <ul className="list-disc list-inside mt-1 ml-2">
-                      <li>Understand your column structure</li>
-                      <li>Map fields to the required format</li>
-                      <li>Fix common formatting issues</li>
+                      <li>Quoted fields with commas, semicolons, and special characters</li>
+                      <li>Automatic delimiter detection (comma, semicolon, tab)</li>
+                      <li>Escaped quotes and complex CSV formatting</li>
+                      <li>AI backup for any remaining mapping issues</li>
                     </ul>
                   </div>
                 </div>
@@ -177,6 +179,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                   aiProcessedData={aiProcessedData}
                   setAiProcessedData={setAiProcessedData}
                   onImportFromProcessed={handleImportFromProcessed}
+                  parseResult={parseResult}
                 />
                 <div className="flex justify-end">
                   <Button variant="outline" onClick={handleClose}>

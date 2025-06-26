@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { CSVParser, CSVParseResult } from '@/utils/csvParser';
 
 interface ImportResult {
   success: boolean;
@@ -25,38 +26,44 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
   const [result, setResult] = useState<ImportResult | null>(null);
   const [extractedData, setExtractedData] = useState<string | null>(null);
   const [aiProcessedData, setAiProcessedData] = useState<string | null>(null);
+  const [parseResult, setParseResult] = useState<CSVParseResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const parseCSV = (text: string): any[] => {
-    console.log('Parsing CSV text, length:', text.length);
-    const lines = text.split('\n').filter(line => line.trim());
-    console.log('Found lines:', lines.length);
+  const parseCSVWithAdvancedParser = (text: string): any[] => {
+    console.log('Using advanced CSV parser...');
     
-    if (lines.length < 2) {
-      console.log('Not enough lines in CSV');
+    const validation = CSVParser.validateCSV(text);
+    if (!validation.isValid) {
+      console.log('CSV validation failed:', validation.errors);
+      toast({
+        title: "CSV Format Issues",
+        description: `Found issues: ${validation.errors.join(', ')}. Try using AI processing to fix these issues.`,
+        variant: "destructive"
+      });
+    }
+
+    const parseResult = CSVParser.parse(text, {
+      autoDetectDelimiter: true,
+      skipEmptyLines: true
+    });
+
+    console.log('Advanced parser results:', {
+      delimiter: parseResult.delimiter,
+      headers: parseResult.headers,
+      rowCount: parseResult.rowCount,
+      sampleData: parseResult.data[0]
+    });
+
+    setParseResult(parseResult);
+
+    if (parseResult.data.length === 0) {
+      console.log('No data found after advanced parsing');
       return [];
     }
 
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    console.log('Headers found:', headers);
-    
-    const data = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-      const row: any = {};
-      
-      headers.forEach((header, index) => {
-        row[header] = values[index] || '';
-      });
-      
-      data.push(row);
-    }
-
-    console.log('Parsed data:', data);
-    return data;
+    return parseResult.data;
   };
 
   const parseExcel = async (file: File): Promise<any[]> => {
@@ -172,7 +179,7 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
       return;
     }
 
-    console.log('Starting import process...');
+    console.log('Starting import process with advanced CSV parser...');
     setImporting(true);
     
     try {
@@ -183,21 +190,23 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
         data = await parseExcel(file);
       } else {
         csvText = await file.text();
-        console.log('File content read successfully');
-        data = parseCSV(csvText);
+        console.log('File content read successfully, length:', csvText.length);
+        data = parseCSVWithAdvancedParser(csvText);
       }
       
       if (data.length === 0) {
-        console.log('No data found in file');
+        console.log('No data found in file after parsing');
         toast({
-          title: "No Data",
-          description: "The file appears to be empty or invalid.",
+          title: "No Data Found",
+          description: "The file appears to be empty or could not be parsed. Try using AI processing to fix format issues.",
           variant: "destructive"
         });
         return;
       }
 
-      console.log('Calling onImport with data:', data.length, 'rows');
+      console.log('Calling onImport with parsed data:', data.length, 'rows');
+      console.log('Sample row structure:', Object.keys(data[0] || {}));
+      
       const result = await onImport(data);
       console.log('Import result:', result);
       
@@ -207,13 +216,14 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
         const hasFieldErrors = result.errors.some(error => 
           error.includes('is required') || 
           error.includes('Invalid') ||
-          error.includes('field')
+          error.includes('field') ||
+          error.includes('not found')
         );
         
         if (hasFieldErrors) {
           toast({
-            title: "Format Issues Detected",
-            description: "Would you like to use AI to automatically fix the column mapping?",
+            title: "Column Mapping Issues Detected",
+            description: "Some required fields weren't found. Would you like to use AI to automatically fix the column mapping?",
           });
         }
       }
@@ -223,10 +233,16 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
           title: "Import Successful",
           description: `Successfully imported ${result.processed} records.`,
         });
+      } else if (result.processed > 0) {
+        toast({
+          title: "Partial Import Success",
+          description: `Imported ${result.processed} records successfully, ${result.errors.length} had errors.`,
+          variant: "destructive"
+        });
       } else {
         toast({
-          title: "Import Completed with Errors",
-          description: `Processed ${result.processed} records with ${result.errors.length} errors.`,
+          title: "Import Failed",
+          description: `No records were imported. ${result.errors.length} errors found.`,
           variant: "destructive"
         });
       }
@@ -246,11 +262,11 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
     const dataToImport = dataSource === 'extracted' ? extractedData : aiProcessedData;
     if (!dataToImport) return;
 
-    console.log('Importing processed data...');
+    console.log('Importing processed data from:', dataSource);
     setImporting(true);
 
     try {
-      const data = parseCSV(dataToImport);
+      const data = parseCSVWithAdvancedParser(dataToImport);
       
       if (data.length === 0) {
         console.log('No data found in processed text');
@@ -298,6 +314,7 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
     setExtractedData(null);
     setAiProcessedData(null);
     setResult(null);
+    setParseResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -319,6 +336,7 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
     setExtractedData,
     aiProcessedData,
     setAiProcessedData,
+    parseResult,
     fileInputRef,
     imageInputRef,
     handleImport,

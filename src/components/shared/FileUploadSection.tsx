@@ -1,11 +1,11 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, Download, Loader2, Zap } from 'lucide-react';
+import { Upload, Download, Loader2, Zap, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { CSVParseResult } from '@/utils/csvParser';
 
 interface FileUploadSectionProps {
   file: File | null;
@@ -20,6 +20,7 @@ interface FileUploadSectionProps {
   aiProcessedData: string | null;
   setAiProcessedData: (data: string | null) => void;
   onImportFromProcessed: (source: string) => void;
+  parseResult?: CSVParseResult | null;
 }
 
 const FileUploadSection: React.FC<FileUploadSectionProps> = ({
@@ -34,7 +35,8 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   onProcessWithAI,
   aiProcessedData,
   setAiProcessedData,
-  onImportFromProcessed
+  onImportFromProcessed,
+  parseResult
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
@@ -136,7 +138,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
       <Alert>
         <AlertDescription>
           <div className="space-y-2">
-            <p>Upload any CSV file - don't worry about column names or format! Our AI will handle the mapping.</p>
+            <p>Upload any CSV file - our advanced parser handles complex formatting including quoted fields, escaped characters, and various delimiters!</p>
             <div className="text-sm text-slate-600">
               <strong>Supported formats:</strong> CSV (.csv), Excel (.xlsx, .xls)*
               <br />
@@ -166,7 +168,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                 {isDragOver ? 'Drop your file here' : 'Drag and drop your file here, or click to browse'}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Any CSV format works - AI will handle the mapping!
+                Advanced CSV parser handles complex formatting automatically!
               </p>
             </div>
           </div>
@@ -185,21 +187,33 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
             Download Sample CSV
           </Button>
         </div>
-        
-        <div className="text-xs text-slate-500">
-          <strong>Don't have the exact format?</strong> No problem! Upload any CSV and our AI will fix it automatically.
-        </div>
       </div>
 
       {file && (
-        <div className="p-3 bg-slate-50 rounded">
-          <p className="text-sm">
-            <strong>Selected file:</strong> {file.name} ({(file.size / 1024).toFixed(1)} KB)
-          </p>
-          {(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) && (
-            <p className="text-xs text-amber-600 mt-1">
-              ⚠️ Excel file detected. For best results, please convert to CSV format first.
+        <div className="space-y-2">
+          <div className="p-3 bg-slate-50 rounded">
+            <p className="text-sm">
+              <strong>Selected file:</strong> {file.name} ({(file.size / 1024).toFixed(1)} KB)
             </p>
+            {(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) && (
+              <p className="text-xs text-amber-600 mt-1">
+                ⚠️ Excel file detected. For best results, please convert to CSV format first.
+              </p>
+            )}
+          </div>
+
+          {parseResult && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle size={16} className="text-green-600" />
+                <span className="text-sm font-medium text-green-800">CSV Parsed Successfully</span>
+              </div>
+              <div className="text-xs text-green-700 space-y-1">
+                <p><strong>Delimiter:</strong> {parseResult.delimiter === ',' ? 'Comma' : parseResult.delimiter === ';' ? 'Semicolon' : parseResult.delimiter === '\t' ? 'Tab' : `"${parseResult.delimiter}"`}</p>
+                <p><strong>Headers found:</strong> {parseResult.headers.length} ({parseResult.headers.slice(0, 3).join(', ')}{parseResult.headers.length > 3 ? '...' : ''})</p>
+                <p><strong>Data rows:</strong> {parseResult.rowCount}</p>
+              </div>
+            </div>
           )}
         </div>
       )}
