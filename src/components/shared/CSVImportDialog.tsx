@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileSpreadsheet, FileText, Camera, Info, Brain } from 'lucide-react';
+import { FileSpreadsheet, FileText, Camera, Info, Brain, Zap } from 'lucide-react';
 import { useCSVImport } from './useCSVImport';
 import FileUploadSection from './FileUploadSection';
 import ImageUploadSection from './ImageUploadSection';
