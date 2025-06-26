@@ -19,3 +19,5 @@ export { default as RolePermissionMatrix } from './RolePermissionMatrix';
 export { default as PermissionsList } from './PermissionsList';
 export { default as PermissionDialog } from './PermissionDialog';
 export { default as FieldDialog } from './FieldDialog';
+export { default as LocationBillingCard } from './LocationBillingCard';
+export { default as LocationsBillingTab } from './LocationsBillingTab';

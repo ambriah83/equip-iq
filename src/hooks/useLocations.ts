@@ -8,8 +8,9 @@ type LocationInsert = Database['public']['Tables']['locations']['Insert'];
 type LocationUpdate = Database['public']['Tables']['locations']['Update'];
 
 // Create a properly typed Location interface
-export interface Location extends Omit<DatabaseLocation, 'status'> {
+export interface Location extends Omit<DatabaseLocation, 'status' | 'ownership_type'> {
   status: 'active' | 'maintenance' | 'closed';
+  ownership_type: 'corporate' | 'franchise';
 }
 
 export const useLocations = () => {
@@ -32,7 +33,10 @@ export const useLocations = () => {
         ...location,
         status: (location.status === 'active' || location.status === 'maintenance' || location.status === 'closed') 
           ? location.status as 'active' | 'maintenance' | 'closed'
-          : 'active' as 'active' | 'maintenance' | 'closed'
+          : 'active' as 'active' | 'maintenance' | 'closed',
+        ownership_type: (location.ownership_type === 'corporate' || location.ownership_type === 'franchise')
+          ? location.ownership_type as 'corporate' | 'franchise'
+          : 'franchise' as 'corporate' | 'franchise'
       }));
       
       setLocations(transformedData);
@@ -58,7 +62,10 @@ export const useLocations = () => {
         ...data,
         status: (data.status === 'active' || data.status === 'maintenance' || data.status === 'closed') 
           ? data.status as 'active' | 'maintenance' | 'closed'
-          : 'active' as 'active' | 'maintenance' | 'closed'
+          : 'active' as 'active' | 'maintenance' | 'closed',
+        ownership_type: (data.ownership_type === 'corporate' || data.ownership_type === 'franchise')
+          ? data.ownership_type as 'corporate' | 'franchise'
+          : 'franchise' as 'corporate' | 'franchise'
       };
       
       setLocations(prev => [...prev, transformedData]);
@@ -84,7 +91,10 @@ export const useLocations = () => {
         ...data,
         status: (data.status === 'active' || data.status === 'maintenance' || data.status === 'closed') 
           ? data.status as 'active' | 'maintenance' | 'closed'
-          : 'active' as 'active' | 'maintenance' | 'closed'
+          : 'active' as 'active' | 'maintenance' | 'closed',
+        ownership_type: (data.ownership_type === 'corporate' || data.ownership_type === 'franchise')
+          ? data.ownership_type as 'corporate' | 'franchise'
+          : 'franchise' as 'corporate' | 'franchise'
       };
       
       setLocations(prev => prev.map(loc => loc.id === id ? transformedData : loc));

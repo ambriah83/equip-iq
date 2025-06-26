@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { PersonalInfoTab, BillingTab, UserManagementTab, PermissionsTab, DropdownFieldsTab, OwnerBillingTab } from '@/components/settings';
-import { Settings as SettingsIcon, User, CreditCard, Users, Shield, ChevronDown, Building } from 'lucide-react';
+import LocationsBillingTab from '@/components/settings/LocationsBillingTab';
+import { Settings as SettingsIcon, User, CreditCard, Users, Shield, ChevronDown, Building, MapPin } from 'lucide-react';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('personal');
@@ -29,7 +31,7 @@ const Settings = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="personal" className="flex items-center gap-2">
                 <User size={16} />
                 Personal
@@ -37,6 +39,10 @@ const Settings = () => {
               <TabsTrigger value="owner-billing" className="flex items-center gap-2">
                 <Building size={16} />
                 Owner Billing
+              </TabsTrigger>
+              <TabsTrigger value="location-billing" className="flex items-center gap-2">
+                <MapPin size={16} />
+                Location Billing
               </TabsTrigger>
               <TabsTrigger value="billing" className="flex items-center gap-2">
                 <CreditCard size={16} />
@@ -63,6 +69,10 @@ const Settings = () => {
               
               <TabsContent value="owner-billing">
                 <OwnerBillingTab />
+              </TabsContent>
+              
+              <TabsContent value="location-billing">
+                <LocationsBillingTab />
               </TabsContent>
               
               <TabsContent value="billing">
