@@ -6,3 +6,4 @@ export { default as VendorChatbot } from '../VendorChatbot';
 export { default as VendorHeader } from './VendorHeader';
 export { default as VendorList } from './VendorList';
 export { default as VendorActions } from './VendorActions';
+export { default as VendorForm } from './VendorForm';
