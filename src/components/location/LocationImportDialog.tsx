@@ -38,12 +38,14 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
   };
 
   const handleImport = async (data: any[]) => {
+    console.log('Starting location import with', data.length, 'records');
     const errors: string[] = [];
     let processed = 0;
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       const rowNum = i + 2; // Account for header row
+      console.log(`Processing location row ${rowNum}:`, row);
 
       // Validate required fields
       if (!row.name?.trim()) {
@@ -68,6 +70,8 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
       }
 
       try {
+        console.log(`Inserting location ${rowNum} into database...`);
+        
         // Insert into Supabase
         const { error } = await supabase
           .from('locations')
@@ -83,6 +87,7 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
           });
 
         if (error) {
+          console.error(`Database error for row ${rowNum}:`, error);
           if (error.code === '23505') { // Unique constraint violation
             errors.push(`Row ${rowNum}: Location with this abbreviation already exists`);
           } else {
@@ -91,11 +96,15 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
           continue;
         }
 
+        console.log(`Location row ${rowNum} inserted successfully`);
         processed++;
       } catch (error) {
+        console.error(`Unexpected error for row ${rowNum}:`, error);
         errors.push(`Row ${rowNum}: Unexpected error occurred`);
       }
     }
+
+    console.log(`Location import completed: ${processed} processed, ${errors.length} errors`);
 
     // Trigger refresh of location list
     if (processed > 0) {

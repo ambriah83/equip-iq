@@ -15,7 +15,7 @@ const UserImportDialog: React.FC<UserImportDialogProps> = ({
 }) => {
   const sampleData = {
     name: 'John Doe',
-    email: 'john.doe@company.com',
+    email: 'john.doe@glotanning.com',
     role: 'staff',
     status: 'active'
   };
@@ -30,12 +30,14 @@ const UserImportDialog: React.FC<UserImportDialogProps> = ({
   };
 
   const handleImport = async (data: any[]) => {
+    console.log('Starting user import with', data.length, 'records');
     const errors: string[] = [];
     let processed = 0;
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       const rowNum = i + 2; // Account for header row
+      console.log(`Processing user row ${rowNum}:`, row);
 
       // Validate required fields
       if (!row.name?.trim()) {
@@ -75,8 +77,11 @@ const UserImportDialog: React.FC<UserImportDialogProps> = ({
 
       // Here you would typically save to database
       // For now, just count as processed
+      console.log(`User row ${rowNum} validated successfully`);
       processed++;
     }
+
+    console.log(`User import completed: ${processed} processed, ${errors.length} errors`);
 
     // Trigger refresh of user list
     if (processed > 0) {

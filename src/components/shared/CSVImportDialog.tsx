@@ -42,10 +42,14 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
+    console.log('File selected:', selectedFile?.name, selectedFile?.type);
+    
     if (selectedFile && selectedFile.type === 'text/csv') {
       setFile(selectedFile);
       setResult(null);
+      console.log('Valid CSV file selected');
     } else {
+      console.log('Invalid file type selected');
       toast({
         title: "Invalid File",
         description: "Please select a valid CSV file.",
@@ -55,10 +59,18 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
   };
 
   const parseCSV = (text: string): any[] => {
+    console.log('Parsing CSV text, length:', text.length);
     const lines = text.split('\n').filter(line => line.trim());
-    if (lines.length < 2) return [];
+    console.log('Found lines:', lines.length);
+    
+    if (lines.length < 2) {
+      console.log('Not enough lines in CSV');
+      return [];
+    }
 
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    console.log('Headers found:', headers);
+    
     const data = [];
 
     for (let i = 1; i < lines.length; i++) {
@@ -72,18 +84,27 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
       data.push(row);
     }
 
+    console.log('Parsed data:', data);
     return data;
   };
 
   const handleImport = async () => {
-    if (!file) return;
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
 
+    console.log('Starting import process...');
     setImporting(true);
+    
     try {
       const text = await file.text();
+      console.log('File content read successfully');
+      
       const data = parseCSV(text);
       
       if (data.length === 0) {
+        console.log('No data found in CSV');
         toast({
           title: "No Data",
           description: "The CSV file appears to be empty or invalid.",
@@ -92,7 +113,10 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
         return;
       }
 
+      console.log('Calling onImport with data:', data.length, 'rows');
       const result = await onImport(data);
+      console.log('Import result:', result);
+      
       setResult(result);
 
       if (result.success) {
@@ -108,6 +132,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
         });
       }
     } catch (error) {
+      console.error('Import error:', error);
       toast({
         title: "Import Failed",
         description: "An error occurred while importing the file.",
@@ -119,6 +144,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
   };
 
   const downloadSample = () => {
+    console.log('Downloading sample CSV for:', title);
     const headers = Object.keys(sampleData).join(',');
     const values = Object.values(sampleData).join(',');
     const csvContent = `${headers}\n${values}`;
@@ -130,9 +156,11 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
     a.download = `${title.toLowerCase().replace(' ', '_')}_sample.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+    console.log('Sample CSV downloaded');
   };
 
   const handleClose = () => {
+    console.log('Closing import dialog');
     setFile(null);
     setResult(null);
     if (fileInputRef.current) {
