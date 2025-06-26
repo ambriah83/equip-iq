@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,8 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Upload, Download, HelpCircle, CheckCircle, XCircle, FileSpreadsheet, FileText } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Upload, Download, HelpCircle, CheckCircle, XCircle, FileSpreadsheet, FileText, Camera, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ImportResult {
   success: boolean;
@@ -35,9 +36,13 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
   fieldDescriptions
 }) => {
   const [file, setFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  const [extractingFromImage, setExtractingFromImage] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [extractedData, setExtractedData] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,6 +70,29 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
         toast({
           title: "Invalid File",
           description: "Please select a CSV or Excel file (.csv, .xlsx, .xls).",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    console.log('Image selected:', selectedFile?.name, selectedFile?.type);
+    
+    if (selectedFile) {
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      
+      if (validTypes.includes(selectedFile.type)) {
+        setImageFile(selectedFile);
+        setResult(null);
+        setExtractedData(null);
+        console.log('Valid image selected');
+      } else {
+        console.log('Invalid image type selected');
+        toast({
+          title: "Invalid File",
+          description: "Please select an image file (.jpg, .jpeg, .png, .webp).",
           variant: "destructive"
         });
       }
@@ -106,6 +134,62 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
     // For now, we'll show a helpful message about Excel files
     // In a real implementation, you'd use a library like xlsx or similar
     throw new Error('Excel file parsing is not yet implemented. Please convert your Excel file to CSV format and try again.');
+  };
+
+  const extractDataFromImage = async () => {
+    if (!imageFile) return;
+
+    console.log('Starting image data extraction...');
+    setExtractingFromImage(true);
+
+    try {
+      // Convert image to base64
+      const reader = new FileReader();
+      const imageDataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(imageFile);
+      });
+
+      console.log('Image converted to base64, calling extraction function...');
+
+      const { data, error } = await supabase.functions.invoke('extract-data-from-image', {
+        body: {
+          imageData: imageDataUrl,
+          dataType: title.toLowerCase(),
+          requiredFields
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('Extraction result:', data);
+
+      if (data.success && data.csvData) {
+        setExtractedData(data.csvData);
+        toast({
+          title: "Data Extracted",
+          description: "Successfully extracted data from image. Review and import if correct.",
+        });
+      } else {
+        toast({
+          title: "Extraction Failed",
+          description: data.message || "Could not extract structured data from the image.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Image extraction error:', error);
+      toast({
+        title: "Extraction Failed",
+        description: error instanceof Error ? error.message : "An error occurred while extracting data from the image.",
+        variant: "destructive"
+      });
+    } finally {
+      setExtractingFromImage(false);
+    }
   };
 
   const handleImport = async () => {
@@ -168,6 +252,55 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
     }
   };
 
+  const handleImportFromExtracted = async () => {
+    if (!extractedData) return;
+
+    console.log('Importing extracted data...');
+    setImporting(true);
+
+    try {
+      const data = parseCSV(extractedData);
+      
+      if (data.length === 0) {
+        console.log('No data found in extracted text');
+        toast({
+          title: "No Data",
+          description: "The extracted data appears to be empty or invalid.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Calling onImport with extracted data:', data.length, 'rows');
+      const result = await onImport(data);
+      console.log('Import result:', result);
+      
+      setResult(result);
+
+      if (result.success) {
+        toast({
+          title: "Import Successful",
+          description: `Successfully imported ${result.processed} records from image.`,
+        });
+      } else {
+        toast({
+          title: "Import Completed with Errors",
+          description: `Processed ${result.processed} records with ${result.errors.length} errors.`,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "An error occurred while importing the data.",
+        variant: "destructive"
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const downloadSample = () => {
     console.log('Downloading sample CSV for:', title);
     const headers = Object.keys(sampleData).join(',');
@@ -187,16 +320,21 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
   const handleClose = () => {
     console.log('Closing import dialog');
     setFile(null);
+    setImageFile(null);
+    setExtractedData(null);
     setResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
     }
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <DialogTitle>Import {title}</DialogTitle>
@@ -207,20 +345,15 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                 </TooltipTrigger>
                 <TooltipContent className="max-w-md">
                   <div className="space-y-2">
-                    <p className="font-semibold">File Format Support:</p>
+                    <p className="font-semibold">Import Options:</p>
                     <div className="text-sm space-y-1">
                       <div className="flex items-center gap-2">
                         <FileText size={14} />
-                        <span><strong>CSV:</strong> Fully supported</span>
+                        <span><strong>CSV/Excel:</strong> Upload files directly</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <FileSpreadsheet size={14} />
-                        <span><strong>Excel:</strong> Convert to CSV first</span>
-                      </div>
-                      <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
-                        <strong>Google Sheets:</strong> File → Download → CSV (.csv)
-                        <br />
-                        <strong>Excel:</strong> Save As → CSV (Comma delimited)
+                        <Camera size={14} />
+                        <span><strong>Image:</strong> AI extracts data from photos/screenshots</span>
                       </div>
                     </div>
                     <p className="font-semibold mt-3">Required Fields:</p>
@@ -231,9 +364,6 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
                         </div>
                       ))}
                     </div>
-                    <p className="text-xs text-slate-600 mt-2">
-                      Download the sample CSV below to see the exact format required.
-                    </p>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -241,106 +371,216 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
           </div>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <Alert>
-            <AlertDescription>
-              <div className="space-y-2">
-                <p>Upload a CSV file with the required columns. Required fields: {requiredFields.join(', ')}</p>
-                <div className="text-sm text-slate-600">
-                  <strong>Supported formats:</strong> CSV (.csv), Excel (.xlsx, .xls)*
-                  <br />
-                  <em>*Excel files: Please convert to CSV format for best results</em>
-                </div>
-              </div>
-            </AlertDescription>
-          </Alert>
+        <Tabs defaultValue="file" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="file" className="flex items-center gap-2">
+              <FileSpreadsheet size={16} />
+              File Upload
+            </TabsTrigger>
+            <TabsTrigger value="image" className="flex items-center gap-2">
+              <Camera size={16} />
+              Image Extract
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="space-y-2">
-            <Label>Upload File</Label>
-            <div className="flex gap-2">
-              <Input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                onChange={handleFileChange}
-                className="flex-1"
-              />
-              <Button variant="outline" onClick={downloadSample}>
-                <Download size={16} className="mr-2" />
-                Sample CSV
+          <TabsContent value="file" className="space-y-4">
+            <Alert>
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p>Upload a CSV file with the required columns. Required fields: {requiredFields.join(', ')}</p>
+                  <div className="text-sm text-slate-600">
+                    <strong>Supported formats:</strong> CSV (.csv), Excel (.xlsx, .xls)*
+                    <br />
+                    <em>*Excel files: Please convert to CSV format for best results</em>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <Label>Upload File</Label>
+              <div className="flex gap-2">
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileChange}
+                  className="flex-1"
+                />
+                <Button variant="outline" onClick={downloadSample}>
+                  <Download size={16} className="mr-2" />
+                  Sample CSV
+                </Button>
+              </div>
+              <div className="text-xs text-slate-500">
+                <strong>Google Sheets users:</strong> File → Download → CSV (.csv)
+                <br />
+                <strong>Excel users:</strong> Save As → CSV (Comma delimited)
+              </div>
+            </div>
+
+            {file && (
+              <div className="p-3 bg-slate-50 rounded">
+                <p className="text-sm">
+                  <strong>Selected file:</strong> {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                </p>
+                {(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    ⚠️ Excel file detected. For best results, please convert to CSV format first.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleImport} 
+                disabled={!file || importing}
+              >
+                {importing ? (
+                  <>
+                    <Loader2 size={16} className="mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Upload size={16} className="mr-2" />
+                    Import
+                  </>
+                )}
               </Button>
             </div>
-            <div className="text-xs text-slate-500">
-              <strong>Google Sheets users:</strong> File → Download → CSV (.csv)
-              <br />
-              <strong>Excel users:</strong> Save As → CSV (Comma delimited)
-            </div>
-          </div>
+          </TabsContent>
 
-          {file && (
-            <div className="p-3 bg-slate-50 rounded">
-              <p className="text-sm">
-                <strong>Selected file:</strong> {file.name} ({(file.size / 1024).toFixed(1)} KB)
-              </p>
-              {(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) && (
-                <p className="text-xs text-amber-600 mt-1">
-                  ⚠️ Excel file detected. For best results, please convert to CSV format first.
+          <TabsContent value="image" className="space-y-4">
+            <Alert>
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p>Upload an image containing tabular data. AI will extract and structure the data for import.</p>
+                  <div className="text-sm text-slate-600">
+                    <strong>Supported formats:</strong> JPG, PNG, WebP
+                    <br />
+                    <em>Works best with clear, high-contrast images of tables or spreadsheets</em>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <Label>Upload Image</Label>
+              <Input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="w-full"
+              />
+              <div className="text-xs text-slate-500">
+                <strong>Tips:</strong> Ensure text is clear and readable. Screenshots of spreadsheets work well.
+              </div>
+            </div>
+
+            {imageFile && (
+              <div className="p-3 bg-slate-50 rounded">
+                <p className="text-sm">
+                  <strong>Selected image:</strong> {imageFile.name} ({(imageFile.size / 1024).toFixed(1)} KB)
                 </p>
-              )}
-            </div>
-          )}
-
-          {result && (
-            <Alert className={result.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
-              <div className="flex items-start gap-2">
-                {result.success ? (
-                  <CheckCircle size={16} className="text-green-600 mt-0.5" />
-                ) : (
-                  <XCircle size={16} className="text-red-600 mt-0.5" />
-                )}
-                <div className="flex-1">
-                  <AlertDescription>
-                    <div className="space-y-2">
-                      <p>Processed {result.processed} records</p>
-                      {result.errors.length > 0 && (
-                        <div>
-                          <p className="font-semibold text-red-700">Errors:</p>
-                          <ul className="list-disc list-inside text-sm space-y-1">
-                            {result.errors.slice(0, 5).map((error, index) => (
-                              <li key={index}>{error}</li>
-                            ))}
-                            {result.errors.length > 5 && (
-                              <li>... and {result.errors.length - 5} more errors</li>
-                            )}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </AlertDescription>
+                <div className="mt-2">
+                  <Button 
+                    onClick={extractDataFromImage} 
+                    disabled={extractingFromImage}
+                    size="sm"
+                  >
+                    {extractingFromImage ? (
+                      <>
+                        <Loader2 size={16} className="mr-2 animate-spin" />
+                        Extracting...
+                      </>
+                    ) : (
+                      <>
+                        <Camera size={16} className="mr-2" />
+                        Extract Data
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
-            </Alert>
-          )}
+            )}
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleImport} 
-              disabled={!file || importing}
-            >
-              {importing ? (
-                <>Processing...</>
+            {extractedData && (
+              <div className="space-y-2">
+                <Label>Extracted Data Preview</Label>
+                <div className="p-3 bg-slate-50 rounded max-h-40 overflow-y-auto">
+                  <pre className="text-xs whitespace-pre-wrap">{extractedData}</pre>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setExtractedData(null)}>
+                    Clear
+                  </Button>
+                  <Button 
+                    onClick={handleImportFromExtracted} 
+                    disabled={importing}
+                  >
+                    {importing ? (
+                      <>
+                        <Loader2 size={16} className="mr-2 animate-spin" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={16} className="mr-2" />
+                        Import Data
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {!extractedData && (
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {result && (
+          <Alert className={result.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
+            <div className="flex items-start gap-2">
+              {result.success ? (
+                <CheckCircle size={16} className="text-green-600 mt-0.5" />
               ) : (
-                <>
-                  <Upload size={16} className="mr-2" />
-                  Import
-                </>
+                <XCircle size={16} className="text-red-600 mt-0.5" />
               )}
-            </Button>
-          </div>
-        </div>
+              <div className="flex-1">
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p>Processed {result.processed} records</p>
+                    {result.errors.length > 0 && (
+                      <div>
+                        <p className="font-semibold text-red-700">Errors:</p>
+                        <ul className="list-disc list-inside text-sm space-y-1">
+                          {result.errors.slice(0, 5).map((error, index) => (
+                            <li key={index}>{error}</li>
+                          ))}
+                          {result.errors.length > 5 && (
+                            <li>... and {result.errors.length - 5} more errors</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </AlertDescription>
+              </div>
+            </div>
+          </Alert>
+        )}
       </DialogContent>
     </Dialog>
   );
