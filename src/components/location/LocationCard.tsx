@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MapPin, Users, Home } from 'lucide-react';
+import { MapPin, Users, Home, Building } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,13 @@ const LocationCard: React.FC<LocationCardProps> = ({
             <div className="flex items-center gap-2 mb-2">
               <CardTitle className="text-lg">{location.name}</CardTitle>
               <Badge variant="secondary">{location.abbreviation}</Badge>
+              <Badge 
+                variant={location.ownership_type === 'corporate' ? 'default' : 'outline'}
+                className={location.ownership_type === 'corporate' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}
+              >
+                <Building size={12} className="mr-1" />
+                {location.ownership_type === 'corporate' ? 'Corporate' : 'Franchise'}
+              </Badge>
             </div>
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <MapPin size={16} />

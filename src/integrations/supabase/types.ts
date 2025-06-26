@@ -210,6 +210,8 @@ export type Database = {
           manager_name: string | null
           name: string
           notes: string | null
+          owner_id: string | null
+          ownership_type: string
           phone: string | null
           status: string
           updated_at: string
@@ -223,6 +225,8 @@ export type Database = {
           manager_name?: string | null
           name: string
           notes?: string | null
+          owner_id?: string | null
+          ownership_type?: string
           phone?: string | null
           status?: string
           updated_at?: string
@@ -236,8 +240,49 @@ export type Database = {
           manager_name?: string | null
           name?: string
           notes?: string | null
+          owner_id?: string | null
+          ownership_type?: string
           phone?: string | null
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      owner_billing: {
+        Row: {
+          billing_email: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          owner_id: string
+          stripe_customer_id: string | null
+          subscription_active: boolean | null
+          subscription_end: string | null
+          subscription_tier: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_email?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          owner_id: string
+          stripe_customer_id?: string | null
+          subscription_active?: boolean | null
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_email?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          owner_id?: string
+          stripe_customer_id?: string | null
+          subscription_active?: boolean | null
+          subscription_end?: string | null
+          subscription_tier?: string | null
           updated_at?: string
         }
         Relationships: []
