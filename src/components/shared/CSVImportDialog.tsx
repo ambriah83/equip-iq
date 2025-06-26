@@ -172,7 +172,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
       } else {
         console.log('Invalid image type selected');
         toast({
-          title: "Invalid File",
+          title: "Invalid File",  
           description: "Please select an image file (.jpg, .jpeg, .png, .webp).",
           variant: "destructive"
         });
@@ -488,8 +488,8 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <div className="flex items-center gap-2">
             <DialogTitle>Import {title}</DialogTitle>
             <TooltipProvider>
@@ -547,318 +547,322 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Alert className="border-blue-200 bg-blue-50">
-          <Zap className="h-4 w-4" />
-          <AlertDescription>
-            <div className="space-y-2">
-              <p className="font-medium">✨ AI-Powered Import - Any Format Works!</p>
-              <div className="text-sm">
-                Upload your CSV in any format with any column names. If the standard import fails, our AI will automatically:
-                <ul className="list-disc list-inside mt-1 ml-2">
-                  <li>Understand your column structure</li>
-                  <li>Map fields to the required format</li>
-                  <li>Fix common formatting issues</li>
-                </ul>
-              </div>
-            </div>
-          </AlertDescription>
-        </Alert>
-
-        <Tabs defaultValue="file" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="file" className="flex items-center gap-2">
-              <FileSpreadsheet size={16} />
-              File Upload
-            </TabsTrigger>
-            <TabsTrigger value="image" className="flex items-center gap-2">
-              <Camera size={16} />
-              Image Extract
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="file" className="space-y-4">
-            <Alert>
+        <div className="flex-1 overflow-y-auto pr-2">
+          <div className="space-y-4">
+            <Alert className="border-blue-200 bg-blue-50">
+              <Zap className="h-4 w-4" />
               <AlertDescription>
                 <div className="space-y-2">
-                  <p>Upload any CSV file - don't worry about column names or format! Our AI will handle the mapping.</p>
-                  <div className="text-sm text-slate-600">
-                    <strong>Supported formats:</strong> CSV (.csv), Excel (.xlsx, .xls)*
-                    <br />
-                    <em>*Excel files: Please convert to CSV format for best results</em>
+                  <p className="font-medium">✨ AI-Powered Import - Any Format Works!</p>
+                  <div className="text-sm">
+                    Upload your CSV in any format with any column names. If the standard import fails, our AI will automatically:
+                    <ul className="list-disc list-inside mt-1 ml-2">
+                      <li>Understand your column structure</li>
+                      <li>Map fields to the required format</li>
+                      <li>Fix common formatting issues</li>
+                    </ul>
                   </div>
                 </div>
               </AlertDescription>
             </Alert>
 
-            <div className="space-y-2">
-              <Label>Upload File</Label>
-              <div 
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
-                  isDragOver 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                onDragOver={(e) => handleDragOver(e, false)}
-                onDragLeave={(e) => handleDragLeave(e, false)}
-                onDrop={(e) => handleDrop(e, false)}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <Upload size={32} className={isDragOver ? 'text-blue-500' : 'text-gray-400'} />
-                  <div>
-                    <p className="text-sm font-medium">
-                      {isDragOver ? 'Drop your file here' : 'Drag and drop your file here, or click to browse'}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Any CSV format works - AI will handle the mapping!
-                    </p>
-                  </div>
-                </div>
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </div>
-              
-              <div className="flex justify-center">
-                <Button variant="outline" onClick={downloadSample} size="sm">
-                  <Download size={16} className="mr-2" />
-                  Download Sample CSV
-                </Button>
-              </div>
-              
-              <div className="text-xs text-slate-500">
-                <strong>Don't have the exact format?</strong> No problem! Upload any CSV and our AI will fix it automatically.
-              </div>
-            </div>
+            <Tabs defaultValue="file" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="file" className="flex items-center gap-2">
+                  <FileSpreadsheet size={16} />
+                  File Upload
+                </TabsTrigger>
+                <TabsTrigger value="image" className="flex items-center gap-2">
+                  <Camera size={16} />
+                  Image Extract
+                </TabsTrigger>
+              </TabsList>
 
-            {file && (
-              <div className="p-3 bg-slate-50 rounded">
-                <p className="text-sm">
-                  <strong>Selected file:</strong> {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                </p>
-                {(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    ⚠️ Excel file detected. For best results, please convert to CSV format first.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {aiProcessedData && (
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Zap size={16} className="text-blue-500" />
-                  AI-Processed Data Preview
-                </Label>
-                <div className="p-3 bg-slate-50 rounded max-h-40 overflow-y-auto">
-                  <pre className="text-xs whitespace-pre-wrap">{aiProcessedData}</pre>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setAiProcessedData(null)}>
-                    Clear
-                  </Button>
-                  <Button 
-                    onClick={() => handleImportFromProcessed('processed')} 
-                    disabled={importing}
-                  >
-                    {importing ? (
-                      <>
-                        <Loader2 size={16} className="mr-2 animate-spin" />
-                        Importing...
-                      </>
-                    ) : (
-                      <>
-                        <Upload size={16} className="mr-2" />
-                        Import AI-Processed Data
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleImport} 
-                disabled={!file || importing || processingWithAI}
-              >
-                {importing ? (
-                  <>
-                    <Loader2 size={16} className="mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : processingWithAI ? (
-                  <>
-                    <Loader2 size={16} className="mr-2 animate-spin" />
-                    AI Processing...
-                  </>
-                ) : (
-                  <>
-                    <Upload size={16} className="mr-2" />
-                    Import
-                  </>
-                )}
-              </Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="image" className="space-y-4">
-            <Alert>
-              <AlertDescription>
-                <div className="space-y-2">
-                  <p>Upload an image containing tabular data. AI will extract and structure the data for import.</p>
-                  <div className="text-sm text-slate-600">
-                    <strong>Supported formats:</strong> JPG, PNG, WebP
-                    <br />
-                    <em>Works best with clear, high-contrast images of tables or spreadsheets</em>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-2">
-              <Label>Upload Image</Label>
-              <div 
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
-                  isImageDragOver 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                onDragOver={(e) => handleDragOver(e, true)}
-                onDragLeave={(e) => handleDragLeave(e, true)}
-                onDrop={(e) => handleDrop(e, true)}
-                onClick={() => imageInputRef.current?.click()}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <Camera size={32} className={isImageDragOver ? 'text-blue-500' : 'text-gray-400'} />
-                  <div>
-                    <p className="text-sm font-medium">
-                      {isImageDragOver ? 'Drop your image here' : 'Drag and drop your image here, or click to browse'}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Supports JPG, PNG, WebP
-                    </p>
-                  </div>
-                </div>
-                <Input
-                  ref={imageInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-              </div>
-              
-              <div className="text-xs text-slate-500">
-                <strong>Tips:</strong> Ensure text is clear and readable. Screenshots of spreadsheets work well.
-              </div>
-            </div>
-
-            {imageFile && (
-              <div className="p-3 bg-slate-50 rounded">
-                <p className="text-sm">
-                  <strong>Selected image:</strong> {imageFile.name} ({(imageFile.size / 1024).toFixed(1)} KB)
-                </p>
-                <div className="mt-2">
-                  <Button 
-                    onClick={extractDataFromImage} 
-                    disabled={extractingFromImage}
-                    size="sm"
-                  >
-                    {extractingFromImage ? (
-                      <>
-                        <Loader2 size={16} className="mr-2 animate-spin" />
-                        Extracting...
-                      </>
-                    ) : (
-                      <>
-                        <Camera size={16} className="mr-2" />
-                        Extract Data
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {extractedData && (
-              <div className="space-y-2">
-                <Label>Extracted Data Preview</Label>
-                <div className="p-3 bg-slate-50 rounded max-h-40 overflow-y-auto">
-                  <pre className="text-xs whitespace-pre-wrap">{extractedData}</pre>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setExtractedData(null)}>
-                    Clear
-                  </Button>
-                  <Button 
-                    onClick={() => handleImportFromProcessed('extracted')} 
-                    disabled={importing}
-                  >
-                    {importing ? (
-                      <>
-                        <Loader2 size={16} className="mr-2 animate-spin" />
-                        Importing...
-                      </>
-                    ) : (
-                      <>
-                        <Upload size={16} className="mr-2" />
-                        Import Data
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {!extractedData && (
-              <div className="flex justify-end">
-                <Button variant="outline" onClick={handleClose}>
-                  Cancel
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-
-        {result && (
-          <Alert className={result.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
-            <div className="flex items-start gap-2">
-              {result.success ? (
-                <CheckCircle size={16} className="text-green-600 mt-0.5" />
-              ) : (
-                <XCircle size={16} className="text-red-600 mt-0.5" />
-              )}
-              <div className="flex-1">
-                <AlertDescription>
-                  <div className="space-y-2">
-                    <p>Processed {result.processed} records</p>
-                    {result.errors.length > 0 && (
-                      <div>
-                        <p className="font-semibold text-red-700">Errors:</p>
-                        <ul className="list-disc list-inside text-sm space-y-1">
-                          {result.errors.slice(0, 5).map((error, index) => (
-                            <li key={index}>{error}</li>
-                          ))}
-                          {result.errors.length > 5 && (
-                            <li>... and {result.errors.length - 5} more errors</li>
-                          )}
-                        </ul>
+              <TabsContent value="file" className="space-y-4">
+                <Alert>
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <p>Upload any CSV file - don't worry about column names or format! Our AI will handle the mapping.</p>
+                      <div className="text-sm text-slate-600">
+                        <strong>Supported formats:</strong> CSV (.csv), Excel (.xlsx, .xls)*
+                        <br />
+                        <em>*Excel files: Please convert to CSV format for best results</em>
                       </div>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-2">
+                  <Label>Upload File</Label>
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                      isDragOver 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onDragOver={(e) => handleDragOver(e, false)}
+                    onDragLeave={(e) => handleDragLeave(e, false)}
+                    onDrop={(e) => handleDrop(e, false)}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <Upload size={32} className={isDragOver ? 'text-blue-500' : 'text-gray-400'} />
+                      <div>
+                        <p className="text-sm font-medium">
+                          {isDragOver ? 'Drop your file here' : 'Drag and drop your file here, or click to browse'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Any CSV format works - AI will handle the mapping!
+                        </p>
+                      </div>
+                    </div>
+                    <Input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    <Button variant="outline" onClick={downloadSample} size="sm">
+                      <Download size={16} className="mr-2" />
+                      Download Sample CSV
+                    </Button>
+                  </div>
+                  
+                  <div className="text-xs text-slate-500">
+                    <strong>Don't have the exact format?</strong> No problem! Upload any CSV and our AI will fix it automatically.
+                  </div>
+                </div>
+
+                {file && (
+                  <div className="p-3 bg-slate-50 rounded">
+                    <p className="text-sm">
+                      <strong>Selected file:</strong> {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                    </p>
+                    {(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        ⚠️ Excel file detected. For best results, please convert to CSV format first.
+                      </p>
                     )}
                   </div>
-                </AlertDescription>
-              </div>
-            </div>
-          </Alert>
-        )}
+                )}
+
+                {aiProcessedData && (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Zap size={16} className="text-blue-500" />
+                      AI-Processed Data Preview
+                    </Label>
+                    <div className="p-3 bg-slate-50 rounded max-h-32 overflow-y-auto">
+                      <pre className="text-xs whitespace-pre-wrap">{aiProcessedData}</pre>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setAiProcessedData(null)}>
+                        Clear
+                      </Button>
+                      <Button 
+                        onClick={() => handleImportFromProcessed('processed')} 
+                        disabled={importing}
+                      >
+                        {importing ? (
+                          <>
+                            <Loader2 size={16} className="mr-2 animate-spin" />
+                            Importing...
+                          </>
+                        ) : (
+                          <>
+                            <Upload size={16} className="mr-2" />
+                            Import AI-Processed Data
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={handleClose}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleImport} 
+                    disabled={!file || importing || processingWithAI}
+                  >
+                    {importing ? (
+                      <>
+                        <Loader2 size={16} className="mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : processingWithAI ? (
+                      <>
+                        <Loader2 size={16} className="mr-2 animate-spin" />
+                        AI Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={16} className="mr-2" />
+                        Import
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="image" className="space-y-4">
+                <Alert>
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <p>Upload an image containing tabular data. AI will extract and structure the data for import.</p>
+                      <div className="text-sm text-slate-600">
+                        <strong>Supported formats:</strong> JPG, PNG, WebP
+                        <br />
+                        <em>Works best with clear, high-contrast images of tables or spreadsheets</em>
+                      </div>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-2">
+                  <Label>Upload Image</Label>
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                      isImageDragOver 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onDragOver={(e) => handleDragOver(e, true)}
+                    onDragLeave={(e) => handleDragLeave(e, true)}
+                    onDrop={(e) => handleDrop(e, true)}
+                    onClick={() => imageInputRef.current?.click()}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <Camera size={32} className={isImageDragOver ? 'text-blue-500' : 'text-gray-400'} />
+                      <div>
+                        <p className="text-sm font-medium">
+                          {isImageDragOver ? 'Drop your image here' : 'Drag and drop your image here, or click to browse'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Supports JPG, PNG, WebP
+                        </p>
+                      </div>
+                    </div>
+                    <Input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </div>
+                  
+                  <div className="text-xs text-slate-500">
+                    <strong>Tips:</strong> Ensure text is clear and readable. Screenshots of spreadsheets work well.
+                  </div>
+                </div>
+
+                {imageFile && (
+                  <div className="p-3 bg-slate-50 rounded">
+                    <p className="text-sm">
+                      <strong>Selected image:</strong> {imageFile.name} ({(imageFile.size / 1024).toFixed(1)} KB)
+                    </p>
+                    <div className="mt-2">
+                      <Button 
+                        onClick={extractDataFromImage} 
+                        disabled={extractingFromImage}
+                        size="sm"
+                      >
+                        {extractingFromImage ? (
+                          <>
+                            <Loader2 size={16} className="mr-2 animate-spin" />
+                            Extracting...
+                          </>
+                        ) : (
+                          <>
+                            <Camera size={16} className="mr-2" />
+                            Extract Data
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {extractedData && (
+                  <div className="space-y-2">
+                    <Label>Extracted Data Preview</Label>
+                    <div className="p-3 bg-slate-50 rounded max-h-32 overflow-y-auto">
+                      <pre className="text-xs whitespace-pre-wrap">{extractedData}</pre>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setExtractedData(null)}>
+                        Clear
+                      </Button>
+                      <Button 
+                        onClick={() => handleImportFromProcessed('extracted')} 
+                        disabled={importing}
+                      >
+                        {importing ? (
+                          <>
+                            <Loader2 size={16} className="mr-2 animate-spin" />
+                            Importing...
+                          </>
+                        ) : (
+                          <>
+                            <Upload size={16} className="mr-2" />
+                            Import Data
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {!extractedData && (
+                  <div className="flex justify-end">
+                    <Button variant="outline" onClick={handleClose}>
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+
+            {result && (
+              <Alert className={result.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
+                <div className="flex items-start gap-2">
+                  {result.success ? (
+                    <CheckCircle size={16} className="text-green-600 mt-0.5" />
+                  ) : (
+                    <XCircle size={16} className="text-red-600 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <AlertDescription>
+                      <div className="space-y-2">
+                        <p>Processed {result.processed} records</p>
+                        {result.errors.length > 0 && (
+                          <div>
+                            <p className="font-semibold text-red-700">Errors:</p>
+                            <ul className="list-disc list-inside text-sm space-y-1">
+                              {result.errors.slice(0, 5).map((error, index) => (
+                                <li key={index}>{error}</li>
+                              ))}
+                              {result.errors.length > 5 && (
+                                <li>... and {result.errors.length - 5} more errors</li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </AlertDescription>
+                  </div>
+                </div>
+              </Alert>
+            )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
