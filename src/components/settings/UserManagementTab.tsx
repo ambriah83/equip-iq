@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,11 +23,11 @@ const UserManagementTab = () => {
   const { toast } = useToast();
   
   const [users, setUsers] = useState<User[]>([
-    { id: '1', name: 'John Doe', email: 'john@company.com', role: 'admin', status: 'active' },
-    { id: '2', name: 'Jane Smith', email: 'jane@company.com', role: 'manager', status: 'active' },
-    { id: '3', name: 'Bob Wilson', email: 'bob@company.com', role: 'staff', status: 'inactive' },
-    { id: '4', name: 'Alice Johnson', email: 'alice@company.com', role: 'staff', status: 'active' },
-    { id: '5', name: 'Mike Davis', email: 'mike@company.com', role: 'owner', status: 'active' },
+    { id: '550e8400-e29b-41d4-a716-446655440001', name: 'John Doe', email: 'john@company.com', role: 'admin', status: 'active' },
+    { id: '550e8400-e29b-41d4-a716-446655440002', name: 'Jane Smith', email: 'jane@company.com', role: 'manager', status: 'active' },
+    { id: '550e8400-e29b-41d4-a716-446655440003', name: 'Bob Wilson', email: 'bob@company.com', role: 'staff', status: 'inactive' },
+    { id: '550e8400-e29b-41d4-a716-446655440004', name: 'Alice Johnson', email: 'alice@company.com', role: 'staff', status: 'active' },
+    { id: '550e8400-e29b-41d4-a716-446655440005', name: 'Mike Davis', email: 'mike@company.com', role: 'owner', status: 'active' },
   ]);
 
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
@@ -60,7 +61,7 @@ const UserManagementTab = () => {
       });
     } else {
       const newUser: User = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         name: userData.name || '',
         email: userData.email || '',
         role: userData.role || 'staff',
