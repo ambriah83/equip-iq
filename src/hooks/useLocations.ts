@@ -3,9 +3,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 
-type Location = Database['public']['Tables']['locations']['Row'];
+type DatabaseLocation = Database['public']['Tables']['locations']['Row'];
 type LocationInsert = Database['public']['Tables']['locations']['Insert'];
 type LocationUpdate = Database['public']['Tables']['locations']['Update'];
+
+// Create a properly typed Location interface
+export interface Location extends Omit<DatabaseLocation, 'status'> {
+  status: 'active' | 'maintenance' | 'closed';
+}
 
 export const useLocations = () => {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -21,7 +26,16 @@ export const useLocations = () => {
         .order('name');
       
       if (error) throw error;
-      setLocations(data || []);
+      
+      // Transform data to ensure proper typing
+      const transformedData = (data || []).map(location => ({
+        ...location,
+        status: (location.status === 'active' || location.status === 'maintenance' || location.status === 'closed') 
+          ? location.status as 'active' | 'maintenance' | 'closed'
+          : 'active' as 'active' | 'maintenance' | 'closed'
+      }));
+      
+      setLocations(transformedData);
     } catch (err) {
       console.error('Error fetching locations:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch locations');
@@ -40,8 +54,15 @@ export const useLocations = () => {
       
       if (error) throw error;
       
-      setLocations(prev => [...prev, data]);
-      return data;
+      const transformedData = {
+        ...data,
+        status: (data.status === 'active' || data.status === 'maintenance' || data.status === 'closed') 
+          ? data.status as 'active' | 'maintenance' | 'closed'
+          : 'active' as 'active' | 'maintenance' | 'closed'
+      };
+      
+      setLocations(prev => [...prev, transformedData]);
+      return transformedData;
     } catch (err) {
       console.error('Error creating location:', err);
       throw err;
@@ -59,8 +80,15 @@ export const useLocations = () => {
       
       if (error) throw error;
       
-      setLocations(prev => prev.map(loc => loc.id === id ? data : loc));
-      return data;
+      const transformedData = {
+        ...data,
+        status: (data.status === 'active' || data.status === 'maintenance' || data.status === 'closed') 
+          ? data.status as 'active' | 'maintenance' | 'closed'
+          : 'active' as 'active' | 'maintenance' | 'closed'
+      };
+      
+      setLocations(prev => prev.map(loc => loc.id === id ? transformedData : loc));
+      return transformedData;
     } catch (err) {
       console.error('Error updating location:', err);
       throw err;

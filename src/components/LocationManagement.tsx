@@ -1,18 +1,16 @@
-
 import React, { useState } from 'react';
 import { Building2, MapPin, Users, Edit, Home } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
 import { useViewToggle } from '@/hooks/useViewToggle';
-import { useLocations } from '@/hooks/useLocations';
+import { useLocations, Location } from '@/hooks/useLocations';
 import { useSupabaseRooms } from '@/hooks/useSupabaseRooms';
 import { DataTable, FilterBar, StatusBadge } from '@/components/shared';
 import { LocationCard, AddLocationDialog, LocationDetailsModal } from '@/components/location';
 import { AddRoomDialog } from '@/components/room';
 import { Database } from '@/integrations/supabase/types';
 import ViewToggle from './ViewToggle';
-import { Location } from '@/types/Location';
 
 type DatabaseLocation = Database['public']['Tables']['locations']['Row'];
 
@@ -23,23 +21,6 @@ const LocationManagement = () => {
   const [selectedLocation, setSelectedLocation] = useState<DatabaseLocation | null>(null);
   const [modalMode, setModalMode] = useState<'view' | 'manage'>('view');
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Transform database locations to match the filtering hook's expected type with proper type casting
-  const transformedLocations: Location[] = locations.map(location => ({
-    id: location.id,
-    name: location.name,
-    abbreviation: location.abbreviation,
-    address: location.address,
-    manager_name: location.manager_name,
-    phone: location.phone,
-    email: location.email,
-    notes: location.notes,
-    status: (location.status === 'active' || location.status === 'maintenance' || location.status === 'closed') 
-      ? location.status 
-      : 'active' as 'active' | 'maintenance' | 'closed',
-    created_at: location.created_at,
-    updated_at: location.updated_at
-  }));
 
   const {
     searchTerm,
@@ -52,7 +33,7 @@ const LocationManagement = () => {
     clearAllFilters,
     hasActiveFilters
   } = useDataFiltering({
-    data: transformedLocations,
+    data: locations,
     searchFields: ['name', 'address', 'manager_name', 'abbreviation'],
     filterConfigs: {
       status: 'Status'
@@ -144,10 +125,10 @@ const LocationManagement = () => {
     
     return (
       <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => handleViewDetails(dbLocation)}>
+        <Button size="sm" variant="outline" onClick={() => handleViewDetails(dbLocation as DatabaseLocation)}>
           View
         </Button>
-        <Button size="sm" onClick={() => handleManage(dbLocation)}>
+        <Button size="sm" onClick={() => handleManage(dbLocation as DatabaseLocation)}>
           <Edit size={16} />
         </Button>
       </div>
@@ -178,7 +159,7 @@ const LocationManagement = () => {
         return (
           <LocationCard
             key={location.id}
-            location={dbLocation}
+            location={dbLocation as DatabaseLocation}
             onViewDetails={handleViewDetails}
             onManage={handleManage}
             roomCount={rooms.filter(room => room.location_id === location.id).length}
@@ -205,7 +186,7 @@ const LocationManagement = () => {
           </div>
           <div className="flex items-center gap-4">
             <ViewToggle view={view} onViewChange={setView} />
-            <AddRoomDialog locations={locations} />
+            <AddRoomDialog locations={locations as DatabaseLocation[]} />
             <AddLocationDialog />
           </div>
         </div>
@@ -230,7 +211,7 @@ const LocationManagement = () => {
           columns={columns}
           onEdit={(location) => {
             const dbLocation = locations.find(l => l.id === location.id);
-            if (dbLocation) handleManage(dbLocation);
+            if (dbLocation) handleManage(dbLocation as DatabaseLocation);
           }}
           actions={renderActions}
         />

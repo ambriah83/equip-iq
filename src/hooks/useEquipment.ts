@@ -16,10 +16,12 @@ export interface EquipmentWithDetails extends Equipment {
   location: string;
   room: string;
   serialNumber: string;
-  warrantyStatus: string;
+  warrantyStatus: 'active' | 'inactive';
   lastServiceDate: string;
   lastService: string;
-  warranty: string;
+  warranty: 'active' | 'inactive';
+  // Override status to have proper typing
+  status: 'active' | 'maintenance' | 'offline';
 }
 
 export const useEquipment = () => {
@@ -49,10 +51,13 @@ export const useEquipment = () => {
         location: item.locations?.name || 'Unknown',
         room: item.rooms?.name || 'Unassigned',
         serialNumber: item.serial_number || '',
-        warrantyStatus: item.warranty_status || 'inactive',
+        warrantyStatus: (item.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
         lastServiceDate: item.last_service_date || '',
         lastService: item.last_service_date || '',
-        warranty: item.warranty_status || 'inactive'
+        warranty: (item.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
+        status: (item.status === 'active' || item.status === 'maintenance' || item.status === 'offline') 
+          ? item.status as 'active' | 'maintenance' | 'offline'
+          : 'active' as 'active' | 'maintenance' | 'offline'
       }));
       
       setEquipment(transformedData);
@@ -85,10 +90,13 @@ export const useEquipment = () => {
         location: data.locations?.name || 'Unknown',
         room: data.rooms?.name || 'Unassigned',
         serialNumber: data.serial_number || '',
-        warrantyStatus: data.warranty_status || 'inactive',
+        warrantyStatus: (data.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
         lastServiceDate: data.last_service_date || '',
         lastService: data.last_service_date || '',
-        warranty: data.warranty_status || 'inactive'
+        warranty: (data.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
+        status: (data.status === 'active' || data.status === 'maintenance' || data.status === 'offline') 
+          ? data.status as 'active' | 'maintenance' | 'offline'
+          : 'active' as 'active' | 'maintenance' | 'offline'
       };
       
       setEquipment(prev => [...prev, transformedData]);
@@ -121,10 +129,13 @@ export const useEquipment = () => {
         location: data.locations?.name || 'Unknown',
         room: data.rooms?.name || 'Unassigned',
         serialNumber: data.serial_number || '',
-        warrantyStatus: data.warranty_status || 'inactive',
+        warrantyStatus: (data.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
         lastServiceDate: data.last_service_date || '',
         lastService: data.last_service_date || '',
-        warranty: data.warranty_status || 'inactive'
+        warranty: (data.warranty_status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive',
+        status: (data.status === 'active' || data.status === 'maintenance' || data.status === 'offline') 
+          ? data.status as 'active' | 'maintenance' | 'offline'
+          : 'active' as 'active' | 'maintenance' | 'offline'
       };
       
       setEquipment(prev => prev.map(eq => eq.id === id ? transformedData : eq));
