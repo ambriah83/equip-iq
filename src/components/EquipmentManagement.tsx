@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Wrench, MapPin, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -165,7 +166,7 @@ const EquipmentManagement = () => {
           </div>
           <div className="flex items-center gap-4">
             <ViewToggle view={view} onViewChange={setView} />
-            <AddEquipmentDialog onEquipmentCreate={createEquipment} />
+            <AddEquipmentDialog />
           </div>
         </div>
       </div>

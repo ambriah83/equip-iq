@@ -23,6 +23,12 @@ const LocationManagement = () => {
   const [modalMode, setModalMode] = useState<'view' | 'manage'>('view');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Transform database locations to match the filtering hook's expected type
+  const transformedLocations = locations.map(location => ({
+    ...location,
+    status: location.status as 'active' | 'maintenance' | 'closed'
+  }));
+
   const {
     searchTerm,
     setSearchTerm,
@@ -34,7 +40,7 @@ const LocationManagement = () => {
     clearAllFilters,
     hasActiveFilters
   } = useDataFiltering({
-    data: locations,
+    data: transformedLocations,
     searchFields: ['name', 'address', 'manager_name', 'abbreviation'],
     filterConfigs: {
       status: 'Status'
@@ -145,7 +151,7 @@ const LocationManagement = () => {
       {filteredLocations.map((location) => (
         <LocationCard
           key={location.id}
-          location={location as any}
+          location={location as DatabaseLocation}
           onViewDetails={handleViewDetails}
           onManage={handleManage}
           roomCount={rooms.filter(room => room.location_id === location.id).length}
