@@ -12,14 +12,15 @@ import { LocationCard, AddLocationDialog, LocationDetailsModal } from '@/compone
 import { AddRoomDialog } from '@/components/room';
 import { Database } from '@/integrations/supabase/types';
 import ViewToggle from './ViewToggle';
+import { Location } from '@/types/Location';
 
-type Location = Database['public']['Tables']['locations']['Row'];
+type DatabaseLocation = Database['public']['Tables']['locations']['Row'];
 
 const LocationManagement = () => {
   const { view, setView } = useViewToggle();
   const { locations, loading, createLocation, updateLocation, deleteLocation } = useLocations();
   const { rooms } = useSupabaseRooms();
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<DatabaseLocation | null>(null);
   const [modalMode, setModalMode] = useState<'view' | 'manage'>('view');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -41,19 +42,19 @@ const LocationManagement = () => {
     }
   });
 
-  const handleViewDetails = (location: Location) => {
+  const handleViewDetails = (location: DatabaseLocation) => {
     setSelectedLocation(location);
     setModalMode('view');
     setIsModalOpen(true);
   };
 
-  const handleManage = (location: Location) => {
+  const handleManage = (location: DatabaseLocation) => {
     setSelectedLocation(location);
     setModalMode('manage');
     setIsModalOpen(true);
   };
 
-  const handleLocationUpdate = async (updatedLocation: Location) => {
+  const handleLocationUpdate = async (updatedLocation: DatabaseLocation) => {
     try {
       await updateLocation(updatedLocation.id, updatedLocation);
     } catch (error) {
@@ -70,7 +71,7 @@ const LocationManagement = () => {
     {
       key: 'name',
       label: 'Name',
-      render: (location: Location) => (
+      render: (location: DatabaseLocation) => (
         <div>
           <div className="font-medium flex items-center gap-2">
             {location.name}
@@ -92,7 +93,7 @@ const LocationManagement = () => {
     {
       key: 'rooms',
       label: 'Rooms',
-      render: (location: Location) => (
+      render: (location: DatabaseLocation) => (
         <div className="flex items-center gap-1">
           <Home size={14} />
           <span>{rooms.filter(room => room.location_id === location.id).length}</span>
@@ -102,20 +103,20 @@ const LocationManagement = () => {
     {
       key: 'status',
       label: 'Status',
-      render: (location: Location) => (
+      render: (location: DatabaseLocation) => (
         <StatusBadge status={location.status} variant="location" />
       )
     },
     {
       key: 'created_at',
       label: 'Created',
-      render: (location: Location) => (
+      render: (location: DatabaseLocation) => (
         <span>{new Date(location.created_at).toLocaleDateString()}</span>
       )
     }
   ];
 
-  const renderActions = (location: Location) => (
+  const renderActions = (location: DatabaseLocation) => (
     <div className="flex gap-1">
       <Button size="sm" variant="outline" onClick={() => handleViewDetails(location)}>
         View

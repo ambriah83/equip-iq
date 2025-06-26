@@ -1,25 +1,21 @@
-
 import React, { useState } from 'react';
-import { Wrench, MapPin, AlertTriangle, Edit } from 'lucide-react';
+import { Wrench, MapPin, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
 import { useViewToggle } from '@/hooks/useViewToggle';
-import { useEquipment } from '@/hooks/useEquipment';
+import { useEquipment, EquipmentWithDetails } from '@/hooks/useEquipment';
 import { useLocations } from '@/hooks/useLocations';
 import { DataTable, FilterBar, StatusBadge } from '@/components/shared';
 import { EquipmentCard, WarrantyAlert } from '@/components/equipment';
 import { AddEquipmentDialog, EditEquipmentDialog } from '@/components';
-import { Database } from '@/integrations/supabase/types';
 import ViewToggle from './ViewToggle';
-
-type Equipment = Database['public']['Tables']['equipment']['Row'];
 
 const EquipmentManagement = () => {
   const { view, setView } = useViewToggle();
   const { equipment, loading, createEquipment, updateEquipment, deleteEquipment } = useEquipment();
   const { locations } = useLocations();
-  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
+  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentWithDetails | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const {
@@ -42,7 +38,7 @@ const EquipmentManagement = () => {
     }
   });
 
-  const handleEditEquipment = (equipment: Equipment) => {
+  const handleEditEquipment = (equipment: EquipmentWithDetails) => {
     setSelectedEquipment(equipment);
     setIsEditDialogOpen(true);
   };
@@ -65,7 +61,7 @@ const EquipmentManagement = () => {
     {
       key: 'name',
       label: 'Equipment',
-      render: (equipment: any) => (
+      render: (equipment: EquipmentWithDetails) => (
         <div>
           <div className="font-medium">{equipment.name}</div>
           <div className="text-sm text-slate-600">{equipment.equipment_types?.name}</div>
@@ -76,7 +72,7 @@ const EquipmentManagement = () => {
     {
       key: 'location',
       label: 'Location',
-      render: (equipment: any) => (
+      render: (equipment: EquipmentWithDetails) => (
         <div className="flex items-center gap-1">
           <MapPin size={12} />
           <span className="text-sm">{equipment.locations?.name}</span>
@@ -89,27 +85,27 @@ const EquipmentManagement = () => {
     {
       key: 'status',
       label: 'Status',
-      render: (equipment: Equipment) => (
+      render: (equipment: EquipmentWithDetails) => (
         <StatusBadge status={equipment.status} variant="equipment" />
       )
     },
     {
       key: 'warranty_status',
       label: 'Warranty',
-      render: (equipment: Equipment) => (
+      render: (equipment: EquipmentWithDetails) => (
         <StatusBadge status={equipment.warranty_status} variant="warranty" />
       )
     },
     {
       key: 'last_service_date',
       label: 'Last Service',
-      render: (equipment: Equipment) => (
+      render: (equipment: EquipmentWithDetails) => (
         <span>{equipment.last_service_date ? new Date(equipment.last_service_date).toLocaleDateString() : 'Never'}</span>
       )
     }
   ];
 
-  const renderActions = (equipment: Equipment) => (
+  const renderActions = (equipment: EquipmentWithDetails) => (
     <div className="flex gap-1">
       <Button size="sm" variant="outline" onClick={() => handleEditEquipment(equipment)}>
         <Edit size={16} />

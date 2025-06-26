@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Building2, MapPin, Users, Wrench, AlertTriangle, Edit, Save, X } from 'lucide-react';
 import {
@@ -12,24 +11,16 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Database } from '@/integrations/supabase/types';
 
-interface Location {
-  id: string;
-  name: string;
-  address: string;
-  manager: string;
-  equipmentCount: number;
-  activeIssues: number;
-  status: 'active' | 'maintenance' | 'closed';
-  lastUpdated: string;
-}
+type DatabaseLocation = Database['public']['Tables']['locations']['Row'];
 
 interface LocationDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  location: Location | null;
+  location: DatabaseLocation | null;
   mode: 'view' | 'manage';
-  onLocationUpdate?: (location: Location) => void;
+  onLocationUpdate?: (location: DatabaseLocation) => void;
 }
 
 const LocationDetailsModal = ({ 
@@ -40,7 +31,7 @@ const LocationDetailsModal = ({
   onLocationUpdate 
 }: LocationDetailsModalProps) => {
   const [isEditing, setIsEditing] = useState(mode === 'manage');
-  const [editedLocation, setEditedLocation] = useState<Location | null>(location);
+  const [editedLocation, setEditedLocation] = useState<DatabaseLocation | null>(location);
 
   React.useEffect(() => {
     setEditedLocation(location);
@@ -141,14 +132,14 @@ const LocationDetailsModal = ({
                   {isEditing ? (
                     <Input
                       id="manager"
-                      value={editedLocation.manager}
+                      value={editedLocation.manager_name || ''}
                       onChange={(e) => setEditedLocation({
                         ...editedLocation,
-                        manager: e.target.value
+                        manager_name: e.target.value
                       })}
                     />
                   ) : (
-                    <p className="text-sm mt-1">{location.manager}</p>
+                    <p className="text-sm mt-1">{location.manager_name}</p>
                   )}
                 </div>
               </div>
@@ -158,7 +149,7 @@ const LocationDetailsModal = ({
                 {isEditing ? (
                   <Input
                     id="address"
-                    value={editedLocation.address}
+                    value={editedLocation.address || ''}
                     onChange={(e) => setEditedLocation({
                       ...editedLocation,
                       address: e.target.value
@@ -198,7 +189,7 @@ const LocationDetailsModal = ({
                 </div>
                 <div>
                   <Label>Last Updated</Label>
-                  <p className="text-sm mt-1">{location.lastUpdated}</p>
+                  <p className="text-sm mt-1">{new Date(location.updated_at).toLocaleDateString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -212,7 +203,7 @@ const LocationDetailsModal = ({
                   <Wrench className="h-8 w-8 text-blue-600" />
                   <div>
                     <p className="text-sm text-slate-600">Equipment</p>
-                    <p className="text-2xl font-bold">{location.equipmentCount}</p>
+                    <p className="text-2xl font-bold">0</p>
                   </div>
                 </div>
               </CardContent>
@@ -224,7 +215,7 @@ const LocationDetailsModal = ({
                   <AlertTriangle className="h-8 w-8 text-red-600" />
                   <div>
                     <p className="text-sm text-slate-600">Active Issues</p>
-                    <p className="text-2xl font-bold">{location.activeIssues}</p>
+                    <p className="text-2xl font-bold">0</p>
                   </div>
                 </div>
               </CardContent>
@@ -243,7 +234,7 @@ const LocationDetailsModal = ({
             </Card>
           </div>
 
-          {/* Equipment List */}
+          {/* Equipment List - keeping mock data for now */}
           <Card>
             <CardHeader>
               <CardTitle>Equipment Overview</CardTitle>
@@ -268,32 +259,30 @@ const LocationDetailsModal = ({
             </CardContent>
           </Card>
 
-          {/* Active Issues */}
-          {location.activeIssues > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Active Issues</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {mockIssues.map((issue) => (
-                    <div key={issue.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
-                      <div>
-                        <p className="font-medium">{issue.equipment}</p>
-                        <p className="text-sm text-slate-600">{issue.issue}</p>
-                      </div>
-                      <div className="text-right">
-                        <Badge className={issue.priority === 'High' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}>
-                          {issue.priority}
-                        </Badge>
-                        <p className="text-xs text-slate-500 mt-1">{issue.reported}</p>
-                      </div>
+          {/* Active Issues - keeping mock data for now */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Active Issues</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {mockIssues.map((issue) => (
+                  <div key={issue.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div>
+                      <p className="font-medium">{issue.equipment}</p>
+                      <p className="text-sm text-slate-600">{issue.issue}</p>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                    <div className="text-right">
+                      <Badge className={issue.priority === 'High' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}>
+                        {issue.priority}
+                      </Badge>
+                      <p className="text-xs text-slate-500 mt-1">{issue.reported}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </DialogContent>
     </Dialog>
