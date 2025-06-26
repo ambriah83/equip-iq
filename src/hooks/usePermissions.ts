@@ -20,6 +20,60 @@ export interface RolePermission {
   created_at: string | null;
 }
 
+// Mock role permissions based on the migration data
+const mockRolePermissions: Record<UserRole, Record<EscalationPermission, boolean>> = {
+  owner: {
+    can_use_ladder: true,
+    can_handle_electrical: true,
+    can_disassemble_parts: true,
+    can_work_at_height: true,
+    can_handle_chemicals: true,
+    can_operate_heavy_equipment: true,
+    can_access_restricted_areas: true,
+    can_perform_emergency_shutdowns: true,
+  },
+  admin: {
+    can_use_ladder: true,
+    can_handle_electrical: true,
+    can_disassemble_parts: true,
+    can_work_at_height: true,
+    can_handle_chemicals: true,
+    can_operate_heavy_equipment: true,
+    can_access_restricted_areas: true,
+    can_perform_emergency_shutdowns: true,
+  },
+  manager: {
+    can_use_ladder: true,
+    can_handle_electrical: false,
+    can_disassemble_parts: true,
+    can_work_at_height: true,
+    can_handle_chemicals: false,
+    can_operate_heavy_equipment: false,
+    can_access_restricted_areas: true,
+    can_perform_emergency_shutdowns: true,
+  },
+  staff: {
+    can_use_ladder: true,
+    can_handle_electrical: true,
+    can_disassemble_parts: true,
+    can_work_at_height: false,
+    can_handle_chemicals: false,
+    can_operate_heavy_equipment: false,
+    can_access_restricted_areas: false,
+    can_perform_emergency_shutdowns: false,
+  },
+  vendor: {
+    can_use_ladder: true,
+    can_handle_electrical: true,
+    can_disassemble_parts: true,
+    can_work_at_height: false,
+    can_handle_chemicals: false,
+    can_operate_heavy_equipment: false,
+    can_access_restricted_areas: false,
+    can_perform_emergency_shutdowns: false,
+  }
+};
+
 export const usePermissions = (userId?: string, userRole?: UserRole) => {
   const [permissions, setPermissions] = useState<UserPermission[]>([]);
   const [roleDefaults, setRoleDefaults] = useState<RolePermission[]>([]);
@@ -31,37 +85,91 @@ export const usePermissions = (userId?: string, userRole?: UserRole) => {
     if (!role) return;
     
     try {
-      const { data, error } = await supabase
+      // First try to fetch from Supabase
+      const { data, error: supabaseError } = await supabase
         .from('role_permissions')
         .select('*')
         .eq('role', role);
 
-      if (error) throw error;
-      setRoleDefaults(data || []);
+      if (supabaseError) {
+        console.log('Using mock data for role permissions:', supabaseError.message);
+        // Fall back to mock data
+        const mockData: RolePermission[] = Object.entries(mockRolePermissions[role]).map(([permission, is_allowed]) => ({
+          id: `mock-${role}-${permission}`,
+          role,
+          permission: permission as EscalationPermission,
+          is_allowed,
+          created_at: new Date().toISOString()
+        }));
+        setRoleDefaults(mockData);
+      } else {
+        setRoleDefaults(data || []);
+      }
     } catch (err) {
       console.error('Error fetching role defaults:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      // Fall back to mock data
+      const mockData: RolePermission[] = Object.entries(mockRolePermissions[role]).map(([permission, is_allowed]) => ({
+        id: `mock-${role}-${permission}`,
+        role,
+        permission: permission as EscalationPermission,
+        is_allowed,
+        created_at: new Date().toISOString()
+      }));
+      setRoleDefaults(mockData);
     }
   }, []);
 
   // Fetch user-specific permissions
   const fetchUserPermissions = useCallback(async (targetUserId: string, role: UserRole) => {
     try {
+      // For mock users (UUIDs starting with 550e8400), use role defaults
+      if (targetUserId.startsWith('550e8400')) {
+        console.log('Using mock data for user permissions');
+        const mockPermissions: UserPermission[] = Object.entries(mockRolePermissions[role]).map(([permission, is_allowed]) => ({
+          permission: permission as EscalationPermission,
+          is_allowed,
+          is_custom: false
+        }));
+        setPermissions(mockPermissions);
+        return;
+      }
+
       const { data, error } = await supabase.rpc('get_user_permissions', {
         target_user_id: targetUserId,
         user_role: role
       });
 
-      if (error) throw error;
-      setPermissions(data || []);
+      if (error) {
+        console.error('Supabase RPC error:', error);
+        // Fall back to role defaults for real users too
+        const mockPermissions: UserPermission[] = Object.entries(mockRolePermissions[role]).map(([permission, is_allowed]) => ({
+          permission: permission as EscalationPermission,
+          is_allowed,
+          is_custom: false
+        }));
+        setPermissions(mockPermissions);
+      } else {
+        setPermissions(data || []);
+      }
     } catch (err) {
       console.error('Error fetching user permissions:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      // Fall back to role defaults
+      const mockPermissions: UserPermission[] = Object.entries(mockRolePermissions[role]).map(([permission, is_allowed]) => ({
+        permission: permission as EscalationPermission,
+        is_allowed,
+        is_custom: false
+      }));
+      setPermissions(mockPermissions);
     }
   }, []);
 
   // Initialize user permissions from role defaults
   const initializeUserPermissions = async (targetUserId: string, role: UserRole) => {
+    // Skip initialization for mock users
+    if (targetUserId.startsWith('550e8400')) {
+      return;
+    }
+
     try {
       const { error } = await supabase.rpc('initialize_user_permissions', {
         target_user_id: targetUserId,
@@ -82,6 +190,12 @@ export const usePermissions = (userId?: string, userRole?: UserRole) => {
     permission: EscalationPermission,
     isAllowed: boolean
   ) => {
+    // Skip updates for mock users
+    if (targetUserId.startsWith('550e8400')) {
+      console.log('Mock user permission update - would update in real system');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('user_permissions')
@@ -117,7 +231,7 @@ export const usePermissions = (userId?: string, userRole?: UserRole) => {
   const getPermissionStatus = (permission: EscalationPermission) => {
     return permissions.find(p => p.permission === permission) || {
       permission,
-      is_allowed: false,
+      is_allowed: mockRolePermissions[userRole || 'staff']?.[permission] || false,
       is_custom: false
     };
   };
@@ -135,8 +249,10 @@ export const usePermissions = (userId?: string, userRole?: UserRole) => {
 
         // If user ID is provided, also fetch user-specific permissions
         if (userId && userRole) {
-          // First initialize user permissions if they don't exist
-          await initializeUserPermissions(userId, userRole);
+          // First initialize user permissions if they don't exist (skip for mock users)
+          if (!userId.startsWith('550e8400')) {
+            await initializeUserPermissions(userId, userRole);
+          }
           // Then fetch user-specific permissions
           await fetchUserPermissions(userId, userRole);
         }

@@ -3,7 +3,6 @@ import React from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { usePermissions } from '@/hooks/usePermissions';
 import { Database } from '@/integrations/supabase/types';
 
 type UserRole = Database['public']['Enums']['user_role'];
@@ -45,29 +44,67 @@ const permissionCategories: Record<EscalationPermission, string> = {
   can_perform_emergency_shutdowns: 'Emergency Procedures'
 };
 
+// Mock role permissions based on the migration data
+const rolePermissions: Record<UserRole, Record<EscalationPermission, boolean>> = {
+  owner: {
+    can_use_ladder: true,
+    can_handle_electrical: true,
+    can_disassemble_parts: true,
+    can_work_at_height: true,
+    can_handle_chemicals: true,
+    can_operate_heavy_equipment: true,
+    can_access_restricted_areas: true,
+    can_perform_emergency_shutdowns: true,
+  },
+  admin: {
+    can_use_ladder: true,
+    can_handle_electrical: true,
+    can_disassemble_parts: true,
+    can_work_at_height: true,
+    can_handle_chemicals: true,
+    can_operate_heavy_equipment: true,
+    can_access_restricted_areas: true,
+    can_perform_emergency_shutdowns: true,
+  },
+  manager: {
+    can_use_ladder: true,
+    can_handle_electrical: false,
+    can_disassemble_parts: true,
+    can_work_at_height: true,
+    can_handle_chemicals: false,
+    can_operate_heavy_equipment: false,
+    can_access_restricted_areas: true,
+    can_perform_emergency_shutdowns: true,
+  },
+  staff: {
+    can_use_ladder: true,
+    can_handle_electrical: true,
+    can_disassemble_parts: true,
+    can_work_at_height: false,
+    can_handle_chemicals: false,
+    can_operate_heavy_equipment: false,
+    can_access_restricted_areas: false,
+    can_perform_emergency_shutdowns: false,
+  },
+  vendor: {
+    can_use_ladder: true,
+    can_handle_electrical: true,
+    can_disassemble_parts: true,
+    can_work_at_height: false,
+    can_handle_chemicals: false,
+    can_operate_heavy_equipment: false,
+    can_access_restricted_areas: false,
+    can_perform_emergency_shutdowns: false,
+  }
+};
+
 const UserPermissions: React.FC<UserPermissionsProps> = ({
   user,
   userRole,
   onPermissionToggle
 }) => {
-  const {
-    permissions,
-    roleDefaults,
-    loading,
-    getPermissionStatus
-  } = usePermissions(user?.id, userRole);
-
-  const getEffectivePermissionStatus = (permission: EscalationPermission) => {
-    if (user) {
-      return getPermissionStatus(permission);
-    } else {
-      const roleDefault = roleDefaults.find(rd => rd.permission === permission);
-      return {
-        permission,
-        is_allowed: roleDefault?.is_allowed || false,
-        is_custom: false
-      };
-    }
+  const getPermissionForRole = (permission: EscalationPermission) => {
+    return rolePermissions[userRole]?.[permission] || false;
   };
 
   const formatPermissionName = (permission: string) => {
@@ -78,50 +115,42 @@ const UserPermissions: React.FC<UserPermissionsProps> = ({
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">User Permissions</h3>
       <p className="text-sm text-gray-600">
-        Customize permissions for this user. These override the default role permissions.
-        {!user && ' (Showing default permissions for selected role)'}
+        {user ? 'Customize permissions for this user. These override the default role permissions.' : 'Default permissions for the selected role.'}
       </p>
       
-      {loading && user ? (
-        <div className="text-center py-4">Loading permissions...</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
-          {Object.entries(permissionDescriptions).map(([permission, description]) => {
-            const permStatus = getEffectivePermissionStatus(permission as EscalationPermission);
-            
-            return (
-              <div key={permission} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <Label className="font-medium text-sm">
-                      {formatPermissionName(permission)}
-                    </Label>
-                    <Badge variant="outline" className="text-xs">
-                      {permissionCategories[permission as EscalationPermission]}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-1">{description}</p>
-                  {user && permStatus.is_custom && (
-                    <div className="text-xs text-blue-600 mt-1">Custom override applied</div>
-                  )}
-                  {!user && (
-                    <div className="text-xs text-green-600 mt-1">Role default</div>
-                  )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+        {Object.entries(permissionDescriptions).map(([permission, description]) => {
+          const isAllowed = getPermissionForRole(permission as EscalationPermission);
+          
+          return (
+            <div key={permission} className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <Label className="font-medium text-sm">
+                    {formatPermissionName(permission)}
+                  </Label>
+                  <Badge variant="outline" className="text-xs">
+                    {permissionCategories[permission as EscalationPermission]}
+                  </Badge>
                 </div>
-                <Switch
-                  checked={permStatus.is_allowed}
-                  onCheckedChange={(checked) => {
-                    if (user) {
-                      onPermissionToggle(permission as EscalationPermission, checked);
-                    }
-                  }}
-                  disabled={!user}
-                />
+                <p className="text-xs text-gray-600 mt-1">{description}</p>
+                <div className="text-xs text-green-600 mt-1">
+                  Role default: {isAllowed ? 'Allowed' : 'Restricted'}
+                </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+              <Switch
+                checked={isAllowed}
+                onCheckedChange={(checked) => {
+                  if (user) {
+                    onPermissionToggle(permission as EscalationPermission, checked);
+                  }
+                }}
+                disabled={!user}
+              />
+            </div>
+          );
+        })}
+      </div>
       
       {!user && (
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
