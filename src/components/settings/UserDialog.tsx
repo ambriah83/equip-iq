@@ -16,7 +16,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'owner' | 'manager' | 'staff';
+  role: 'admin' | 'owner' | 'manager' | 'franchisee' | 'tech' | 'employee';
   status: 'active' | 'inactive';
 }
 
@@ -30,12 +30,12 @@ const UserDialog: React.FC<UserDialogProps> = ({ user, onSave, onClose }) => {
   const [formData, setFormData] = useState<{
     name: string;
     email: string;
-    role: 'admin' | 'owner' | 'manager' | 'staff';
+    role: 'admin' | 'owner' | 'manager' | 'franchisee' | 'tech' | 'employee';
     status: 'active' | 'inactive';
   }>({
     name: '',
     email: '',
-    role: 'staff',
+    role: 'employee',
     status: 'active'
   });
 
@@ -60,7 +60,7 @@ const UserDialog: React.FC<UserDialogProps> = ({ user, onSave, onClose }) => {
       setFormData({
         name: '',
         email: '',
-        role: 'staff',
+        role: 'employee',
         status: 'active'
       });
       setSelectedLocations([]);

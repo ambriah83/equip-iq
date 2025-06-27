@@ -111,7 +111,7 @@ const UserManagementTab = () => {
         id: crypto.randomUUID(),
         name: userData.name || '',
         email: userData.email || '',
-        role: userData.role || 'staff',
+        role: userData.role || 'employee',
         status: userData.status || 'active'
       };
       setUsers([...users, newUser]);
