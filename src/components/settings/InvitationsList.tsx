@@ -3,8 +3,9 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Mail, Clock, CheckCircle, XCircle, RefreshCw, MapPin } from 'lucide-react';
 import { UserInvitation } from '@/hooks/useUserInvitations';
+import { useLocations } from '@/hooks/useLocations';
 
 interface InvitationsListProps {
   invitations: UserInvitation[];
@@ -19,6 +20,8 @@ const InvitationsList: React.FC<InvitationsListProps> = ({
   onResend,
   loading
 }) => {
+  const { locations } = useLocations();
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -44,6 +47,14 @@ const InvitationsList: React.FC<InvitationsListProps> = ({
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
+  };
+
+  const getLocationNames = (locationIds: string[] = []) => {
+    if (!locationIds.length) return 'All locations';
+    
+    return locationIds
+      .map(id => locations.find(loc => loc.id === id)?.name || 'Unknown')
+      .join(', ');
   };
 
   const isExpired = (expiresAt: string) => {
@@ -93,8 +104,12 @@ const InvitationsList: React.FC<InvitationsListProps> = ({
                       <span className="text-red-500"> • Expired</span>
                     }
                   </p>
-                  <div className="mt-1">
+                  <div className="mt-1 flex items-center gap-2">
                     {getStatusBadge(invitation.status)}
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <MapPin size={12} />
+                      <span>{getLocationNames(invitation.location_access)}</span>
+                    </div>
                   </div>
                 </div>
               </div>

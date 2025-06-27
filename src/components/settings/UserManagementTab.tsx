@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'owner' | 'manager' | 'staff';
+  role: 'admin' | 'owner' | 'manager' | 'franchisee' | 'tech' | 'employee';
   status: 'active' | 'inactive';
 }
 
@@ -77,7 +78,7 @@ const UserManagementTab = () => {
         id: profile.id,
         name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'No Name',
         email: profile.email,
-        role: profile.role as 'admin' | 'owner' | 'manager' | 'staff',
+        role: profile.role as 'admin' | 'owner' | 'manager' | 'franchisee' | 'tech' | 'employee',
         status: profile.status as 'active' | 'inactive'
       }));
 
@@ -88,9 +89,10 @@ const UserManagementTab = () => {
       setUsers([
         { id: '6ba7b810-9dad-11d1-80b4-00c04fd430c8', name: 'John Doe', email: 'john@company.com', role: 'admin', status: 'active' },
         { id: '6ba7b811-9dad-11d1-80b4-00c04fd430c8', name: 'Jane Smith', email: 'jane@company.com', role: 'manager', status: 'active' },
-        { id: '6ba7b812-9dad-11d1-80b4-00c04fd430c8', name: 'Bob Wilson', email: 'bob@company.com', role: 'staff', status: 'inactive' },
-        { id: '6ba7b813-9dad-11d1-80b4-00c04fd430c8', name: 'Alice Johnson', email: 'alice@company.com', role: 'staff', status: 'active' },
+        { id: '6ba7b812-9dad-11d1-80b4-00c04fd430c8', name: 'Bob Wilson', email: 'bob@company.com', role: 'franchisee', status: 'inactive' },
+        { id: '6ba7b813-9dad-11d1-80b4-00c04fd430c8', name: 'Alice Johnson', email: 'alice@company.com', role: 'tech', status: 'active' },
         { id: '6ba7b814-9dad-11d1-80b4-00c04fd430c8', name: 'Mike Davis', email: 'mike@company.com', role: 'owner', status: 'active' },
+        { id: '6ba7b815-9dad-11d1-80b4-00c04fd430c8', name: 'Sarah Brown', email: 'sarah@company.com', role: 'employee', status: 'active' },
       ]);
     } finally {
       setLoadingUsers(false);

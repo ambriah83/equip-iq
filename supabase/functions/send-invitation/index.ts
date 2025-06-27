@@ -16,6 +16,7 @@ interface InvitationRequest {
   role: string;
   invitedBy: string;
   companyName?: string;
+  locationAccess?: string[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -29,14 +30,14 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     )
 
-    const { email, role, invitedBy, companyName }: InvitationRequest = await req.json();
+    const { email, role, invitedBy, companyName, locationAccess = [] }: InvitationRequest = await req.json();
 
     // Generate invitation token
     const invitationToken = crypto.randomUUID();
     const siteUrl = Deno.env.get('SUPABASE_URL')?.replace('https://', 'https://').replace('.supabase.co', '.lovableproject.com') || 'http://localhost:3000';
     const invitationUrl = `${siteUrl}/accept-invitation?token=${invitationToken}`;
 
-    // Store invitation in database
+    // Store invitation in database with location access
     const { error: dbError } = await supabaseClient
       .from('user_invitations')
       .insert({
@@ -44,7 +45,8 @@ const handler = async (req: Request): Promise<Response> => {
         role,
         invited_by: invitedBy,
         invitation_token: invitationToken,
-        status: 'pending'
+        status: 'pending',
+        location_access: locationAccess
       });
 
     if (dbError) {

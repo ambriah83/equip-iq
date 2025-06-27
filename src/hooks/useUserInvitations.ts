@@ -12,6 +12,7 @@ export interface UserInvitation {
   expires_at: string;
   created_at: string;
   invited_by?: string;
+  location_access?: string[];
 }
 
 export const useUserInvitations = () => {
@@ -38,7 +39,8 @@ export const useUserInvitations = () => {
         invitation_token: invitation.invitation_token,
         expires_at: invitation.expires_at,
         created_at: invitation.created_at,
-        invited_by: invitation.invited_by
+        invited_by: invitation.invited_by,
+        location_access: invitation.location_access || []
       }));
       
       setInvitations(transformedData);
@@ -54,7 +56,7 @@ export const useUserInvitations = () => {
     }
   }, [toast]);
 
-  const sendInvitation = useCallback(async (email: string, role: string) => {
+  const sendInvitation = useCallback(async (email: string, role: string, locationAccess: string[] = []) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -64,7 +66,8 @@ export const useUserInvitations = () => {
           email,
           role,
           invitedBy: user.id,
-          companyName: 'EquipIQ Team'
+          companyName: 'EquipIQ Team',
+          locationAccess
         }
       });
 
