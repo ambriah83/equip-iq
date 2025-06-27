@@ -16,170 +16,244 @@ const LocationImportDialog: React.FC<LocationImportDialogProps> = ({
 }) => {
   const sampleData = {
     'Location Name': 'Glo Tanning - Sample Location',
-    abbreviation: 'GL_Sample',
+    'Tan-Link or SunLync': 'GL_Sample',
     address: '123 Main St, City, State 12345',
-    manager_name: 'Jane Smith',
-    phone: '(555) 123-4567',
+    'STORE MANAGER': 'Jane Smith',
+    'Direct Store Line': '(555) 123-4567',
     email: 'sample@glotanning.com',
+    'Corporate or Franchise': 'Franchise',
     status: 'active'
   };
 
-  const requiredFields = ['Location Name', 'abbreviation', 'address'];
+  const requiredFields = ['Location Name', 'Tan-Link or SunLync', 'address'];
 
   const fieldDescriptions = {
     'Location Name': 'Full name of the location (e.g., "Glo Tanning - City Name")',
-    abbreviation: 'Location code/abbreviation (e.g., "FL_Tampa")',
+    'Tan-Link or SunLync': 'Location code/abbreviation for equipment connection',
     address: 'Complete street address',
-    manager_name: 'Name of the location manager (optional)',
-    phone: 'Phone number (optional)',
+    'STORE MANAGER': 'Name of the location manager (optional)',
+    'Direct Store Line': 'Phone number (optional)',
     email: 'Email address (optional)',
+    'Corporate or Franchise': 'Ownership type: Corporate or Franchise (optional)',
     status: 'Status: active, maintenance, or closed (optional, defaults to active)',
     notes: 'Additional notes about the location (optional)'
   };
 
+  // Enhanced column mapping function specifically for your CSV format
+  const mapColumnValue = (row: any, possibleKeys: string[], fallbackKeys: string[] = []) => {
+    // Try exact matches first
+    for (const key of possibleKeys) {
+      if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
+        return row[key];
+      }
+    }
+    
+    // Try case-insensitive matches
+    const rowKeys = Object.keys(row);
+    for (const targetKey of possibleKeys) {
+      const matchingKey = rowKeys.find(key => 
+        key.toLowerCase() === targetKey.toLowerCase()
+      );
+      if (matchingKey && row[matchingKey] !== undefined && row[matchingKey] !== null && row[matchingKey] !== '') {
+        return row[matchingKey];
+      }
+    }
+    
+    // Try fallback keys
+    for (const key of fallbackKeys) {
+      if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
+        return row[key];
+      }
+    }
+    
+    return '';
+  };
+
   const handleImport = async (data: any[]) => {
-    console.log('Starting location import with', data.length, 'records');
+    console.log('🚀 Starting enhanced location import with', data.length, 'records');
+    
+    // Log the import attempt
+    try {
+      await supabase.rpc('log_import_attempt', {
+        operation_type: 'location_import_start',
+        table_name: 'locations',
+        details: { record_count: data.length, headers: Object.keys(data[0] || {}) }
+      });
+    } catch (error) {
+      console.log('Logging failed (non-critical):', error);
+    }
+
     const errors: string[] = [];
     let processed = 0;
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       const rowNum = i + 2; // Account for header row
-      console.log(`Processing location row ${rowNum}:`, row);
-      console.log(`Available columns in row ${rowNum}:`, Object.keys(row));
+      
+      console.log(`📍 Processing location row ${rowNum}:`, row);
+      console.log(`📋 Available columns in row ${rowNum}:`, Object.keys(row));
 
-      // Enhanced column mapping - prioritize exact matches first, then try variations
-      const locationName = row['Location Name'] || row['LocationName'] || row.name || row.Name || row.NAME || 
-                          row['location name'] || row['LOCATION NAME'] ||
-                          row['location'] || row['Location'] || row['LOCATION'] ||
-                          row['Store Name'] || row['store name'] || row['STORE NAME'] ||
-                          row['Store'] || row['store'] || row['STORE'] ||
-                          row['Business Name'] || row['business name'] || row['BUSINESS NAME'] ||
-                          row['Company'] || row['company'] || row['COMPANY'] ||
-                          row['Shop Name'] || row['shop name'] || row['SHOP NAME'] ||
-                          row['Branch'] || row['branch'] || row['BRANCH'] ||
-                          row['Site'] || row['site'] || row['SITE'] ||
-                          // Try using the first column if it looks like a name
-                          Object.values(row)[0] || '';
+      // Enhanced mapping for your specific CSV format
+      const locationName = mapColumnValue(row, [
+        'Location Name', 'LocationName', 'location name', 'LOCATION NAME',
+        'name', 'Name', 'NAME', 'location', 'Location', 'LOCATION',
+        'Store Name', 'store name', 'STORE NAME', 'Store', 'store', 'STORE'
+      ]);
 
-      // For abbreviation, try to use Location Name as fallback by creating abbreviation from it
-      let abbreviation = row.abbreviation || row.Abbreviation || row.ABBREVIATION ||
-                        row['Location Code'] || row['location code'] || row['LOCATION CODE'] ||
-                        row['Store Code'] || row['store code'] || row['STORE CODE'] ||
-                        row.code || row.Code || row.CODE ||
-                        row.abbrev || row.Abbrev || row.ABBREV ||
-                        row['Short Name'] || row['short name'] || row['SHORT NAME'] ||
-                        row.id || row.ID || row.Id ||
-                        // Try using the second column as abbreviation if first is name
-                        Object.values(row)[1] || '';
+      const abbreviation = mapColumnValue(row, [
+        'Tan-Link or SunLync', 'TanLink or SunLync', 'Tan-Link', 'TanLink',
+        'SunLync', 'abbreviation', 'Abbreviation', 'ABBREVIATION',
+        'Location Code', 'location code', 'LOCATION CODE',
+        'Store Code', 'store code', 'STORE CODE', 'code', 'Code', 'CODE'
+      ]);
 
-      // If no abbreviation found, try to create one from the location name
-      if (!abbreviation && locationName) {
-        // Extract parts before hyphen and create abbreviation
-        const nameParts = locationName.toString().split('-')[0].trim().split(' ');
-        abbreviation = nameParts.map(part => part.charAt(0).toUpperCase()).join('') + '_' + 
-                      (nameParts[nameParts.length - 1] || 'LOC');
-      }
+      const address = mapColumnValue(row, [
+        'address', 'Address', 'ADDRESS',
+        'Street Address', 'street address', 'STREET ADDRESS',
+        'Full Address', 'full address', 'FULL ADDRESS',
+        'Location Address', 'location address', 'LOCATION ADDRESS'
+      ]);
 
-      const address = row.Address || row.address || row.ADDRESS ||
-                     row['Street Address'] || row['street address'] || row['STREET ADDRESS'] ||
-                     row['Full Address'] || row['full address'] || row['FULL ADDRESS'] ||
-                     row.location_address || row['Location Address'] || row['LOCATION ADDRESS'] ||
-                     row['Physical Address'] || row['physical address'] || row['PHYSICAL ADDRESS'] ||
-                     // Look for any column that might contain address info
-                     Object.entries(row).find(([key, value]) => 
-                       key.toLowerCase().includes('address') && value
-                     )?.[1] || '';
+      const managerName = mapColumnValue(row, [
+        'STORE MANAGER', 'Store Manager', 'store manager',
+        'manager_name', 'Manager Name', 'manager name',
+        'manager', 'Manager', 'MANAGER'
+      ]);
 
-      // Map STORE MANAGER column to manager_name
-      const managerName = row['STORE MANAGER'] || row['Store Manager'] || row['store manager'] ||
-                         row.manager_name || row['Manager Name'] || row['manager name'] || 
-                         row.manager || row.Manager || row.MANAGER ||
-                         row['Area Manager'] || row['area manager'] || row['AREA MANAGER'] ||
-                         row['Branch Manager'] || row['branch manager'] || row['BRANCH MANAGER'] || '';
+      const phone = mapColumnValue(row, [
+        'Direct Store Line', 'direct store line', 'DIRECT STORE LINE',
+        'phone', 'Phone', 'PHONE',
+        'Phone Number', 'phone number', 'PHONE NUMBER',
+        'telephone', 'Telephone', 'TELEPHONE'
+      ]);
 
-      // Map Direct Store Line to phone
-      const phone = row['Direct Store Line'] || row['direct store line'] || row['DIRECT STORE LINE'] ||
-                   row.phone || row.Phone || row.PHONE ||
-                   row['Phone Number'] || row['phone number'] || row['PHONE NUMBER'] ||
-                   row.telephone || row.Telephone || row.TELEPHONE || '';
+      const email = mapColumnValue(row, [
+        'email', 'Email', 'EMAIL',
+        'Email Address', 'email address', 'EMAIL ADDRESS'
+      ]);
 
-      const email = row.email || row.Email || row.EMAIL ||
-                   row['Email Address'] || row['email address'] || row['EMAIL ADDRESS'] ||
-                   row.contact_email || row['Contact Email'] || row['CONTACT EMAIL'] || '';
+      const ownershipType = mapColumnValue(row, [
+        'Corporate or Franchise', 'corporate or franchise', 'CORPORATE OR FRANCHISE',
+        'ownership_type', 'Ownership Type', 'ownership type',
+        'type', 'Type', 'TYPE'
+      ]);
 
-      const status = (row.status || row.Status || row.STATUS || 'active').toLowerCase();
+      const status = mapColumnValue(row, [
+        'status', 'Status', 'STATUS'
+      ], ['active']);
 
-      console.log(`Mapped values for row ${rowNum}:`, {
+      const notes = mapColumnValue(row, [
+        'notes', 'Notes', 'NOTES',
+        'comments', 'Comments', 'COMMENTS'
+      ]);
+
+      console.log(`🔄 Mapped values for row ${rowNum}:`, {
         locationName: locationName?.toString()?.substring(0, 50),
         abbreviation: abbreviation?.toString()?.substring(0, 20),
         address: address?.toString()?.substring(0, 50),
         managerName: managerName?.toString()?.substring(0, 30),
-        phone: phone?.toString()?.substring(0, 20)
+        phone: phone?.toString()?.substring(0, 20),
+        ownershipType: ownershipType?.toString()?.substring(0, 15)
       });
 
-      // Validate required fields with better error messages
+      // Validate required fields with detailed error messages
       if (!locationName || !locationName.toString().trim()) {
         const availableColumns = Object.keys(row).join(', ');
-        const firstFewValues = Object.entries(row).slice(0, 5).map(([key, value]) => `${key}: "${value}"`).join(', ');
-        errors.push(`Row ${rowNum}: Location name is required but not found. Available columns: ${availableColumns}. First few values: ${firstFewValues}`);
+        errors.push(`Row ${rowNum}: Location name is required but not found. Available columns: ${availableColumns}`);
         continue;
       }
 
       if (!abbreviation || !abbreviation.toString().trim()) {
         const availableColumns = Object.keys(row).join(', ');
-        errors.push(`Row ${rowNum}: Location abbreviation/code is required but not found or could not be generated. Available columns: ${availableColumns}. Try adding a column like 'abbreviation', 'code', or 'Location Code'`);
+        errors.push(`Row ${rowNum}: "Tan-Link or SunLync" abbreviation is required but not found. Available columns: ${availableColumns}`);
         continue;
       }
 
       if (!address || !address.toString().trim()) {
         const availableColumns = Object.keys(row).join(', ');
-        errors.push(`Row ${rowNum}: Address is required but not found. Available columns: ${availableColumns}. Try adding a column like 'address', 'Address', or 'Street Address'`);
+        errors.push(`Row ${rowNum}: Address is required but not found. Available columns: ${availableColumns}`);
         continue;
       }
 
-      // Validate status if provided
-      if (status && !['active', 'maintenance', 'closed'].includes(status)) {
-        errors.push(`Row ${rowNum}: Invalid status "${status}". Must be 'active', 'maintenance', or 'closed'`);
+      // Normalize ownership type
+      let normalizedOwnershipType = 'franchise'; // Default
+      if (ownershipType) {
+        const ownershipStr = ownershipType.toString().toLowerCase();
+        if (ownershipStr.includes('corporate')) {
+          normalizedOwnershipType = 'corporate';
+        } else if (ownershipStr.includes('franchise')) {
+          normalizedOwnershipType = 'franchise';
+        }
+      }
+
+      // Normalize status
+      const normalizedStatus = (status?.toString()?.toLowerCase() || 'active');
+      if (!['active', 'maintenance', 'closed'].includes(normalizedStatus)) {
+        errors.push(`Row ${rowNum}: Invalid status "${normalizedStatus}". Must be 'active', 'maintenance', or 'closed'`);
         continue;
       }
 
       try {
-        console.log(`Inserting location ${rowNum} into database...`);
+        console.log(`💾 Inserting location ${rowNum} into database...`);
         
+        const locationData = {
+          name: locationName.toString().trim(),
+          abbreviation: abbreviation.toString().trim(),
+          address: address.toString().trim(),
+          manager_name: managerName?.toString()?.trim() || null,
+          phone: phone?.toString()?.trim() || null,
+          email: email?.toString()?.trim() || null,
+          ownership_type: normalizedOwnershipType,
+          status: normalizedStatus,
+          notes: notes?.toString()?.trim() || null
+        };
+
+        // Log the insertion attempt
+        try {
+          await supabase.rpc('log_import_attempt', {
+            operation_type: 'location_insert',
+            table_name: 'locations',
+            details: { row_number: rowNum, data: locationData }
+          });
+        } catch (logError) {
+          console.log('Logging failed (non-critical):', logError);
+        }
+
         // Insert into Supabase
         const { error } = await supabase
           .from('locations')
-          .insert({
-            name: locationName.toString().trim(),
-            abbreviation: abbreviation.toString().trim(),
-            address: address.toString().trim(),
-            manager_name: managerName?.toString()?.trim() || null,
-            phone: phone?.toString()?.trim() || null,
-            email: email?.toString()?.trim() || null,
-            status: status || 'active',
-            notes: row.notes?.toString()?.trim() || null
-          });
+          .insert(locationData);
 
         if (error) {
-          console.error(`Database error for row ${rowNum}:`, error);
+          console.error(`❌ Database error for row ${rowNum}:`, error);
           if (error.code === '23505') { // Unique constraint violation
-            errors.push(`Row ${rowNum}: Location with this abbreviation already exists`);
+            errors.push(`Row ${rowNum}: Location with abbreviation "${abbreviation}" already exists`);
           } else {
             errors.push(`Row ${rowNum}: Database error - ${error.message}`);
           }
           continue;
         }
 
-        console.log(`Location row ${rowNum} inserted successfully`);
+        console.log(`✅ Location row ${rowNum} inserted successfully`);
         processed++;
       } catch (error) {
-        console.error(`Unexpected error for row ${rowNum}:`, error);
+        console.error(`💥 Unexpected error for row ${rowNum}:`, error);
         errors.push(`Row ${rowNum}: Unexpected error occurred`);
       }
     }
 
-    console.log(`Location import completed: ${processed} processed, ${errors.length} errors`);
+    console.log(`🎯 Location import completed: ${processed} processed, ${errors.length} errors`);
+
+    // Log the final result
+    try {
+      await supabase.rpc('log_import_attempt', {
+        operation_type: 'location_import_complete',
+        table_name: 'locations',
+        details: { processed, errors: errors.length, error_messages: errors.slice(0, 5) }
+      });
+    } catch (logError) {
+      console.log('Final logging failed (non-critical):', logError);
+    }
 
     // Trigger refresh of location list
     if (processed > 0) {

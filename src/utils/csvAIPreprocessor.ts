@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface CSVPreprocessingResult {
@@ -15,7 +14,7 @@ export interface CSVPreprocessingResult {
 
 export class CSVAIPreprocessor {
   /**
-   * Enhanced CSV analysis with better column detection
+   * Enhanced CSV analysis with specific focus on Glo Tanning format
    */
   static analyzeCSVForPreprocessing(
     csvText: string, 
@@ -33,44 +32,86 @@ export class CSVAIPreprocessor {
     const mappingSuggestions: Record<string, string> = {};
     let confidence = 0;
 
-    console.log('🔍 CSV Analysis Details:');
+    console.log('🔍 Enhanced CSV Analysis for Glo Tanning Format:');
     console.log('Original headers:', headers);
     console.log('Required fields:', requiredFields);
 
-    // Enhanced column mapping detection
+    // Specific mappings for Glo Tanning CSV format
+    const specificMappings: Record<string, string[]> = {
+      'Location Name': [
+        'location name', 'locationname', 'name', 'location', 'store name', 'storename',
+        'business name', 'shop name', 'branch name', 'site name'
+      ],
+      'Tan-Link or SunLync': [
+        'tanlink or sunlync', 'tan-link', 'tanlink', 'sunlync', 'abbreviation',
+        'location code', 'store code', 'code', 'abbrev', 'short name', 'id'
+      ],
+      'address': [
+        'street address', 'full address', 'physical address', 'location address', 'addr'
+      ],
+      'STORE MANAGER': [
+        'store manager', 'manager name', 'manager', 'branch manager', 'area manager',
+        'supervisor', 'lead', 'manager_name'
+      ],
+      'Direct Store Line': [
+        'direct store line', 'phone number', 'phone', 'telephone', 'tel', 'contact'
+      ],
+      'Corporate or Franchise': [
+        'corporate or franchise', 'ownership type', 'type', 'ownership', 'category'
+      ]
+    };
+
+    // Enhanced column mapping detection with specific focus
     const missingFields = requiredFields.filter(field => {
       // Try exact match first
       if (headers.some(header => header.toLowerCase() === field.toLowerCase())) {
         return false;
       }
 
-      // Try fuzzy matching with enhanced patterns
+      // Try specific mappings for Glo Tanning format
+      const normalizedField = field.toLowerCase();
+      const possibleVariations = specificMappings[field] || specificMappings[normalizedField] || [];
+      
       const matchedHeader = headers.find(header => {
-        const matches = this.enhancedFuzzyMatch(header, field);
-        if (matches) {
-          mappingSuggestions[header] = field;
-          console.log(`✅ Mapped "${header}" → "${field}"`);
-          return true;
+        const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        // Check against specific variations
+        for (const variation of possibleVariations) {
+          const normalizedVariation = variation.replace(/[^a-z0-9]/g, '');
+          if (normalizedHeader === normalizedVariation || 
+              normalizedHeader.includes(normalizedVariation) ||
+              normalizedVariation.includes(normalizedHeader)) {
+            mappingSuggestions[header] = field;
+            console.log(`✅ Specific mapping found: "${header}" → "${field}"`);
+            return true;
+          }
         }
-        return false;
+        
+        // Enhanced fuzzy matching
+        return this.enhancedFuzzyMatch(header, field);
       });
 
-      return !matchedHeader;
+      if (matchedHeader) {
+        mappingSuggestions[matchedHeader] = field;
+        return false;
+      }
+
+      return true;
     });
 
     if (missingFields.length > 0) {
-      issues.push(`Missing or unmatched fields: ${missingFields.join(', ')}`);
-      confidence += 40;
-      console.log('❌ Missing fields:', missingFields);
+      issues.push(`Missing or unmatched critical fields: ${missingFields.join(', ')}`);
+      confidence += 50; // Higher confidence for missing critical fields
+      console.log('❌ Missing critical fields:', missingFields);
     }
 
-    // Enhanced problematic pattern detection
+    // Enhanced problematic pattern detection for Glo Tanning format
     const problematicPatterns = [
-      { pattern: /^["'].*["']$/, issue: 'Headers wrapped in quotes', weight: 20 },
-      { pattern: /\s+\w+\s+\w+/, issue: 'Multi-word headers with spaces', weight: 15 },
-      { pattern: /[A-Z]{2,}\s[A-Z]{2,}/, issue: 'ALL CAPS headers', weight: 10 },
-      { pattern: /\w+_\w+/, issue: 'Underscore separated headers', weight: 5 },
-      { pattern: /\w+\s+\w+\s+\w+/, issue: 'Three or more word headers', weight: 15 }
+      { pattern: /^["'].*["']$/, issue: 'Headers wrapped in quotes', weight: 25 },
+      { pattern: /\s+or\s+/i, issue: 'Headers with "or" separator (like "Tan-Link or SunLync")', weight: 30 },
+      { pattern: /[A-Z]{2,}\s[A-Z]{2,}/, issue: 'ALL CAPS multi-word headers', weight: 20 },
+      { pattern: /\w+\s+\w+\s+\w+/, issue: 'Three or more word headers', weight: 15 },
+      { pattern: /-/, issue: 'Headers with hyphens', weight: 10 }
     ];
 
     problematicPatterns.forEach(({ pattern, issue, weight }) => {
@@ -78,9 +119,26 @@ export class CSVAIPreprocessor {
       if (matchingHeaders.length > 0) {
         issues.push(`${issue}: ${matchingHeaders.join(', ')}`);
         confidence += weight;
-        console.log(`⚠️ Pattern issue: ${issue}`, matchingHeaders);
+        console.log(`⚠️ Pattern issue detected: ${issue}`, matchingHeaders);
       }
     });
+
+    // Check for Glo Tanning specific indicators
+    const gloTanningIndicators = [
+      'tan-link', 'sunlync', 'store manager', 'direct store line', 'corporate or franchise'
+    ];
+    
+    const foundIndicators = headers.filter(header => 
+      gloTanningIndicators.some(indicator => 
+        header.toLowerCase().includes(indicator.toLowerCase())
+      )
+    );
+
+    if (foundIndicators.length > 0) {
+      issues.push(`Glo Tanning specific format detected: ${foundIndicators.join(', ')}`);
+      confidence += 40;
+      console.log('🏢 Glo Tanning format indicators found:', foundIndicators);
+    }
 
     // Enhanced delimiter detection
     const commaCount = headerLine.split(',').length - 1;
@@ -93,39 +151,41 @@ export class CSVAIPreprocessor {
       console.log('⚠️ Non-standard delimiter detected');
     }
 
-    // Data consistency check
+    // Data consistency check with enhanced validation
     if (lines.length > 2) {
       const sampleDataLine = lines[1];
       const dataFields = this.parseHeaderLine(sampleDataLine);
       if (Math.abs(dataFields.length - headers.length) > 1) {
         issues.push('Inconsistent field count between header and data');
-        confidence += 20;
+        confidence += 30;
         console.log('⚠️ Field count mismatch:', { headerCount: headers.length, dataCount: dataFields.length });
       }
     }
 
-    const needsPreprocessing = confidence > 20 || missingFields.length > 0;
+    const needsPreprocessing = confidence > 15 || missingFields.length > 0;
     
     const analysisDetails = {
       originalHeaders: headers,
       detectedIssues: issues,
       mappingSuggestions,
       confidence,
-      delimiter: this.detectDelimiter(headerLine)
+      delimiter: this.detectDelimiter(headerLine),
+      gloTanningFormat: foundIndicators.length > 0
     };
 
-    console.log('📊 Analysis Summary:', {
+    console.log('📊 Enhanced Analysis Summary:', {
       needsPreprocessing,
       confidence,
       issuesCount: issues.length,
-      mappingSuggestions
+      mappingSuggestions,
+      isGloTanningFormat: foundIndicators.length > 0
     });
 
     return { needsPreprocessing, issues, confidence, analysisDetails };
   }
 
   /**
-   * Enhanced AI preprocessing with better prompting
+   * Enhanced AI preprocessing with Glo Tanning specific prompting
    */
   static async preprocessWithAI(
     csvText: string,
@@ -133,7 +193,7 @@ export class CSVAIPreprocessor {
     requiredFields: string[],
     fieldDescriptions: Record<string, string>
   ): Promise<CSVPreprocessingResult> {
-    console.log('🤖 Starting enhanced AI preprocessing...');
+    console.log('🤖 Starting Glo Tanning specific AI preprocessing...');
     
     try {
       // Pre-analyze the CSV to provide better context to AI
@@ -145,21 +205,27 @@ export class CSVAIPreprocessor {
         requiredFields,
         fieldDescriptions,
         preprocessingMode: true,
+        gloTanningSpecific: true,
         analysisContext: {
           detectedIssues: analysis.issues,
           mappingSuggestions: analysis.analysisDetails.mappingSuggestions,
           originalHeaders: analysis.analysisDetails.originalHeaders,
-          instructions: [
-            'Focus on standardizing column names to match required fields exactly',
-            'Handle common variations like "Location Name" → "name", "STORE MANAGER" → "manager_name"',
-            'Preserve all data while fixing column mapping issues',
-            'Ensure consistent delimiter usage (prefer commas)',
-            'Remove unnecessary quotes around headers and data'
+          isGloTanningFormat: analysis.analysisDetails.gloTanningFormat,
+          specificInstructions: [
+            'This is a Glo Tanning franchise location import CSV',
+            'Map "Tan-Link or SunLync" to a simple abbreviation field',
+            'Map "STORE MANAGER" to manager_name field',
+            'Map "Direct Store Line" to phone field',
+            'Map "Corporate or Franchise" to ownership_type field',
+            'Standardize all column names to match required fields exactly',
+            'Handle multi-word headers with spaces and special characters',
+            'Remove unnecessary quotes and normalize formatting',
+            'Ensure consistent comma delimiter usage'
           ]
         }
       };
 
-      console.log('📤 Sending to AI with enhanced context:', enhancedPrompt.analysisContext);
+      console.log('📤 Sending to AI with Glo Tanning specific context:', enhancedPrompt.analysisContext);
 
       const { data, error } = await supabase.functions.invoke('extract-data-from-image', {
         body: enhancedPrompt
@@ -185,7 +251,7 @@ export class CSVAIPreprocessor {
         return {
           needsPreprocessing: true,
           processedCSV: data.csvData,
-          confidence: Math.min(95, 80 + (5 - processedAnalysis.issues.length) * 3),
+          confidence: Math.min(95, 85 + (5 - processedAnalysis.issues.length) * 2),
           analysisDetails: {
             ...analysis.analysisDetails,
             processedHeaders: processedAnalysis.analysisDetails.originalHeaders,
@@ -195,7 +261,7 @@ export class CSVAIPreprocessor {
       } else {
         return {
           needsPreprocessing: true,
-          error: data.message || 'AI could not process the CSV',
+          error: data.message || 'AI could not process the Glo Tanning CSV format',
           confidence: 0,
           analysisDetails: analysis.analysisDetails
         };
@@ -211,7 +277,7 @@ export class CSVAIPreprocessor {
   }
 
   /**
-   * Enhanced fuzzy matching with location-specific patterns
+   * Enhanced fuzzy matching with Glo Tanning specific patterns
    */
   private static enhancedFuzzyMatch(header: string, requiredField: string): boolean {
     const normalizeHeader = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -224,57 +290,59 @@ export class CSVAIPreprocessor {
     // Contains match
     if (normHeader.includes(normRequired) || normRequired.includes(normHeader)) return true;
     
-    // Enhanced location-specific mappings
-    const fieldMappings: Record<string, string[]> = {
-      'name': [
-        'locationname', 'storename', 'businessname', 'companyname', 'shopname',
-        'branchname', 'sitename', 'title', 'label', 'description'
-      ],
+    // Glo Tanning specific fuzzy matching
+    const gloTanningMappings: Record<string, string[]> = {
       'locationname': [
-        'name', 'storename', 'businessname', 'location', 'store', 'branch', 'site'
+        'name', 'location', 'store', 'business', 'shop', 'branch', 'site'
       ],
-      'abbreviation': [
-        'locationcode', 'storecode', 'code', 'abbrev', 'shortname', 'id'
+      'tanlinkorsunlync': [
+        'abbreviation', 'code', 'abbrev', 'shortname', 'id', 'tanlink', 'sunlync'
       ],
       'address': [
-        'streetaddress', 'fulladdress', 'physicaladdress', 'locationaddress', 'location'
+        'streetaddress', 'fulladdress', 'physicaladdress', 'locationaddress'
       ],
-      'managername': [
-        'storemanager', 'branchmanager', 'areamanager', 'manager', 'supervisor', 'lead'
+      'storemanager': [
+        'managername', 'manager', 'branchmanager', 'areamanager', 'supervisor'
       ],
-      'manager_name': [
-        'storemanager', 'branchmanager', 'areamanager', 'manager', 'supervisor', 'lead'
+      'directstoreline': [
+        'phone', 'phonenumber', 'telephone', 'tel', 'contact'
       ],
-      'phone': [
-        'directstoreline', 'phonenumber', 'telephone', 'tel', 'contact'
-      ],
-      'email': [
-        'emailaddress', 'contactemail', 'mail'
+      'corporateorfranchise': [
+        'ownershiptype', 'type', 'ownership', 'category'
       ]
     };
     
-    // Check field mappings
-    const mappings = fieldMappings[normRequired] || [];
+    // Check Glo Tanning specific mappings
+    const mappings = gloTanningMappings[normRequired] || [];
     if (mappings.some(mapping => normHeader.includes(mapping) || mapping.includes(normHeader))) {
       return true;
     }
     
-    // Reverse check - see if required field matches any mapped values
-    for (const [field, variations] of Object.entries(fieldMappings)) {
+    // Reverse check
+    for (const [field, variations] of Object.entries(gloTanningMappings)) {
       if (variations.includes(normRequired) && normHeader.includes(field)) {
         return true;
       }
     }
     
-    // Word-based matching for multi-word fields
+    // Word-based matching with enhanced weight for Glo Tanning terms
     const headerWords = header.toLowerCase().split(/[\s_-]+/);
     const requiredWords = requiredField.toLowerCase().split(/[\s_-]+/);
     
     const commonWords = headerWords.filter(word => 
-      requiredWords.some(rWord => word.includes(rWord) || rWord.includes(word))
+      requiredWords.some(rWord => {
+        // Exact word match
+        if (word === rWord) return true;
+        // Partial match for longer words
+        if (word.length > 3 && rWord.length > 3) {
+          return word.includes(rWord) || rWord.includes(word);
+        }
+        return false;
+      })
     );
     
-    return commonWords.length >= Math.min(headerWords.length, requiredWords.length) * 0.6;
+    // Higher threshold for better matching
+    return commonWords.length >= Math.min(headerWords.length, requiredWords.length) * 0.7;
   }
 
   /**

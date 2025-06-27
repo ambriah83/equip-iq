@@ -156,6 +156,30 @@ export type Database = {
         }
         Relationships: []
       }
+      import_logs: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          id: string
+          operation_type: string | null
+          table_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          operation_type?: string | null
+          table_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          operation_type?: string | null
+          table_name?: string | null
+        }
+        Relationships: []
+      }
       knowledge_base: {
         Row: {
           content: string | null
@@ -582,6 +606,10 @@ export type Database = {
           target_user_id: string
           user_role: Database["public"]["Enums"]["user_role"]
         }
+        Returns: undefined
+      }
+      log_import_attempt: {
+        Args: { operation_type: string; table_name: string; details?: Json }
         Returns: undefined
       }
       user_has_permission: {
