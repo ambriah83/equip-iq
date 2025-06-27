@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Plus, Upload, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
 import { useUserInvitations } from '@/hooks/useUserInvitations';
+import { User } from '@/types/User';
 import UserDialog from './UserDialog';
 import UserFilters from './UserFilters';
 import UserList from './UserList';
@@ -14,14 +14,6 @@ import UserImportDialog from './UserImportDialog';
 import SendInvitationDialog from './SendInvitationDialog';
 import InvitationsList from './InvitationsList';
 import { supabase } from '@/integrations/supabase/client';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'owner' | 'manager' | 'franchisee' | 'tech' | 'employee';
-  status: 'active' | 'inactive';
-}
 
 const UserManagementTab = () => {
   const { toast } = useToast();

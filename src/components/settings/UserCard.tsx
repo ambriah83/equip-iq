@@ -2,15 +2,8 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, User } from 'lucide-react';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'owner' | 'manager' | 'franchisee' | 'tech' | 'employee';
-  status: 'active' | 'inactive';
-}
+import { Edit, Trash2, User as UserIcon } from 'lucide-react';
+import { User } from '@/types/User';
 
 interface UserCardProps {
   user: User;
@@ -23,7 +16,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, onEdit, onDelete }) => {
     <div className="flex items-center justify-between p-4 border rounded-lg">
       <div className="flex items-center space-x-4">
         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-          <User size={20} className="text-blue-600" />
+          <UserIcon size={20} className="text-blue-600" />
         </div>
         <div>
           <h3 className="font-medium">{user.name}</h3>
