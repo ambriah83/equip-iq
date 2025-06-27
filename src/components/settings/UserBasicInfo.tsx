@@ -8,7 +8,7 @@ interface UserBasicInfoProps {
   formData: {
     name: string;
     email: string;
-    role: 'admin' | 'owner' | 'manager' | 'staff';
+    role: 'admin' | 'owner' | 'manager' | 'franchisee' | 'tech' | 'employee';
     status: 'active' | 'inactive';
   };
   setFormData: (data: any) => void;
@@ -38,7 +38,7 @@ const UserBasicInfo: React.FC<UserBasicInfoProps> = ({ formData, setFormData }) 
       </div>
       <div>
         <Label htmlFor="role">Role</Label>
-        <Select value={formData.role} onValueChange={(value: 'admin' | 'owner' | 'manager' | 'staff') => setFormData({...formData, role: value})}>
+        <Select value={formData.role} onValueChange={(value: 'admin' | 'owner' | 'manager' | 'franchisee' | 'tech' | 'employee') => setFormData({...formData, role: value})}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -46,7 +46,9 @@ const UserBasicInfo: React.FC<UserBasicInfoProps> = ({ formData, setFormData }) 
             <SelectItem value="admin">Admin</SelectItem>
             <SelectItem value="owner">Owner</SelectItem>
             <SelectItem value="manager">Manager</SelectItem>
-            <SelectItem value="staff">Staff</SelectItem>
+            <SelectItem value="franchisee">Franchisee</SelectItem>
+            <SelectItem value="tech">Tech</SelectItem>
+            <SelectItem value="employee">Employee</SelectItem>
           </SelectContent>
         </Select>
       </div>

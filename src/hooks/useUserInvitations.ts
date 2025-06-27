@@ -137,7 +137,8 @@ export const useUserInvitations = () => {
           email: invitation.email,
           role: invitation.role,
           invitedBy: user.id,
-          companyName: 'EquipIQ Team'
+          companyName: 'EquipIQ Team',
+          locationAccess: invitation.location_access || []
         }
       });
 
