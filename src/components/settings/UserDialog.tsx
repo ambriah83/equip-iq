@@ -15,7 +15,7 @@ type EscalationPermission = Database['public']['Enums']['escalation_permission']
 
 interface UserDialogProps {
   user: User | null;
-  onSave: (data: Partial<User>) => void;
+  onSave: (data: User) => void;
   onClose: () => void;
 }
 
@@ -69,7 +69,14 @@ const UserDialog: React.FC<UserDialogProps> = ({ user, onSave, onClose }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    const userData: User = {
+      id: user?.id || crypto.randomUUID(),
+      name: formData.name,
+      email: formData.email,
+      role: formData.role,
+      status: formData.status
+    };
+    onSave(userData);
   };
 
   const handlePermissionToggle = async (permission: EscalationPermission, newValue: boolean) => {

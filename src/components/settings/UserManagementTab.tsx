@@ -91,22 +91,15 @@ const UserManagementTab = () => {
     }
   };
 
-  function handleSaveUser(userData: Partial<User>) {
+  function handleSaveUser(userData: User) {
     if (editingUser) {
-      setUsers(users.map(user => user.id === editingUser.id ? { ...user, ...userData } : user));
+      setUsers(users.map(user => user.id === editingUser.id ? userData : user));
       toast({
         title: "User Updated",
         description: "User has been updated successfully.",
       });
     } else {
-      const newUser: User = {
-        id: crypto.randomUUID(),
-        name: userData.name || '',
-        email: userData.email || '',
-        role: userData.role || 'employee',
-        status: userData.status || 'active'
-      };
-      setUsers([...users, newUser]);
+      setUsers([...users, userData]);
       toast({
         title: "User Added",
         description: "New user has been added successfully.",
