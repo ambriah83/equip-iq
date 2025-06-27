@@ -28,7 +28,20 @@ export const useUserInvitations = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setInvitations(data || []);
+      
+      // Transform the data to match our interface
+      const transformedData: UserInvitation[] = (data || []).map(invitation => ({
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        status: invitation.status as 'pending' | 'accepted' | 'expired' | 'cancelled',
+        invitation_token: invitation.invitation_token,
+        expires_at: invitation.expires_at,
+        created_at: invitation.created_at,
+        invited_by: invitation.invited_by
+      }));
+      
+      setInvitations(transformedData);
     } catch (error) {
       console.error('Error fetching invitations:', error);
       toast({
@@ -138,7 +151,6 @@ export const useUserInvitations = () => {
       toast({
         title: "Error",
         description: "Failed to resend invitation",
-        variant: "destructive",
       });
     }
   }, [toast, fetchInvitations]);
