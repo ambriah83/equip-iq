@@ -1,7 +1,9 @@
+
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { csvParser } from '@/utils/csvParser';
+import { CSVParser } from '@/utils/csvParser';
 import { CSVAIPreprocessor } from '@/utils/csvAIPreprocessor';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ImportResult {
   success: boolean;
@@ -86,10 +88,10 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
           setAiProcessedData(preprocessResult.processedCSV);
           
           // Parse the AI-processed CSV
-          const parseResult = csvParser.parse(preprocessResult.processedCSV);
+          const parseResult = CSVParser.parse(preprocessResult.processedCSV);
           setParseResult(parseResult);
           
-          if (parseResult.success && parseResult.data) {
+          if (parseResult.data && parseResult.data.length > 0) {
             console.log('📈 Using AI-processed data for import');
             setAutoProcessingStatus('📥 Importing enhanced data...');
             const importResult = await onImport(parseResult.data);
@@ -117,10 +119,10 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
           console.log('⚠️ AI preprocessing failed, trying original CSV');
           setAutoProcessingStatus('⚠️ AI enhancement failed, trying original CSV...');
           
-          const parseResult = csvParser.parse(text);
+          const parseResult = CSVParser.parse(text);
           setParseResult(parseResult);
           
-          if (parseResult.success && parseResult.data) {
+          if (parseResult.data && parseResult.data.length > 0) {
             setAutoProcessingStatus('📥 Importing original data...');
             const importResult = await onImport(parseResult.data);
             setResult(importResult);
@@ -140,7 +142,7 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
               });
             }
           } else {
-            throw new Error(parseResult.error || 'Failed to parse CSV');
+            throw new Error('Failed to parse CSV');
           }
         }
       } else {
@@ -148,10 +150,10 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
         console.log('✅ CSV looks good, parsing directly');
         setAutoProcessingStatus('✅ CSV format looks good! Parsing data...');
         
-        const parseResult = csvParser.parse(text);
+        const parseResult = CSVParser.parse(text);
         setParseResult(parseResult);
         
-        if (parseResult.success && parseResult.data) {
+        if (parseResult.data && parseResult.data.length > 0) {
           setAutoProcessingStatus('📥 Importing data...');
           const importResult = await onImport(parseResult.data);
           setResult(importResult);
@@ -171,7 +173,7 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
             });
           }
         } else {
-          throw new Error(parseResult.error || 'Failed to parse CSV');
+          throw new Error('Failed to parse CSV');
         }
       }
     } catch (error) {
@@ -203,8 +205,8 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
     setResult(null);
 
     try {
-      const parseResult = csvParser.parse(dataToImport);
-      if (parseResult.success && parseResult.data) {
+      const parseResult = CSVParser.parse(dataToImport);
+      if (parseResult.data && parseResult.data.length > 0) {
         const importResult = await onImport(parseResult.data);
         setResult(importResult);
         
@@ -221,7 +223,7 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
           });
         }
       } else {
-        throw new Error(parseResult.error || 'Failed to parse data');
+        throw new Error('Failed to parse data');
       }
     } catch (error) {
       console.error('Import error:', error);

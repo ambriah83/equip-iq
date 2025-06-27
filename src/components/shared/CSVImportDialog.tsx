@@ -1,14 +1,10 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileSpreadsheet, FileText, Camera, Info, Brain, Zap } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useCSVImport } from './useCSVImport';
-import FileUploadSection from './FileUploadSection';
-import ImageUploadSection from './ImageUploadSection';
+import CSVDialogHeader from './CSVDialogHeader';
+import CSVImportAlert from './CSVImportAlert';
+import CSVImportTabs from './CSVImportTabs';
 import ImportResultAlert from './ImportResultAlert';
 
 interface ImportResult {
@@ -76,141 +72,40 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl h-[85vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <DialogTitle>Import {title}</DialogTitle>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-auto p-1">
-                    <Info size={16} className="text-blue-500" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-md p-4" side="bottom">
-                  <div className="space-y-3">
-                    <div>
-                      <p className="font-semibold text-base mb-2">Import Options:</p>
-                      <div className="text-sm space-y-2">
-                        <div className="flex items-start gap-2">
-                          <FileText size={14} className="mt-0.5 flex-shrink-0" />
-                          <div>
-                            <span className="font-medium">CSV/Excel:</span> Advanced parser handles any CSV format including quoted fields and complex formatting
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Camera size={14} className="mt-0.5 flex-shrink-0" />
-                          <div>
-                            <span className="font-medium">Image:</span> AI extracts data from photos/screenshots of spreadsheets
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Zap size={14} className="mt-0.5 flex-shrink-0" />
-                          <div>
-                            <span className="font-medium">AI Processing:</span> Automatically fixes format and mapping issues
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-base mb-2">Required Fields:</p>
-                      <div className="text-sm space-y-1">
-                        {requiredFields.map(field => (
-                          <div key={field} className="border-l-2 border-blue-200 pl-2">
-                            <span className="font-medium">{field}:</span> {fieldDescriptions[field]}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="text-xs text-gray-600 mt-3 p-2 bg-blue-50 rounded">
-                      <strong>New:</strong> Advanced CSV parser automatically handles quoted fields, escaped characters, and various delimiters!
-                    </div>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <DialogDescription className="text-sm text-gray-600">
-            AI-powered import with automatic format detection and fixing for any CSV structure
-          </DialogDescription>
-        </DialogHeader>
+        <CSVDialogHeader
+          title={title}
+          requiredFields={requiredFields}
+          fieldDescriptions={fieldDescriptions}
+        />
 
         <div className="flex-1 overflow-y-auto pr-2">
           <div className="space-y-4">
-            <Alert className="border-green-200 bg-green-50">
-              <Brain className="h-4 w-4" />
-              <AlertDescription>
-                <div className="space-y-2">
-                  <p className="font-medium">🚀 AI-First Import System</p>
-                  <div className="text-sm">
-                    Your CSV will be automatically analyzed and fixed before import:
-                    <ul className="list-disc list-inside mt-1 ml-2">
-                      <li>Detects column mapping issues (like "Location Name" vs "name")</li>
-                      <li>Fixes formatting problems automatically</li>
-                      <li>Handles complex CSV structures seamlessly</li>
-                      <li>No manual intervention required</li>
-                    </ul>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
+            <CSVImportAlert />
 
-            <Tabs defaultValue="file" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="file" className="flex items-center gap-2">
-                  <FileSpreadsheet size={16} />
-                  Smart File Upload
-                </TabsTrigger>
-                <TabsTrigger value="image" className="flex items-center gap-2">
-                  <Camera size={16} />
-                  Image Extract
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="file" className="space-y-4">
-                <FileUploadSection
-                  file={file}
-                  setFile={setFile}
-                  fileInputRef={fileInputRef}
-                  sampleData={sampleData}
-                  title={title}
-                  importing={importing}
-                  processingWithAI={processingWithAI}
-                  onImport={handleImport}
-                  onProcessWithAI={handleProcessWithAI}
-                  aiProcessedData={aiProcessedData}
-                  setAiProcessedData={setAiProcessedData}
-                  onImportFromProcessed={handleImportFromProcessed}
-                  parseResult={parseResult}
-                  autoProcessingStatus={autoProcessingStatus}
-                />
-                <div className="flex justify-end">
-                  <Button variant="outline" onClick={handleClose}>
-                    Cancel
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="image" className="space-y-4">
-                <ImageUploadSection
-                  imageFile={imageFile}
-                  setImageFile={setImageFile}
-                  imageInputRef={imageInputRef}
-                  extractingFromImage={extractingFromImage}
-                  extractedData={extractedData}
-                  setExtractedData={setExtractedData}
-                  onExtractData={extractDataFromImage}
-                  onImportFromProcessed={handleImportFromProcessed}
-                  importing={importing}
-                />
-                {!extractedData && (
-                  <div className="flex justify-end">
-                    <Button variant="outline" onClick={handleClose}>
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+            <CSVImportTabs
+              file={file}
+              setFile={setFile}
+              fileInputRef={fileInputRef}
+              sampleData={sampleData}
+              title={title}
+              importing={importing}
+              processingWithAI={processingWithAI}
+              onImport={handleImport}
+              onProcessWithAI={handleProcessWithAI}
+              aiProcessedData={aiProcessedData}
+              setAiProcessedData={setAiProcessedData}
+              onImportFromProcessed={handleImportFromProcessed}
+              parseResult={parseResult}
+              autoProcessingStatus={autoProcessingStatus}
+              imageFile={imageFile}
+              setImageFile={setImageFile}
+              imageInputRef={imageInputRef}
+              extractingFromImage={extractingFromImage}
+              extractedData={extractedData}
+              setExtractedData={setExtractedData}
+              onExtractData={extractDataFromImage}
+              onClose={handleClose}
+            />
 
             {result && <ImportResultAlert result={result} />}
           </div>

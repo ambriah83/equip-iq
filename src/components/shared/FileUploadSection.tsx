@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { FileSpreadsheet, FileText, Upload, X, Info, Brain, Loader2 } from 'lucide-react';
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, Download, Loader2, Zap, CheckCircle, AlertCircle, Brain, FileText, ArrowRight } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { CSVParseResult } from '@/utils/csvParser';
 
 interface FileUploadSectionProps {
   file: File | null;
@@ -16,12 +21,12 @@ interface FileUploadSectionProps {
   importing: boolean;
   processingWithAI: boolean;
   onImport: () => void;
-  onProcessWithAI: (csvText: string) => void;
+  onProcessWithAI: (csvText: string) => Promise<void>;
   aiProcessedData: string | null;
   setAiProcessedData: (data: string | null) => void;
-  onImportFromProcessed: (source: string) => void;
-  parseResult?: CSVParseResult | null;
-  autoProcessingStatus?: string | null;
+  onImportFromProcessed: (source: string) => Promise<void>;
+  parseResult: any;
+  autoProcessingStatus: string | null;
 }
 
 const FileUploadSection: React.FC<FileUploadSectionProps> = ({
@@ -40,308 +45,176 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   parseResult,
   autoProcessingStatus
 }) => {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [processingDetails, setProcessingDetails] = useState<any>(null);
-  const { toast } = useToast();
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    if (droppedFiles.length === 0) return;
-
-    const droppedFile = droppedFiles[0];
-    const validTypes = [
-      'text/csv',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    ];
-    
-    const isValidType = validTypes.includes(droppedFile.type) || 
-                       droppedFile.name.endsWith('.csv') ||
-                       droppedFile.name.endsWith('.xlsx') ||
-                       droppedFile.name.endsWith('.xls');
-    
-    if (isValidType) {
-      setFile(droppedFile);
-      setAiProcessedData(null);
-      setProcessingDetails(null);
-      console.log('Valid file dropped:', droppedFile.name);
-    } else {
-      toast({
-        title: "Invalid File",
-        description: "Please drop a CSV or Excel file (.csv, .xlsx, .xls).",
-        variant: "destructive"
-      });
-    }
-  };
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
-    console.log('File selected:', selectedFile?.name, selectedFile?.type);
-    
     if (selectedFile) {
-      const validTypes = [
-        'text/csv',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      ];
-      
-      const isValidType = validTypes.includes(selectedFile.type) || 
-                         selectedFile.name.endsWith('.csv') ||
-                         selectedFile.name.endsWith('.xlsx') ||
-                         selectedFile.name.endsWith('.xls');
-      
-      if (isValidType) {
-        setFile(selectedFile);
-        setAiProcessedData(null);
-        setProcessingDetails(null);
-        console.log('Valid file selected');
-      } else {
-        console.log('Invalid file type selected');
-        toast({
-          title: "Invalid File",
-          description: "Please select a CSV or Excel file (.csv, .xlsx, .xls).",
-          variant: "destructive"
-        });
-      }
+      setFile(selectedFile);
     }
   };
 
-  const downloadSample = () => {
-    console.log('Downloading sample CSV for:', title);
-    const headers = Object.keys(sampleData).join(',');
-    const values = Object.values(sampleData).join(',');
-    const csvContent = `${headers}\n${values}`;
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title.toLowerCase().replace(' ', '_')}_sample.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    console.log('Sample CSV downloaded');
+  const formatPreviewData = (data: any) => {
+    if (typeof data === 'string') {
+      return data;
+    }
+    if (typeof data === 'object' && data !== null) {
+      return JSON.stringify(data, null, 2);
+    }
+    return String(data);
   };
 
   return (
     <div className="space-y-4">
-      <Alert className="border-blue-200 bg-blue-50">
-        <Brain className="h-4 w-4" />
-        <AlertDescription>
-          <div className="space-y-2">
-            <p className="font-medium">🎯 Enhanced Smart Import</p>
-            <div className="text-sm">
-              Advanced AI-powered import system now with:
-              <ul className="list-disc list-inside mt-1 ml-2">
-                <li><strong>Better Column Detection:</strong> Handles "Store Manager" → "manager_name", "Location Name" → "name"</li>
-                <li><strong>Enhanced Preprocessing:</strong> Smarter AI analysis of your CSV structure</li>
-                <li><strong>Detailed Logging:</strong> See exactly what's happening during import</li>
-                <li><strong>Improved Reliability:</strong> Better handling of various CSV formats</li>
-              </ul>
-            </div>
+      <Card className="p-4">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5 text-blue-500" />
+            <span className="font-medium">Smart CSV Upload</span>
           </div>
-        </AlertDescription>
-      </Alert>
-
-      <div className="space-y-2">
-        <Label>Upload File</Label>
-        <div 
-          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
-            isDragOver 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-gray-300 hover:border-gray-400'
-          }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <div className="flex flex-col items-center gap-2">
-            <Upload size={32} className={isDragOver ? 'text-blue-500' : 'text-gray-400'} />
-            <div>
-              <p className="text-sm font-medium">
-                {isDragOver ? 'Drop your file here' : 'Drag and drop your file here, or click to browse'}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Enhanced CSV parser with smart column detection!
-              </p>
-            </div>
-          </div>
-          <Input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,.xlsx,.xls"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </div>
-        
-        <div className="flex justify-center">
-          <Button variant="outline" onClick={downloadSample} size="sm">
-            <Download size={16} className="mr-2" />
-            Download Sample CSV
-          </Button>
-        </div>
-      </div>
-
-      {file && (
-        <div className="space-y-2">
-          <div className="p-3 bg-slate-50 rounded">
-            <p className="text-sm">
-              <strong>Selected file:</strong> {file.name} ({(file.size / 1024).toFixed(1)} KB)
-            </p>
-            {(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) && (
-              <p className="text-xs text-amber-600 mt-1">
-                ⚠️ Excel file detected. For best results, please convert to CSV format first.
-              </p>
-            )}
-          </div>
-
-          {parseResult && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle size={16} className="text-green-600" />
-                <span className="text-sm font-medium text-green-800">CSV Parsed Successfully</span>
+          
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <div className="space-y-2">
+              <FileSpreadsheet className="h-12 w-12 text-gray-400 mx-auto" />
+              <div>
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={importing || processingWithAI}
+                >
+                  Choose CSV/Excel File
+                </Button>
               </div>
-              <div className="text-xs text-green-700 space-y-1">
-                <p><strong>Delimiter:</strong> {parseResult.delimiter === ',' ? 'Comma' : parseResult.delimiter === ';' ? 'Semicolon' : parseResult.delimiter === '\t' ? 'Tab' : `"${parseResult.delimiter}"`}</p>
-                <p><strong>Headers found:</strong> {parseResult.headers.length} ({parseResult.headers.slice(0, 3).join(', ')}{parseResult.headers.length > 3 ? '...' : ''})</p>
-                <p><strong>Data rows:</strong> {parseResult.rowCount}</p>
-              </div>
+              <p className="text-sm text-gray-500">
+                Or drag and drop your file here
+              </p>
             </div>
-          )}
-        </div>
-      )}
-
-      {aiProcessedData && (
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2">
-            <Zap size={16} className="text-blue-500" />
-            AI-Enhanced Data Preview
-          </Label>
-          <div className="p-3 bg-slate-50 rounded max-h-32 overflow-y-auto">
-            <pre className="text-xs whitespace-pre-wrap">{aiProcessedData}</pre>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setAiProcessedData(null)}>
-              Clear
-            </Button>
-            <Button 
-              onClick={() => onImportFromProcessed('processed')} 
-              disabled={importing}
-            >
-              {importing ? (
-                <>
-                  <Loader2 size={16} className="mr-2 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Upload size={16} className="mr-2" />
-                  Import Enhanced Data
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
 
-      {autoProcessingStatus && (
-        <div className="space-y-2">
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-            <div className="flex items-center gap-2">
-              {processingWithAI ? (
-                <Loader2 size={16} className="animate-spin text-blue-600" />
-              ) : autoProcessingStatus.includes('✅') ? (
-                <CheckCircle size={16} className="text-green-600" />
-              ) : autoProcessingStatus.includes('⚠️') ? (
-                <AlertCircle size={16} className="text-amber-600" />
-              ) : autoProcessingStatus.includes('❌') ? (
-                <AlertCircle size={16} className="text-red-600" />
-              ) : (
-                <Brain size={16} className="text-blue-600" />
-              )}
-              <span className="text-sm font-medium text-blue-800">Smart AI Processing</span>
-            </div>
-            <p className="text-xs text-blue-700 mt-1">{autoProcessingStatus}</p>
-            
-            {processingDetails && (
-              <div className="mt-3 p-2 bg-white rounded border text-xs">
-                <div className="font-medium mb-2 flex items-center gap-1">
-                  <FileText size={12} />
-                  Processing Details:
+          {file && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm font-medium">{file.name}</span>
+                  <span className="text-xs text-gray-500">
+                    ({(file.size / 1024).toFixed(1)} KB)
+                  </span>
                 </div>
-                {processingDetails.originalHeaders && (
-                  <div className="mb-2">
-                    <span className="font-medium">Original Headers:</span>
-                    <div className="text-gray-600 ml-2">
-                      {processingDetails.originalHeaders.join(', ')}
-                    </div>
-                  </div>
-                )}
-                {processingDetails.mappingSuggestions && Object.keys(processingDetails.mappingSuggestions).length > 0 && (
-                  <div className="mb-2">
-                    <span className="font-medium">Column Mappings:</span>
-                    <div className="text-gray-600 ml-2">
-                      {Object.entries(processingDetails.mappingSuggestions).map(([from, to]) => (
-                        <div key={from} className="flex items-center gap-1">
-                          <span>"{from}"</span>
-                          <ArrowRight size={10} />
-                          <span>"{to}"</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {processingDetails.detectedIssues && processingDetails.detectedIssues.length > 0 && (
-                  <div>
-                    <span className="font-medium">Issues Detected:</span>
-                    <ul className="text-gray-600 ml-2 list-disc list-inside">
-                      {processingDetails.detectedIssues.map((issue: string, index: number) => (
-                        <li key={index}>{issue}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFile(null)}
+                  disabled={importing || processingWithAI}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            )}
-          </div>
+
+              {autoProcessingStatus && (
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <AlertDescription>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Processing Status:</span>
+                      <span>{autoProcessingStatus}</span>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={onImport}
+                  disabled={importing || processingWithAI}
+                  className="flex-1"
+                >
+                  {importing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {processingWithAI ? 'AI Processing...' : 'Importing...'}
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Import {title}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
+      </Card>
+
+      {/* AI Processed Data Preview */}
+      {aiProcessedData && (
+        <Card className="p-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Brain className="h-4 w-4 text-green-500" />
+                <span className="font-medium text-green-700">AI Enhanced Data</span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onImportFromProcessed('processed')}
+                  disabled={importing}
+                >
+                  {importing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Import Enhanced Data'
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAiProcessedData(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <ScrollArea className="h-32 border rounded">
+              <pre className="text-xs p-2 whitespace-pre-wrap">
+                {formatPreviewData(aiProcessedData)}
+              </pre>
+            </ScrollArea>
+          </div>
+        </Card>
       )}
 
-      <div className="flex justify-end gap-2">
-        <Button 
-          onClick={onImport} 
-          disabled={!file || importing || processingWithAI}
-        >
-          {importing ? (
-            <>
-              <Loader2 size={16} className="mr-2 animate-spin" />
-              {processingWithAI ? 'AI Processing...' : 'Importing...'}
-            </>
-          ) : (
-            <>
-              <Upload size={16} className="mr-2" />
-              Enhanced Smart Import
-            </>
-          )}
-        </Button>
-      </div>
+      {/* Sample Data Format */}
+      <Card className="p-4">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Info className="h-4 w-4 text-blue-500" />
+            <span className="font-medium">Expected CSV Format</span>
+          </div>
+          <ScrollArea className="h-32 border rounded">
+            <pre className="text-xs p-2 whitespace-pre-wrap">
+              {Object.keys(sampleData).join(',')}
+              {'\n'}
+              {Object.values(sampleData).map(value => 
+                typeof value === 'string' && value.includes(',') 
+                  ? `"${value}"` 
+                  : value
+              ).join(',')}
+            </pre>
+          </ScrollArea>
+          <p className="text-xs text-gray-500">
+            Your CSV should have these columns. The AI will automatically map similar column names.
+          </p>
+        </div>
+      </Card>
     </div>
   );
 };
