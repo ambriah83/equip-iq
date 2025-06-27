@@ -40,7 +40,7 @@ export const useUserInvitations = () => {
         expires_at: invitation.expires_at,
         created_at: invitation.created_at,
         invited_by: invitation.invited_by,
-        location_access: Array.isArray(invitation.location_access) ? invitation.location_access : []
+        location_access: []
       }));
       
       setInvitations(transformedData);
