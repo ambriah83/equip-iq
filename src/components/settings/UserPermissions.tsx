@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -12,7 +11,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'owner' | 'manager' | 'staff';
+  role: 'admin' | 'owner' | 'manager' | 'franchisee' | 'tech' | 'employee';
   status: 'active' | 'inactive';
 }
 
@@ -44,7 +43,7 @@ const permissionCategories: Record<EscalationPermission, string> = {
   can_perform_emergency_shutdowns: 'Emergency Procedures'
 };
 
-// Mock role permissions based on the migration data
+// Role permissions based on the migration data
 const rolePermissions: Record<UserRole, Record<EscalationPermission, boolean>> = {
   owner: {
     can_use_ladder: true,
@@ -76,9 +75,40 @@ const rolePermissions: Record<UserRole, Record<EscalationPermission, boolean>> =
     can_access_restricted_areas: true,
     can_perform_emergency_shutdowns: true,
   },
-  staff: {
+  franchisee: {
     can_use_ladder: true,
     can_handle_electrical: true,
+    can_disassemble_parts: true,
+    can_work_at_height: true,
+    can_handle_chemicals: false,
+    can_operate_heavy_equipment: false,
+    can_access_restricted_areas: true,
+    can_perform_emergency_shutdowns: true,
+  },
+  tech: {
+    can_use_ladder: true,
+    can_handle_electrical: true,
+    can_disassemble_parts: true,
+    can_work_at_height: true,
+    can_handle_chemicals: true,
+    can_operate_heavy_equipment: true,
+    can_access_restricted_areas: false,
+    can_perform_emergency_shutdowns: false,
+  },
+  employee: {
+    can_use_ladder: true,
+    can_handle_electrical: false,
+    can_disassemble_parts: true,
+    can_work_at_height: false,
+    can_handle_chemicals: false,
+    can_operate_heavy_equipment: false,
+    can_access_restricted_areas: false,
+    can_perform_emergency_shutdowns: false,
+  },
+  // Keep legacy roles for compatibility
+  staff: {
+    can_use_ladder: true,
+    can_handle_electrical: false,
     can_disassemble_parts: true,
     can_work_at_height: false,
     can_handle_chemicals: false,

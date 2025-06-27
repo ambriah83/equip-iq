@@ -703,7 +703,15 @@ export type Database = {
         | "can_access_restricted_areas"
         | "can_perform_emergency_shutdowns"
       subscription_tier_enum: "basic" | "professional" | "enterprise"
-      user_role: "owner" | "admin" | "manager" | "staff" | "vendor"
+      user_role:
+        | "owner"
+        | "admin"
+        | "manager"
+        | "staff"
+        | "vendor"
+        | "franchisee"
+        | "tech"
+        | "employee"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -830,7 +838,16 @@ export const Constants = {
         "can_perform_emergency_shutdowns",
       ],
       subscription_tier_enum: ["basic", "professional", "enterprise"],
-      user_role: ["owner", "admin", "manager", "staff", "vendor"],
+      user_role: [
+        "owner",
+        "admin",
+        "manager",
+        "staff",
+        "vendor",
+        "franchisee",
+        "tech",
+        "employee",
+      ],
     },
   },
 } as const

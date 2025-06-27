@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
@@ -20,7 +19,7 @@ export interface RolePermission {
   created_at: string | null;
 }
 
-// Mock role permissions based on the migration data
+// Updated role permissions to include new roles
 const mockRolePermissions: Record<UserRole, Record<EscalationPermission, boolean>> = {
   owner: {
     can_use_ladder: true,
@@ -52,9 +51,40 @@ const mockRolePermissions: Record<UserRole, Record<EscalationPermission, boolean
     can_access_restricted_areas: true,
     can_perform_emergency_shutdowns: true,
   },
-  staff: {
+  franchisee: {
     can_use_ladder: true,
     can_handle_electrical: true,
+    can_disassemble_parts: true,
+    can_work_at_height: true,
+    can_handle_chemicals: false,
+    can_operate_heavy_equipment: false,
+    can_access_restricted_areas: true,
+    can_perform_emergency_shutdowns: true,
+  },
+  tech: {
+    can_use_ladder: true,
+    can_handle_electrical: true,
+    can_disassemble_parts: true,
+    can_work_at_height: true,
+    can_handle_chemicals: true,
+    can_operate_heavy_equipment: true,
+    can_access_restricted_areas: false,
+    can_perform_emergency_shutdowns: false,
+  },
+  employee: {
+    can_use_ladder: true,
+    can_handle_electrical: false,
+    can_disassemble_parts: true,
+    can_work_at_height: false,
+    can_handle_chemicals: false,
+    can_operate_heavy_equipment: false,
+    can_access_restricted_areas: false,
+    can_perform_emergency_shutdowns: false,
+  },
+  // Keep legacy roles for compatibility
+  staff: {
+    can_use_ladder: true,
+    can_handle_electrical: false,
     can_disassemble_parts: true,
     can_work_at_height: false,
     can_handle_chemicals: false,
