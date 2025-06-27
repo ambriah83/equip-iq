@@ -562,6 +562,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_permissions: {
         Args: {
           target_user_id: string
@@ -579,6 +583,13 @@ export type Database = {
           user_role: Database["public"]["Enums"]["user_role"]
         }
         Returns: undefined
+      }
+      user_has_permission: {
+        Args: {
+          target_user_id: string
+          check_permission: Database["public"]["Enums"]["escalation_permission"]
+        }
+        Returns: boolean
       }
     }
     Enums: {

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, Download, Loader2, Zap, CheckCircle, AlertCircle, Brain } from 'lucide-react';
+import { Upload, Download, Loader2, Zap, CheckCircle, AlertCircle, Brain, FileText, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CSVParseResult } from '@/utils/csvParser';
 
@@ -41,6 +41,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   autoProcessingStatus
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [processingDetails, setProcessingDetails] = useState<any>(null);
   const { toast } = useToast();
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -78,6 +79,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
     if (isValidType) {
       setFile(droppedFile);
       setAiProcessedData(null);
+      setProcessingDetails(null);
       console.log('Valid file dropped:', droppedFile.name);
     } else {
       toast({
@@ -107,6 +109,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
       if (isValidType) {
         setFile(selectedFile);
         setAiProcessedData(null);
+        setProcessingDetails(null);
         console.log('Valid file selected');
       } else {
         console.log('Invalid file type selected');
@@ -141,14 +144,14 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         <Brain className="h-4 w-4" />
         <AlertDescription>
           <div className="space-y-2">
-            <p className="font-medium">🧠 AI-First CSV Processing</p>
+            <p className="font-medium">🎯 Enhanced Smart Import</p>
             <div className="text-sm">
-              New intelligent import system:
+              Advanced AI-powered import system now with:
               <ul className="list-disc list-inside mt-1 ml-2">
-                <li><strong>Auto-detects</strong> formatting issues and column name problems</li>
-                <li><strong>Auto-fixes</strong> CSV structure using AI before parsing</li>
-                <li><strong>Smart mapping</strong> of columns like "Location Name" → "name"</li>
-                <li><strong>Seamless experience</strong> - no manual intervention needed</li>
+                <li><strong>Better Column Detection:</strong> Handles "Store Manager" → "manager_name", "Location Name" → "name"</li>
+                <li><strong>Enhanced Preprocessing:</strong> Smarter AI analysis of your CSV structure</li>
+                <li><strong>Detailed Logging:</strong> See exactly what's happening during import</li>
+                <li><strong>Improved Reliability:</strong> Better handling of various CSV formats</li>
               </ul>
             </div>
           </div>
@@ -175,7 +178,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                 {isDragOver ? 'Drop your file here' : 'Drag and drop your file here, or click to browse'}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Advanced CSV parser handles complex formatting automatically!
+                Enhanced CSV parser with smart column detection!
               </p>
             </div>
           </div>
@@ -229,7 +232,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
             <Zap size={16} className="text-blue-500" />
-            AI-Processed Data Preview
+            AI-Enhanced Data Preview
           </Label>
           <div className="p-3 bg-slate-50 rounded max-h-32 overflow-y-auto">
             <pre className="text-xs whitespace-pre-wrap">{aiProcessedData}</pre>
@@ -250,7 +253,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
               ) : (
                 <>
                   <Upload size={16} className="mr-2" />
-                  Import AI-Processed Data
+                  Import Enhanced Data
                 </>
               )}
             </Button>
@@ -273,9 +276,50 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
               ) : (
                 <Brain size={16} className="text-blue-600" />
               )}
-              <span className="text-sm font-medium text-blue-800">AI Auto-Processing</span>
+              <span className="text-sm font-medium text-blue-800">Smart AI Processing</span>
             </div>
             <p className="text-xs text-blue-700 mt-1">{autoProcessingStatus}</p>
+            
+            {processingDetails && (
+              <div className="mt-3 p-2 bg-white rounded border text-xs">
+                <div className="font-medium mb-2 flex items-center gap-1">
+                  <FileText size={12} />
+                  Processing Details:
+                </div>
+                {processingDetails.originalHeaders && (
+                  <div className="mb-2">
+                    <span className="font-medium">Original Headers:</span>
+                    <div className="text-gray-600 ml-2">
+                      {processingDetails.originalHeaders.join(', ')}
+                    </div>
+                  </div>
+                )}
+                {processingDetails.mappingSuggestions && Object.keys(processingDetails.mappingSuggestions).length > 0 && (
+                  <div className="mb-2">
+                    <span className="font-medium">Column Mappings:</span>
+                    <div className="text-gray-600 ml-2">
+                      {Object.entries(processingDetails.mappingSuggestions).map(([from, to]) => (
+                        <div key={from} className="flex items-center gap-1">
+                          <span>"{from}"</span>
+                          <ArrowRight size={10} />
+                          <span>"{to}"</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {processingDetails.detectedIssues && processingDetails.detectedIssues.length > 0 && (
+                  <div>
+                    <span className="font-medium">Issues Detected:</span>
+                    <ul className="text-gray-600 ml-2 list-disc list-inside">
+                      {processingDetails.detectedIssues.map((issue: string, index: number) => (
+                        <li key={index}>{issue}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -293,7 +337,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
           ) : (
             <>
               <Upload size={16} className="mr-2" />
-              Smart Import
+              Enhanced Smart Import
             </>
           )}
         </Button>

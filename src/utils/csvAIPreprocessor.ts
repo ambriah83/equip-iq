@@ -6,60 +6,83 @@ export interface CSVPreprocessingResult {
   processedCSV?: string;
   error?: string;
   confidence: number;
+  analysisDetails?: {
+    originalHeaders: string[];
+    detectedIssues: string[];
+    mappingSuggestions: Record<string, string>;
+  };
 }
 
 export class CSVAIPreprocessor {
   /**
-   * Analyzes a CSV to determine if it needs AI preprocessing
+   * Enhanced CSV analysis with better column detection
    */
   static analyzeCSVForPreprocessing(
     csvText: string, 
     requiredFields: string[], 
     fieldDescriptions: Record<string, string>
-  ): { needsPreprocessing: boolean; issues: string[]; confidence: number } {
+  ): { needsPreprocessing: boolean; issues: string[]; confidence: number; analysisDetails: any } {
     const lines = csvText.split('\n').filter(line => line.trim());
     if (lines.length < 2) {
-      return { needsPreprocessing: false, issues: [], confidence: 0 };
+      return { needsPreprocessing: false, issues: [], confidence: 0, analysisDetails: {} };
     }
 
     const headerLine = lines[0];
     const headers = this.parseHeaderLine(headerLine);
     const issues: string[] = [];
+    const mappingSuggestions: Record<string, string> = {};
     let confidence = 0;
 
-    console.log('Analyzing CSV headers:', headers);
+    console.log('🔍 CSV Analysis Details:');
+    console.log('Original headers:', headers);
     console.log('Required fields:', requiredFields);
 
-    // Check for missing required fields
+    // Enhanced column mapping detection
     const missingFields = requiredFields.filter(field => {
-      const found = headers.some(header => 
-        this.fuzzyMatch(header, field) || 
-        this.fuzzyMatch(header, Object.keys(fieldDescriptions).find(key => key === field) || '')
-      );
-      return !found;
+      // Try exact match first
+      if (headers.some(header => header.toLowerCase() === field.toLowerCase())) {
+        return false;
+      }
+
+      // Try fuzzy matching with enhanced patterns
+      const matchedHeader = headers.find(header => {
+        const matches = this.enhancedFuzzyMatch(header, field);
+        if (matches) {
+          mappingSuggestions[header] = field;
+          console.log(`✅ Mapped "${header}" → "${field}"`);
+          return true;
+        }
+        return false;
+      });
+
+      return !matchedHeader;
     });
 
     if (missingFields.length > 0) {
-      issues.push(`Missing required fields: ${missingFields.join(', ')}`);
-      confidence += 30;
+      issues.push(`Missing or unmatched fields: ${missingFields.join(', ')}`);
+      confidence += 40;
+      console.log('❌ Missing fields:', missingFields);
     }
 
-    // Check for common problematic patterns
+    // Enhanced problematic pattern detection
     const problematicPatterns = [
       { pattern: /^["'].*["']$/, issue: 'Headers wrapped in quotes', weight: 20 },
       { pattern: /\s+\w+\s+\w+/, issue: 'Multi-word headers with spaces', weight: 15 },
       { pattern: /[A-Z]{2,}\s[A-Z]{2,}/, issue: 'ALL CAPS headers', weight: 10 },
-      { pattern: /\w+_\w+/, issue: 'Underscore separated headers', weight: 5 }
+      { pattern: /\w+_\w+/, issue: 'Underscore separated headers', weight: 5 },
+      { pattern: /\w+\s+\w+\s+\w+/, issue: 'Three or more word headers', weight: 15 }
     ];
 
     problematicPatterns.forEach(({ pattern, issue, weight }) => {
-      if (headers.some(header => pattern.test(header))) {
-        issues.push(issue);
+      const matchingHeaders = headers.filter(header => pattern.test(header));
+      if (matchingHeaders.length > 0) {
+        issues.push(`${issue}: ${matchingHeaders.join(', ')}`);
         confidence += weight;
+        console.log(`⚠️ Pattern issue: ${issue}`, matchingHeaders);
       }
     });
 
-    // Check for delimiter issues
+    // Enhanced delimiter detection
     const commaCount = headerLine.split(',').length - 1;
     const semicolonCount = headerLine.split(';').length - 1;
     const tabCount = headerLine.split('\t').length - 1;
@@ -67,32 +90,42 @@ export class CSVAIPreprocessor {
     if (semicolonCount > commaCount || tabCount > commaCount) {
       issues.push('Non-standard delimiter detected');
       confidence += 25;
+      console.log('⚠️ Non-standard delimiter detected');
     }
 
-    // Check data consistency
+    // Data consistency check
     if (lines.length > 2) {
       const sampleDataLine = lines[1];
       const dataFields = this.parseHeaderLine(sampleDataLine);
       if (Math.abs(dataFields.length - headers.length) > 1) {
         issues.push('Inconsistent field count between header and data');
         confidence += 20;
+        console.log('⚠️ Field count mismatch:', { headerCount: headers.length, dataCount: dataFields.length });
       }
     }
 
-    const needsPreprocessing = confidence > 30 || missingFields.length > 0;
+    const needsPreprocessing = confidence > 20 || missingFields.length > 0;
     
-    console.log('CSV Analysis Result:', {
-      needsPreprocessing,
-      issues,
+    const analysisDetails = {
+      originalHeaders: headers,
+      detectedIssues: issues,
+      mappingSuggestions,
       confidence,
-      missingFields
+      delimiter: this.detectDelimiter(headerLine)
+    };
+
+    console.log('📊 Analysis Summary:', {
+      needsPreprocessing,
+      confidence,
+      issuesCount: issues.length,
+      mappingSuggestions
     });
 
-    return { needsPreprocessing, issues, confidence };
+    return { needsPreprocessing, issues, confidence, analysisDetails };
   }
 
   /**
-   * Preprocesses CSV with AI to fix formatting and mapping issues
+   * Enhanced AI preprocessing with better prompting
    */
   static async preprocessWithAI(
     csvText: string,
@@ -100,46 +133,75 @@ export class CSVAIPreprocessor {
     requiredFields: string[],
     fieldDescriptions: Record<string, string>
   ): Promise<CSVPreprocessingResult> {
-    console.log('Starting AI preprocessing for CSV...');
+    console.log('🤖 Starting enhanced AI preprocessing...');
     
     try {
-      const { data, error } = await supabase.functions.invoke('extract-data-from-image', {
-        body: {
-          imageData: null,
-          csvData: csvText,
-          dataType: dataType.toLowerCase(),
-          requiredFields,
-          fieldDescriptions,
-          preprocessingMode: true // New flag to indicate this is preprocessing
+      // Pre-analyze the CSV to provide better context to AI
+      const analysis = this.analyzeCSVForPreprocessing(csvText, requiredFields, fieldDescriptions);
+      
+      const enhancedPrompt = {
+        csvData: csvText,
+        dataType: dataType.toLowerCase(),
+        requiredFields,
+        fieldDescriptions,
+        preprocessingMode: true,
+        analysisContext: {
+          detectedIssues: analysis.issues,
+          mappingSuggestions: analysis.analysisDetails.mappingSuggestions,
+          originalHeaders: analysis.analysisDetails.originalHeaders,
+          instructions: [
+            'Focus on standardizing column names to match required fields exactly',
+            'Handle common variations like "Location Name" → "name", "STORE MANAGER" → "manager_name"',
+            'Preserve all data while fixing column mapping issues',
+            'Ensure consistent delimiter usage (prefer commas)',
+            'Remove unnecessary quotes around headers and data'
+          ]
         }
+      };
+
+      console.log('📤 Sending to AI with enhanced context:', enhancedPrompt.analysisContext);
+
+      const { data, error } = await supabase.functions.invoke('extract-data-from-image', {
+        body: enhancedPrompt
       });
 
       if (error) {
-        console.error('AI preprocessing error:', error);
+        console.error('❌ AI preprocessing error:', error);
         return {
           needsPreprocessing: true,
           error: error.message || 'AI preprocessing failed',
-          confidence: 0
+          confidence: 0,
+          analysisDetails: analysis.analysisDetails
         };
       }
 
-      console.log('AI preprocessing result:', data);
+      console.log('✅ AI preprocessing result:', data);
 
       if (data.success && data.csvData) {
+        // Validate the processed CSV
+        const processedAnalysis = this.analyzeCSVForPreprocessing(data.csvData, requiredFields, fieldDescriptions);
+        console.log('📋 Processed CSV analysis:', processedAnalysis);
+
         return {
           needsPreprocessing: true,
           processedCSV: data.csvData,
-          confidence: 95
+          confidence: Math.min(95, 80 + (5 - processedAnalysis.issues.length) * 3),
+          analysisDetails: {
+            ...analysis.analysisDetails,
+            processedHeaders: processedAnalysis.analysisDetails.originalHeaders,
+            improvementsMade: analysis.issues.length - processedAnalysis.issues.length
+          }
         };
       } else {
         return {
           needsPreprocessing: true,
           error: data.message || 'AI could not process the CSV',
-          confidence: 0
+          confidence: 0,
+          analysisDetails: analysis.analysisDetails
         };
       }
     } catch (error) {
-      console.error('AI preprocessing error:', error);
+      console.error('❌ AI preprocessing error:', error);
       return {
         needsPreprocessing: true,
         error: error instanceof Error ? error.message : 'Unknown error during AI preprocessing',
@@ -149,46 +211,96 @@ export class CSVAIPreprocessor {
   }
 
   /**
-   * Parses a header line handling various CSV formats
+   * Enhanced fuzzy matching with location-specific patterns
+   */
+  private static enhancedFuzzyMatch(header: string, requiredField: string): boolean {
+    const normalizeHeader = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normHeader = normalizeHeader(header);
+    const normRequired = normalizeHeader(requiredField);
+    
+    // Exact match after normalization
+    if (normHeader === normRequired) return true;
+    
+    // Contains match
+    if (normHeader.includes(normRequired) || normRequired.includes(normHeader)) return true;
+    
+    // Enhanced location-specific mappings
+    const fieldMappings: Record<string, string[]> = {
+      'name': [
+        'locationname', 'storename', 'businessname', 'companyname', 'shopname',
+        'branchname', 'sitename', 'title', 'label', 'description'
+      ],
+      'locationname': [
+        'name', 'storename', 'businessname', 'location', 'store', 'branch', 'site'
+      ],
+      'abbreviation': [
+        'locationcode', 'storecode', 'code', 'abbrev', 'shortname', 'id'
+      ],
+      'address': [
+        'streetaddress', 'fulladdress', 'physicaladdress', 'locationaddress', 'location'
+      ],
+      'managername': [
+        'storemanager', 'branchmanager', 'areamanager', 'manager', 'supervisor', 'lead'
+      ],
+      'manager_name': [
+        'storemanager', 'branchmanager', 'areamanager', 'manager', 'supervisor', 'lead'
+      ],
+      'phone': [
+        'directstoreline', 'phonenumber', 'telephone', 'tel', 'contact'
+      ],
+      'email': [
+        'emailaddress', 'contactemail', 'mail'
+      ]
+    };
+    
+    // Check field mappings
+    const mappings = fieldMappings[normRequired] || [];
+    if (mappings.some(mapping => normHeader.includes(mapping) || mapping.includes(normHeader))) {
+      return true;
+    }
+    
+    // Reverse check - see if required field matches any mapped values
+    for (const [field, variations] of Object.entries(fieldMappings)) {
+      if (variations.includes(normRequired) && normHeader.includes(field)) {
+        return true;
+      }
+    }
+    
+    // Word-based matching for multi-word fields
+    const headerWords = header.toLowerCase().split(/[\s_-]+/);
+    const requiredWords = requiredField.toLowerCase().split(/[\s_-]+/);
+    
+    const commonWords = headerWords.filter(word => 
+      requiredWords.some(rWord => word.includes(rWord) || rWord.includes(word))
+    );
+    
+    return commonWords.length >= Math.min(headerWords.length, requiredWords.length) * 0.6;
+  }
+
+  /**
+   * Enhanced header parsing with better delimiter detection
    */
   private static parseHeaderLine(line: string): string[] {
-    // Simple CSV parsing for header analysis
-    return line.split(/[,;\t]/)
+    const delimiter = this.detectDelimiter(line);
+    return line.split(delimiter)
       .map(header => header.trim().replace(/^["']|["']$/g, ''))
       .filter(header => header.length > 0);
   }
 
   /**
-   * Fuzzy matching for field names
+   * Detect the most likely delimiter in a CSV line
    */
-  private static fuzzyMatch(str1: string, str2: string): boolean {
-    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const norm1 = normalize(str1);
-    const norm2 = normalize(str2);
+  private static detectDelimiter(line: string): string {
+    const delimiters = [',', ';', '\t', '|'];
+    const counts = delimiters.map(delim => ({
+      delimiter: delim,
+      count: line.split(delim).length - 1
+    }));
     
-    // Exact match
-    if (norm1 === norm2) return true;
+    const bestDelimiter = counts.reduce((best, current) => 
+      current.count > best.count ? current : best
+    );
     
-    // Contains match
-    if (norm1.includes(norm2) || norm2.includes(norm1)) return true;
-    
-    // Common variations
-    const variations: Record<string, string[]> = {
-      'name': ['title', 'label', 'description'],
-      'location': ['store', 'branch', 'site', 'shop'],
-      'phone': ['telephone', 'tel', 'contact'],
-      'email': ['mail', 'contact'],
-      'address': ['location', 'street'],
-      'manager': ['supervisor', 'lead', 'boss']
-    };
-    
-    for (const [key, vals] of Object.entries(variations)) {
-      if ((norm1.includes(key) && vals.some(v => norm2.includes(v))) ||
-          (norm2.includes(key) && vals.some(v => norm1.includes(v)))) {
-        return true;
-      }
-    }
-    
-    return false;
+    return bestDelimiter.count > 0 ? bestDelimiter.delimiter : ',';
   }
 }
