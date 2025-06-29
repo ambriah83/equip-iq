@@ -15,6 +15,7 @@ const Auth = () => {
   const [lastName, setLastName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -100,6 +101,9 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
+        options: {
+          persistSession: keepSignedIn
+        }
       });
 
       if (error) {
@@ -109,6 +113,8 @@ const Auth = () => {
           toast.error(error.message);
         }
       } else {
+        // Store the user's preference for future sessions
+        localStorage.setItem('keepSignedIn', keepSignedIn.toString());
         toast.success('Welcome back!');
         navigate('/');
       }
@@ -138,6 +144,8 @@ const Auth = () => {
           setCompanyName={setCompanyName}
           showPassword={showPassword}
           setShowPassword={setShowPassword}
+          keepSignedIn={keepSignedIn}
+          setKeepSignedIn={setKeepSignedIn}
           loading={loading}
           onSignUp={handleSignUp}
           onSignIn={handleSignIn}

@@ -20,6 +20,8 @@ interface AuthFormProps {
   setCompanyName: (name: string) => void;
   showPassword: boolean;
   setShowPassword: (show: boolean) => void;
+  keepSignedIn: boolean;
+  setKeepSignedIn: (keep: boolean) => void;
   loading: boolean;
   onSignUp: (e: React.FormEvent) => void;
   onSignIn: (e: React.FormEvent) => void;
@@ -40,6 +42,8 @@ const AuthForm = ({
   setCompanyName,
   showPassword,
   setShowPassword,
+  keepSignedIn,
+  setKeepSignedIn,
   loading,
   onSignUp,
   onSignIn
@@ -88,6 +92,8 @@ const AuthForm = ({
               setPassword={setPassword}
               showPassword={showPassword}
               setShowPassword={setShowPassword}
+              keepSignedIn={keepSignedIn}
+              setKeepSignedIn={setKeepSignedIn}
               loading={loading}
               onSubmit={onSignIn}
             />

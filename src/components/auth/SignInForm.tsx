@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff } from 'lucide-react';
 
 interface SignInFormProps {
@@ -12,6 +13,8 @@ interface SignInFormProps {
   setPassword: (password: string) => void;
   showPassword: boolean;
   setShowPassword: (show: boolean) => void;
+  keepSignedIn: boolean;
+  setKeepSignedIn: (keep: boolean) => void;
   loading: boolean;
   onSubmit: (e: React.FormEvent) => void;
 }
@@ -23,6 +26,8 @@ const SignInForm = ({
   setPassword,
   showPassword,
   setShowPassword,
+  keepSignedIn,
+  setKeepSignedIn,
   loading,
   onSubmit
 }: SignInFormProps) => {
@@ -60,6 +65,16 @@ const SignInForm = ({
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
+      </div>
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="keep-signed-in"
+          checked={keepSignedIn}
+          onCheckedChange={(checked) => setKeepSignedIn(checked === true)}
+        />
+        <Label htmlFor="keep-signed-in" className="text-slate-200 text-sm">
+          Keep me signed in
+        </Label>
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? 'Signing In...' : 'Sign In'}
