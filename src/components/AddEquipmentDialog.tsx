@@ -1,131 +1,160 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
+import { CalendarIcon, Plus } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { useLocations } from '@/hooks/useLocations';
+import { useSupabaseRooms } from '@/hooks/useSupabaseRooms';
 import { useEquipmentTypes } from '@/hooks/useEquipmentTypes';
-import FileUpload from './FileUpload';
-import WarrantySection from './equipment/WarrantySection';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const AddEquipmentDialog = () => {
   const [open, setOpen] = useState(false);
-  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const { locations } = useLocations();
+  const { rooms } = useSupabaseRooms();
   const { equipmentTypes } = useEquipmentTypes();
+  const { toast } = useToast();
   
   const [formData, setFormData] = useState({
     name: '',
-    type: '',
-    location: '',
-    room: '',
-    serialNumber: '',
-    warranty: {
-      status: 'inactive' as 'active' | 'inactive',
-      expiryDate: undefined as string | undefined,
-      documentation: [] as string[]
-    },
-    tmaxConnection: '',
+    serial_number: '',
+    equipment_type_id: '',
+    location_id: '',
+    room_id: '',
+    status: 'active',
+    warranty_status: 'inactive',
+    warranty_expiry_date: null as Date | null,
+    last_service_date: null as Date | null,
   });
-  
-  const [equipmentPhoto, setEquipmentPhoto] = useState<File[]>([]);
-  const [documentation, setDocumentation] = useState<File[]>([]);
-  const [warrantyDocumentation, setWarrantyDocumentation] = useState<File[]>([]);
-  const [roomLayout, setRoomLayout] = useState<File[]>([]);
-  const [roomPhoto, setRoomPhoto] = useState<File[]>([]);
 
-  const tmaxConnections = [
-    'Wired',
-    'Wireless',
-  ];
+  // Filter rooms based on selected location
+  const availableRooms = rooms.filter(room => room.location_id === formData.location_id);
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleWarrantyChange = (warranty: { status: 'active' | 'inactive'; expiryDate?: string; documentation?: string[] }) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      warranty: {
-        status: warranty.status,
-        expiryDate: warranty.expiryDate || undefined,
-        documentation: warranty.documentation || []
-      }
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the data to your backend
-    console.log('Adding equipment:', {
-      ...formData,
-      equipmentPhoto,
-      documentation,
-      warrantyDocumentation,
-      roomLayout,
-      roomPhoto,
-    });
     
-    toast({
-      title: "Equipment Added",
-      description: `${formData.name} has been successfully added to the system.`,
-    });
+    if (!formData.name || !formData.equipment_type_id || !formData.location_id) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
     
-    // Reset form and close dialog
-    setFormData({
-      name: '',
-      type: '',
-      location: '',
-      room: '',
-      serialNumber: '',
-      warranty: {
-        status: 'inactive',
-        expiryDate: undefined,
-        documentation: []
-      },
-      tmaxConnection: '',
-    });
-    setEquipmentPhoto([]);
-    setDocumentation([]);
-    setWarrantyDocumentation([]);
-    setRoomLayout([]);
-    setRoomPhoto([]);
-    setOpen(false);
+    try {
+      const equipmentData = {
+        name: formData.name,
+        serial_number: formData.serial_number || null,
+        equipment_type_id: formData.equipment_type_id,
+        location_id: formData.location_id,
+        room_id: formData.room_id || null,
+        status: formData.status,
+        warranty_status: formData.warranty_status,
+        warranty_expiry_date: formData.warranty_expiry_date?.toISOString().split('T')[0] || null,
+        last_service_date: formData.last_service_date?.toISOString().split('T')[0] || null,
+      };
+
+      const { error } = await supabase
+        .from('equipment')
+        .insert(equipmentData);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Equipment added successfully",
+      });
+
+      // Reset form and close dialog
+      setFormData({
+        name: '',
+        serial_number: '',
+        equipment_type_id: '',
+        location_id: '',
+        room_id: '',
+        status: 'active',
+        warranty_status: 'inactive',
+        warranty_expiry_date: null,
+        last_service_date: null,
+      });
+      setOpen(false);
+      
+      // Refresh the page to show new equipment
+      window.location.reload();
+    } catch (error) {
+      console.error('Error adding equipment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add equipment",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-white text-blue-600 hover:bg-blue-50">
-          <Plus size={20} className="mr-2" />
+        <Button>
+          <Plus size={16} className="mr-2" />
           Add Equipment
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Add New Equipment</DialogTitle>
+          <DialogDescription>
+            Add a new piece of equipment to your inventory
+          </DialogDescription>
         </DialogHeader>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Equipment Name</Label>
+              <Label htmlFor="name">Equipment Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="e.g. Tanning Bed #4"
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter equipment name"
                 required
               />
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
-              <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
+              <Label htmlFor="serial_number">Serial Number</Label>
+              <Input
+                id="serial_number"
+                value={formData.serial_number}
+                onChange={(e) => setFormData(prev => ({ ...prev, serial_number: e.target.value }))}
+                placeholder="Enter serial number"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="equipment_type">Equipment Type *</Label>
+              <Select 
+                value={formData.equipment_type_id} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, equipment_type_id: value }))}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder="Select equipment type" />
                 </SelectTrigger>
                 <SelectContent>
                   {equipmentTypes.map((type) => (
@@ -136,113 +165,146 @@ const AddEquipmentDialog = () => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
+            
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Select value={formData.location} onValueChange={(value) => handleInputChange('location', value)}>
+              <Label htmlFor="location">Location *</Label>
+              <Select 
+                value={formData.location_id} 
+                onValueChange={(value) => {
+                  setFormData(prev => ({ ...prev, location_id: value, room_id: '' }));
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent>
                   {locations.map((location) => (
                     <SelectItem key={location.id} value={location.id}>
-                      {location.name}
+                      {location.name} ({location.abbreviation})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="room">Room</Label>
-              <Input
-                id="room"
-                value={formData.room}
-                onChange={(e) => handleInputChange('room', e.target.value)}
-                placeholder="e.g. Room 3"
-                required
-              />
+              <Label htmlFor="room">Room (Optional)</Label>
+              <Select 
+                value={formData.room_id} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, room_id: value }))}
+                disabled={!formData.location_id}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select room" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableRooms.map((room) => (
+                    <SelectItem key={room.id} value={room.id}>
+                      {room.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select 
+                value={formData.status} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="serialNumber">Serial Number</Label>
-              <Input
-                id="serialNumber"
-                value={formData.serialNumber}
-                onChange={(e) => handleInputChange('serialNumber', e.target.value)}
-                placeholder="e.g. TB-2024-004"
-                required
-              />
+              <Label htmlFor="warranty_status">Warranty Status</Label>
+              <Select 
+                value={formData.warranty_status} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, warranty_status: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
+            <div className="space-y-2">
+              <Label>Warranty Expiry Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.warranty_expiry_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.warranty_expiry_date ? format(formData.warranty_expiry_date, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.warranty_expiry_date}
+                    onSelect={(date) => setFormData(prev => ({ ...prev, warranty_expiry_date: date }))}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tmaxConnection">TMAX Connection</Label>
-            <Select value={formData.tmaxConnection} onValueChange={(value) => handleInputChange('tmaxConnection', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select connection type" />
-              </SelectTrigger>
-              <SelectContent>
-                {tmaxConnections.map((connection) => (
-                  <SelectItem key={connection} value={connection}>
-                    {connection}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Last Service Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !formData.last_service_date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.last_service_date ? format(formData.last_service_date, "PPP") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.last_service_date}
+                  onSelect={(date) => setFormData(prev => ({ ...prev, last_service_date: date }))}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
-          <WarrantySection
-            warranty={formData.warranty}
-            onWarrantyChange={handleWarrantyChange}
-            onWarrantyDocsChange={setWarrantyDocumentation}
-          />
-
-          <div className="space-y-4 border-t pt-4">
-            <h3 className="text-lg font-medium">Media & Documentation</h3>
-            
-            <FileUpload
-              label="Equipment Photo"
-              accept="image/*"
-              type="image"
-              onFilesChange={setEquipmentPhoto}
-            />
-            
-            <FileUpload
-              label="Documentation"
-              accept=".pdf,.doc,.docx,.txt"
-              multiple
-              type="document"
-              onFilesChange={setDocumentation}
-            />
-            
-            <FileUpload
-              label="Room Layout"
-              accept="image/*"
-              type="image"
-              onFilesChange={setRoomLayout}
-            />
-            
-            <FileUpload
-              label="Room Photo"
-              accept="image/*"
-              type="image"
-              onFilesChange={setRoomPhoto}
-            />
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
+          <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit">
-              Add Equipment
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Adding...' : 'Add Equipment'}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
