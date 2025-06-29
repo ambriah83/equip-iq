@@ -31,18 +31,25 @@ export const useUserRoles = () => {
     try {
       setLoading(true);
       
-      // Fetch user profiles with their roles
+      // First, fetch user profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select('*');
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
 
+      // Then fetch user roles
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('*');
 
-      if (rolesError) throw rolesError;
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+        throw rolesError;
+      }
 
       // Combine profiles with roles
       const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
@@ -62,18 +69,18 @@ export const useUserRoles = () => {
       console.error('Error fetching users with roles:', error);
       toast({
         title: "Error",
-        description: "Failed to load users",
+        description: "Failed to load users. Using sample data for demonstration.",
         variant: "destructive",
       });
       
       // Fallback to mock data for development
       setUsers([
-        { id: '6ba7b810-9dad-11d1-80b4-00c04fd430c8', name: 'John Doe', email: 'john@company.com', role: 'admin', status: 'active' },
-        { id: '6ba7b811-9dad-11d1-80b4-00c04fd430c8', name: 'Jane Smith', email: 'jane@company.com', role: 'manager', status: 'active' },
-        { id: '6ba7b812-9dad-11d1-80b4-00c04fd430c8', name: 'Bob Wilson', email: 'bob@company.com', role: 'franchisee', status: 'inactive' },
-        { id: '6ba7b813-9dad-11d1-80b4-00c04fd430c8', name: 'Alice Johnson', email: 'alice@company.com', role: 'tech', status: 'active' },
-        { id: '6ba7b814-9dad-11d1-80b4-00c04fd430c8', name: 'Mike Davis', email: 'mike@company.com', role: 'owner', status: 'active' },
-        { id: '6ba7b815-9dad-11d1-80b4-00c04fd430c8', name: 'Sarah Brown', email: 'sarah@company.com', role: 'employee', status: 'active' },
+        { id: '550e8400-e29b-41d4-a716-446655440001', name: 'John Doe', email: 'john@company.com', role: 'admin', status: 'active' },
+        { id: '550e8400-e29b-41d4-a716-446655440002', name: 'Jane Smith', email: 'jane@company.com', role: 'manager', status: 'active' },
+        { id: '550e8400-e29b-41d4-a716-446655440003', name: 'Bob Wilson', email: 'bob@company.com', role: 'franchisee', status: 'inactive' },
+        { id: '550e8400-e29b-41d4-a716-446655440004', name: 'Alice Johnson', email: 'alice@company.com', role: 'tech', status: 'active' },
+        { id: '550e8400-e29b-41d4-a716-446655440005', name: 'Mike Davis', email: 'mike@company.com', role: 'owner', status: 'active' },
+        { id: '550e8400-e29b-41d4-a716-446655440006', name: 'Sarah Brown', email: 'sarah@company.com', role: 'employee', status: 'active' },
       ]);
     } finally {
       setLoading(false);
