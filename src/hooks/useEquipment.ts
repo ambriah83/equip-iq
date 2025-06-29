@@ -40,9 +40,9 @@ export const useEquipment = () => {
         .from('equipment')
         .select(`
           *,
-          locations (name, abbreviation),
-          equipment_types (name),
-          rooms (name)
+          locations:location_id (name, abbreviation),
+          equipment_types:equipment_type_id (name),
+          rooms:room_id (name)
         `)
         .order('name');
       
@@ -84,9 +84,9 @@ export const useEquipment = () => {
         .insert(equipmentData)
         .select(`
           *,
-          locations (name, abbreviation),
-          equipment_types (name),
-          rooms (name)
+          locations:location_id (name, abbreviation),
+          equipment_types:equipment_type_id (name),
+          rooms:room_id (name)
         `)
         .single();
       
@@ -127,9 +127,9 @@ export const useEquipment = () => {
         .eq('id', id)
         .select(`
           *,
-          locations (name, abbreviation),
-          equipment_types (name),
-          rooms (name)
+          locations:location_id (name, abbreviation),
+          equipment_types:equipment_type_id (name),
+          rooms:room_id (name)
         `)
         .single();
       

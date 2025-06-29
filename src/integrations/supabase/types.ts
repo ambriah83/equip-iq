@@ -86,27 +86,6 @@ export type Database = {
             referencedRelation: "rooms"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_equipment_location"
-            columns: ["location_id"]
-            isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_equipment_room"
-            columns: ["room_id"]
-            isOneToOne: false
-            referencedRelation: "rooms"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_equipment_type"
-            columns: ["equipment_type_id"]
-            isOneToOne: false
-            referencedRelation: "equipment_types"
-            referencedColumns: ["id"]
-          },
         ]
       }
       equipment_logs: {
@@ -149,13 +128,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "equipment_logs_equipment_id_fkey"
-            columns: ["equipment_id"]
-            isOneToOne: false
-            referencedRelation: "equipment"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_equipment_logs_equipment"
             columns: ["equipment_id"]
             isOneToOne: false
             referencedRelation: "equipment"
@@ -244,13 +216,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_knowledge_base_equipment"
-            columns: ["equipment_id"]
-            isOneToOne: false
-            referencedRelation: "equipment"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "knowledge_base_equipment_id_fkey"
             columns: ["equipment_id"]
             isOneToOne: false
@@ -297,13 +262,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_location_billing_location"
-            columns: ["location_id"]
-            isOneToOne: true
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "location_billing_location_id_fkey"
             columns: ["location_id"]
@@ -463,13 +421,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_rooms_location"
-            columns: ["location_id"]
-            isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "rooms_location_id_fkey"
             columns: ["location_id"]
             isOneToOne: false
@@ -586,13 +537,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_user_location_access_location"
-            columns: ["location_id"]
-            isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "user_location_access_location_id_fkey"
             columns: ["location_id"]
             isOneToOne: false
@@ -667,6 +611,39 @@ export type Database = {
           phone?: string | null
           position?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          id: string
+          role: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

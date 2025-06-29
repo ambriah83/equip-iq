@@ -22,7 +22,7 @@ export const useSupabaseRooms = () => {
         .from('rooms')
         .select(`
           *,
-          locations (name, abbreviation)
+          locations:location_id (name, abbreviation)
         `)
         .order('name');
       
@@ -43,7 +43,7 @@ export const useSupabaseRooms = () => {
         .insert(roomData)
         .select(`
           *,
-          locations (name, abbreviation)
+          locations:location_id (name, abbreviation)
         `)
         .single();
       
