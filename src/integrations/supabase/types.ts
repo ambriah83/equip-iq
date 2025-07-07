@@ -476,6 +476,111 @@ export type Database = {
         }
         Relationships: []
       }
+      ticket_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          id?: string
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_comments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          assigned_to_user_id: string | null
+          created_at: string
+          description: string | null
+          equipment_id: string | null
+          id: string
+          location_id: string
+          priority: string
+          reported_by_user_id: string
+          resolved_at: string | null
+          room_id: string | null
+          status: string
+          ticket_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          created_at?: string
+          description?: string | null
+          equipment_id?: string | null
+          id?: string
+          location_id: string
+          priority?: string
+          reported_by_user_id: string
+          resolved_at?: string | null
+          room_id?: string | null
+          status?: string
+          ticket_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          created_at?: string
+          description?: string | null
+          equipment_id?: string | null
+          id?: string
+          location_id?: string
+          priority?: string
+          reported_by_user_id?: string
+          resolved_at?: string | null
+          room_id?: string | null
+          status?: string
+          ticket_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_invitations: {
         Row: {
           accepted_at: string | null
