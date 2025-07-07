@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { User } from '@/types/User';
+import { LegacyUser as User } from '@/types/User';
 import { UserWithRole } from '@/hooks/useUserRoles';
 import UserCard from './UserCard';
 

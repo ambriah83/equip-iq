@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Database } from '@/integrations/supabase/types';
-import { User } from '@/types/User';
+import { LegacyUser as User } from '@/types/User';
 import UserBasicInfo from './UserBasicInfo';
 import UserLocationAccess from './UserLocationAccess';
 import UserPermissions from './UserPermissions';

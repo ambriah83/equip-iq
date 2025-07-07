@@ -3,7 +3,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, User as UserIcon } from 'lucide-react';
-import { User } from '@/types/User';
+import { LegacyUser as User } from '@/types/User';
 
 interface UserCardProps {
   user: User;

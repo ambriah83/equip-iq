@@ -1,29 +1,27 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-
-interface Vendor {
-  id: string;
-  equipment_type: string;
-  equipment_name?: string;
-  company_name: string;
-  vendor_department?: string;
-  contact_name?: string;
-  phone?: string;
-  website_email?: string;
-  notes?: string;
-}
+import { useVendorContacts } from '@/hooks/useVendorContacts';
+import { 
+  Vendor, 
+  VendorWithContacts, 
+  CreateVendorData, 
+  UpdateVendorData, 
+  VendorImportResult 
+} from '@/types/Vendor';
 
 export const useVendorManagement = () => {
-  const [vendors, setVendors] = useLocalStorage<Vendor[]>('vendors', []);
+  const [vendors, setVendors] = useState<VendorWithContacts[]>([]);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { contacts, loadContactsForVendor } = useVendorContacts();
 
   const loadVendorsFromDatabase = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('vendors')
@@ -33,37 +31,73 @@ export const useVendorManagement = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        setVendors(data);
+        // Load vendors with their contacts
+        const vendorsWithContacts = await Promise.all(
+          data.map(async (vendor) => {
+            try {
+              const { data: contactsData } = await supabase
+                .from('vendor_contacts')
+                .select('*')
+                .eq('vendor_id', vendor.id)
+                .order('is_primary', { ascending: false });
+
+              const primaryContact = contactsData?.find(contact => contact.is_primary);
+              
+              return {
+                ...vendor,
+                contacts: contactsData || [],
+                primary_contact: primaryContact
+              } as VendorWithContacts;
+            } catch (contactError) {
+              console.error('Error loading contacts for vendor:', vendor.id, contactError);
+              return {
+                ...vendor,
+                contacts: [],
+                primary_contact: undefined
+              } as VendorWithContacts;
+            }
+          })
+        );
+
+        setVendors(vendorsWithContacts);
+      } else {
+        setVendors([]);
       }
     } catch (error) {
       console.error('Error loading vendors:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load vendors",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAddVendor = async (newVendor: Vendor) => {
+  const handleAddVendor = async (newVendorData: CreateVendorData) => {
     try {
       const { data, error } = await supabase
         .from('vendors')
-        .insert([{
-          equipment_type: newVendor.equipment_type,
-          equipment_name: newVendor.equipment_name,
-          company_name: newVendor.company_name,
-          vendor_department: newVendor.vendor_department,
-          contact_name: newVendor.contact_name,
-          phone: newVendor.phone,
-          website_email: newVendor.website_email,
-          notes: newVendor.notes
-        }])
+        .insert([newVendorData])
         .select()
         .single();
 
       if (error) throw error;
 
-      setVendors(prev => [data, ...prev]);
+      const newVendor: VendorWithContacts = {
+        ...data,
+        contacts: [],
+        primary_contact: undefined
+      };
+
+      setVendors(prev => [newVendor, ...prev]);
       toast({
         title: "Success",
         description: "Vendor added successfully",
       });
+
+      return data;
     } catch (error) {
       console.error('Error adding vendor:', error);
       toast({
@@ -71,37 +105,33 @@ export const useVendorManagement = () => {
         description: "Failed to add vendor",
         variant: "destructive"
       });
+      throw error;
     }
   };
 
-  const handleUpdateVendor = async (updatedVendor: Vendor) => {
+  const handleUpdateVendor = async (updatedVendorData: UpdateVendorData) => {
     try {
+      const { id, ...updateData } = updatedVendorData;
+      
       const { data, error } = await supabase
         .from('vendors')
-        .update({
-          equipment_type: updatedVendor.equipment_type,
-          equipment_name: updatedVendor.equipment_name,
-          company_name: updatedVendor.company_name,
-          vendor_department: updatedVendor.vendor_department,
-          contact_name: updatedVendor.contact_name,
-          phone: updatedVendor.phone,
-          website_email: updatedVendor.website_email,
-          notes: updatedVendor.notes
-        })
-        .eq('id', updatedVendor.id)
+        .update(updateData)
+        .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
 
       setVendors(prev => prev.map(vendor => 
-        vendor.id === updatedVendor.id ? data : vendor
+        vendor.id === id ? { ...vendor, ...data } : vendor
       ));
       
       toast({
         title: "Success",
         description: "Vendor updated successfully",
       });
+
+      return data;
     } catch (error) {
       console.error('Error updating vendor:', error);
       toast({
@@ -109,17 +139,18 @@ export const useVendorManagement = () => {
         description: "Failed to update vendor",
         variant: "destructive"
       });
+      throw error;
     }
   };
 
-  const handleImportVendors = async (data: any[]) => {
+  const handleImportVendors = async (data: any[]): Promise<VendorImportResult> => {
     try {
       let processed = 0;
       const errors: string[] = [];
 
       for (const row of data) {
         try {
-          const vendorData = {
+          const vendorData: CreateVendorData = {
             equipment_type: row['Equipment Type'] || row['equipment_type'] || '',
             equipment_name: row['Equipment Name'] || row['equipment_name'] || '',
             company_name: row['Company Name'] || row['company_name'] || '',
@@ -171,26 +202,52 @@ export const useVendorManagement = () => {
     setShowEditDialog(true);
   };
 
-  const handleCall = (vendor: Vendor) => {
-    const phone = vendor.phone;
+  const handleCall = (vendor: VendorWithContacts) => {
+    // Use primary contact phone if available, otherwise fall back to vendor phone
+    const phone = vendor.primary_contact?.phone || vendor.phone;
     if (phone) {
       window.open(`tel:${phone}`);
+    } else {
+      toast({
+        title: "No Phone Number",
+        description: "No phone number available for this vendor",
+        variant: "destructive"
+      });
     }
   };
 
-  const handleText = (vendor: Vendor) => {
-    const phone = vendor.phone;
+  const handleText = (vendor: VendorWithContacts) => {
+    // Use primary contact phone if available, otherwise fall back to vendor phone
+    const phone = vendor.primary_contact?.phone || vendor.phone;
     if (phone) {
       window.open(`sms:${phone}`);
+    } else {
+      toast({
+        title: "No Phone Number",
+        description: "No phone number available for this vendor",
+        variant: "destructive"
+      });
     }
   };
 
-  const handleEmail = (vendor: Vendor) => {
-    const email = vendor.website_email;
+  const handleEmail = (vendor: VendorWithContacts) => {
+    // Use primary contact email if available, otherwise fall back to vendor email
+    const email = vendor.primary_contact?.email || vendor.website_email;
     if (email) {
       window.open(`mailto:${email}`);
+    } else {
+      toast({
+        title: "No Email Address",
+        description: "No email address available for this vendor",
+        variant: "destructive"
+      });
     }
   };
+
+  // Load vendors on mount
+  useEffect(() => {
+    loadVendorsFromDatabase();
+  }, []);
 
   return {
     vendors,
@@ -200,6 +257,7 @@ export const useVendorManagement = () => {
     setShowEditDialog,
     showImportDialog,
     setShowImportDialog,
+    loading,
     loadVendorsFromDatabase,
     handleAddVendor,
     handleUpdateVendor,

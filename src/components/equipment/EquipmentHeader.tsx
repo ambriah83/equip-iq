@@ -2,7 +2,7 @@
 import React from 'react';
 import { Wrench } from 'lucide-react';
 import ViewToggle from '../ViewToggle';
-import { AddEquipmentDialog } from './';
+import AddEquipmentDialog from '../AddEquipmentDialog';
 
 interface EquipmentHeaderProps {
   view: 'card' | 'list';
