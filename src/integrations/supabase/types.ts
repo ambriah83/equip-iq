@@ -363,6 +363,59 @@ export type Database = {
         }
         Relationships: []
       }
+      property_management: {
+        Row: {
+          created_at: string
+          escalation_contact: string | null
+          id: string
+          lease_end_date: string | null
+          lease_start_date: string | null
+          lease_terms_url: string | null
+          location_id: string
+          monthly_rent: number | null
+          property_manager_email: string | null
+          property_manager_name: string | null
+          property_manager_phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          escalation_contact?: string | null
+          id?: string
+          lease_end_date?: string | null
+          lease_start_date?: string | null
+          lease_terms_url?: string | null
+          location_id: string
+          monthly_rent?: number | null
+          property_manager_email?: string | null
+          property_manager_name?: string | null
+          property_manager_phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          escalation_contact?: string | null
+          id?: string
+          lease_end_date?: string | null
+          lease_start_date?: string | null
+          lease_terms_url?: string | null
+          location_id?: string
+          monthly_rent?: number | null
+          property_manager_email?: string | null
+          property_manager_name?: string | null
+          property_manager_phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_management_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           created_at: string | null
