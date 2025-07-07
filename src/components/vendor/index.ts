@@ -7,3 +7,5 @@ export { default as VendorHeader } from './VendorHeader';
 export { default as VendorList } from './VendorList';
 export { default as VendorActions } from './VendorActions';
 export { default as VendorForm } from './VendorForm';
+export { VendorContactsSection } from './VendorContactsSection';
+export { VendorContactDialog } from './VendorContactDialog';

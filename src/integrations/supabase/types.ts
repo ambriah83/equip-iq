@@ -837,6 +837,50 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_contacts: {
+        Row: {
+          contact_name: string
+          created_at: string
+          email: string | null
+          id: string
+          is_primary: boolean
+          phone: string | null
+          role: string | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          contact_name: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          contact_name?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_contacts_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendors: {
         Row: {
           company_name: string
