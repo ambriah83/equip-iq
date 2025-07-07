@@ -1,6 +1,22 @@
 
 # Development Guidelines
 
+## 🚨 CRITICAL: Line Ending Configuration
+
+To prevent conflicts between Windows, WSL, Lovable, and other development tools:
+
+1. **`.gitattributes` is configured** - Enforces LF line endings for all text files
+2. **If you see all files as modified** (line ending issue), fix with:
+   ```bash
+   git add --renormalize .
+   git reset
+   ```
+3. **For Claude Code users**: Always start from the project directory:
+   ```cmd
+   cd C:\Users\ambri\OneDrive\Documents\GitHub\equip-iq
+   claude
+   ```
+
 ## Code Architecture Principles
 
 ### **Component Structure (Atomic Design)**
