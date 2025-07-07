@@ -1,7 +1,14 @@
-
-# Equipment Management System
+# EquipIQ - Equipment Management System
 
 A comprehensive web application for managing equipment, locations, users, and maintenance operations with role-based permissions and real-time collaboration features.
+
+## 🤖 For AI Assistants & Developers
+
+**Important**: Before working on this project, please read:
+- 📋 [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md) - Complete project context and current status
+- 📊 [PROGRESS.md](./PROGRESS.md) - What's done and what's pending
+- 💬 [PROMPTS.md](./PROMPTS.md) - Tested prompts that work with Lovable.dev
+- 🔧 [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues and solutions
 
 ## 🚀 Features
 
@@ -9,6 +16,8 @@ A comprehensive web application for managing equipment, locations, users, and ma
 - **Location & Room Management**: Organize equipment by facilities, buildings, and rooms
 - **User Management**: Role-based access control with customizable permissions
 - **Vendor Management**: Track vendor information and service relationships
+- **Work Orders**: Ticket system for maintenance and repairs
+- **AI Assistant**: Intelligent troubleshooting and guidance
 - **Permission System**: Granular permissions for safety-critical operations
 - **Real-time Updates**: Live data synchronization across users
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
@@ -59,8 +68,8 @@ Before you begin, ensure you have the following installed:
 ### 1. Clone the Repository
 
 ```sh
-git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_NAME>
+git clone https://github.com/ambriah83/equip-iq.git
+cd equip-iq
 ```
 
 ### 2. Install Dependencies
@@ -80,6 +89,7 @@ The project includes Supabase migrations that will automatically set up:
 - User management and role-based permissions system
 - Row Level Security (RLS) policies
 - Default permission data for different user roles
+- Work order (ticket) system
 
 ### 5. Start Development Server
 
@@ -107,6 +117,11 @@ src/
 ├── lib/                 # Utility functions
 ├── pages/               # Page components
 └── types/               # TypeScript type definitions
+
+docs/                    # Project documentation
+├── DATABASE_SCHEMA.md   # Complete database structure
+├── API_INTEGRATION.md   # API documentation
+└── ...                  # Other technical docs
 ```
 
 ## 🔧 Available Scripts
@@ -125,6 +140,7 @@ The system includes several predefined roles with different permission levels:
 - **Manager**: Supervisory access with some restrictions on dangerous operations
 - **Staff**: Standard operational access with safety restrictions
 - **Vendor**: Limited access for external service providers
+- **Tech**: Technical staff with equipment access
 
 Each role has specific permissions for safety-critical operations like:
 - Electrical work
@@ -165,6 +181,7 @@ To connect a custom domain:
 - Database operations use Supabase's Row Level Security for data protection
 - Real-time features are implemented using Supabase's real-time subscriptions
 - The codebase includes comprehensive error handling and loading states
+- Built with Lovable.dev - no coding experience required!
 
 ## 🔗 Useful Links
 
@@ -181,3 +198,4 @@ This project is developed using the Lovable platform. See the Lovable terms of s
 ---
 
 **Project URL**: https://lovable.dev/projects/1bbe4a9f-b017-44d9-91ea-5a7ba7705cdc
+**GitHub Repository**: https://github.com/ambriah83/equip-iq
