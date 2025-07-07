@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useDataFiltering } from '@/hooks/useDataFiltering';
 import { useUserInvitations } from '@/hooks/useUserInvitations';
 import { useUserRoles, UserWithRole } from '@/hooks/useUserRoles';
-import { User } from '@/types/User';
+import { LegacyUser as User } from '@/types/User';
 import UserDialog from './UserDialog';
 import UserFilters from './UserFilters';
 import UserList from './UserList';

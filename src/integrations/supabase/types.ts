@@ -757,6 +757,33 @@ export type Database = {
         }
         Relationships: []
       }
+      users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          is_active?: boolean
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       vendors: {
         Row: {
           company_name: string
