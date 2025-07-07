@@ -21,14 +21,14 @@ interface EditEquipmentDialogProps {
   equipment: Equipment | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEquipmentUpdated: () => void;
+  onUpdateEquipment: (equipmentData: any) => Promise<void>;
 }
 
 const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
   equipment,
   open,
   onOpenChange,
-  onEquipmentUpdated
+  onUpdateEquipment
 }) => {
   const [loading, setLoading] = useState(false);
   const { locations } = useLocations();
@@ -108,7 +108,7 @@ const EditEquipmentDialog: React.FC<EditEquipmentDialogProps> = ({
         description: "Equipment updated successfully",
       });
 
-      onEquipmentUpdated();
+      await onUpdateEquipment(equipmentData);
       onOpenChange(false);
     } catch (error) {
       console.error('Error updating equipment:', error);

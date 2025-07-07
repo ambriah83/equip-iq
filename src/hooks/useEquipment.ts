@@ -24,8 +24,6 @@ export interface EquipmentWithDetails extends Equipment {
     expiryDate?: string;
     documentation?: string[];
   };
-  // Override status to have proper typing
-  status: 'active' | 'maintenance' | 'offline';
 }
 
 export const useEquipment = () => {
