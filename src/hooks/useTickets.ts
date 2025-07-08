@@ -1,57 +1,66 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Database } from '@/integrations/supabase/types';
-import { Ticket, TicketWithDetails, CreateTicketData, UpdateTicketData } from '@/types/Ticket';
-
-type TicketRow = Database['public']['Tables']['tickets']['Row'];
-type TicketInsert = Database['public']['Tables']['tickets']['Insert'];
-type TicketUpdate = Database['public']['Tables']['tickets']['Update'];
+import { TicketWithDetails, CreateTicketData, UpdateTicketData, TicketFilters } from '@/types/Ticket';
+import { useToast } from '@/hooks/use-toast';
 
 export const useTickets = () => {
   const [tickets, setTickets] = useState<TicketWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const fetchTickets = async () => {
+  const fetchTickets = async (filters?: TicketFilters) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('tickets')
         .select(`
           *,
-          locations:location_id (name),
-          equipment:equipment_id (name),
-          rooms:room_id (name)
+          equipment:equipment_id (
+            id,
+            name
+          ),
+          location:location_id (
+            id,
+            name,
+            abbreviation
+          ),
+          room:room_id (
+            id,
+            name
+          ),
+          assigned_to:assigned_to_user_id (
+            id,
+            email
+          ),
+          reported_by:reported_by_user_id (
+            id,
+            email
+          )
         `)
         .order('created_at', { ascending: false });
-      
+
+      // Apply filters
+      if (filters?.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.priority && filters.priority !== 'all') {
+        query = query.eq('priority', filters.priority);
+      }
+      if (filters?.location_id && filters.location_id !== 'all') {
+        query = query.eq('location_id', filters.location_id);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
-      
-      // Transform the data to include display names
-      const transformedData: TicketWithDetails[] = (data || []).map(item => ({
-        id: item.id,
-        location_id: item.location_id,
-        equipment_id: item.equipment_id,
-        room_id: item.room_id,
-        ticket_type: item.ticket_type as 'maintenance' | 'vendor' | 'inspection' | 'other',
-        status: item.status as 'open' | 'in_progress' | 'on_hold' | 'closed' | 'cancelled',
-        priority: item.priority as 'low' | 'medium' | 'high' | 'urgent',
-        title: item.title,
-        description: item.description,
-        reported_by_user_id: item.reported_by_user_id,
-        assigned_to_user_id: item.assigned_to_user_id,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        resolved_at: item.resolved_at,
-        location_name: item.locations?.name || 'Unknown',
-        equipment_name: item.equipment?.name || undefined,
-        room_name: item.rooms?.name || undefined
-      }));
-      
-      setTickets(transformedData);
-    } catch (err) {
-      console.error('Error fetching tickets:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch tickets');
+      setTickets((data as any) || []);
+    } catch (error) {
+      console.error('Error fetching tickets:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch tickets",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -59,117 +68,98 @@ export const useTickets = () => {
 
   const createTicket = async (ticketData: CreateTicketData) => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('User not authenticated');
-
-      const insertData: TicketInsert = {
-        ...ticketData,
-        reported_by_user_id: user.user.id
-      };
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
         .from('tickets')
-        .insert(insertData)
-        .select(`
-          *,
-          locations:location_id (name),
-          equipment:equipment_id (name),
-          rooms:room_id (name)
-        `)
+        .insert([{
+          ...ticketData,
+          reported_by_user_id: user.id,
+          status: 'open'
+        }])
+        .select()
         .single();
-      
+
       if (error) throw error;
-      
-      const transformedData: TicketWithDetails = {
-        id: data.id,
-        location_id: data.location_id,
-        equipment_id: data.equipment_id,
-        room_id: data.room_id,
-        ticket_type: data.ticket_type as 'maintenance' | 'vendor' | 'inspection' | 'other',
-        status: data.status as 'open' | 'in_progress' | 'on_hold' | 'closed' | 'cancelled',
-        priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
-        title: data.title,
-        description: data.description,
-        reported_by_user_id: data.reported_by_user_id,
-        assigned_to_user_id: data.assigned_to_user_id,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        resolved_at: data.resolved_at,
-        location_name: data.locations?.name || 'Unknown',
-        equipment_name: data.equipment?.name || undefined,
-        room_name: data.rooms?.name || undefined
-      };
-      
-      setTickets(prev => [transformedData, ...prev]);
-      return transformedData;
-    } catch (err) {
-      console.error('Error creating ticket:', err);
-      throw err;
+
+      toast({
+        title: "Success",
+        description: "Ticket created successfully",
+      });
+
+      await fetchTickets();
+      return data;
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create ticket",
+        variant: "destructive",
+      });
+      throw error;
     }
   };
 
-  const updateTicket = async (id: string, ticketData: UpdateTicketData) => {
+  const updateTicket = async (ticketData: UpdateTicketData) => {
     try {
-      const updateData: TicketUpdate = {
-        ...ticketData,
-        updated_at: new Date().toISOString()
-      };
+      const { id, ...updateData } = ticketData;
+      
+      // If status is being changed to resolved, set resolved_at
+      if (updateData.status === 'resolved' || updateData.status === 'closed') {
+        updateData.resolved_at = new Date().toISOString();
+      }
 
       const { data, error } = await supabase
         .from('tickets')
         .update(updateData)
         .eq('id', id)
-        .select(`
-          *,
-          locations:location_id (name),
-          equipment:equipment_id (name),
-          rooms:room_id (name)
-        `)
+        .select()
         .single();
-      
+
       if (error) throw error;
-      
-      const transformedData: TicketWithDetails = {
-        id: data.id,
-        location_id: data.location_id,
-        equipment_id: data.equipment_id,
-        room_id: data.room_id,
-        ticket_type: data.ticket_type as 'maintenance' | 'vendor' | 'inspection' | 'other',
-        status: data.status as 'open' | 'in_progress' | 'on_hold' | 'closed' | 'cancelled',
-        priority: data.priority as 'low' | 'medium' | 'high' | 'urgent',
-        title: data.title,
-        description: data.description,
-        reported_by_user_id: data.reported_by_user_id,
-        assigned_to_user_id: data.assigned_to_user_id,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        resolved_at: data.resolved_at,
-        location_name: data.locations?.name || 'Unknown',
-        equipment_name: data.equipment?.name || undefined,
-        room_name: data.rooms?.name || undefined
-      };
-      
-      setTickets(prev => prev.map(ticket => ticket.id === id ? transformedData : ticket));
-      return transformedData;
-    } catch (err) {
-      console.error('Error updating ticket:', err);
-      throw err;
+
+      toast({
+        title: "Success",
+        description: "Ticket updated successfully",
+      });
+
+      await fetchTickets();
+      return data;
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update ticket",
+        variant: "destructive",
+      });
+      throw error;
     }
   };
 
-  const deleteTicket = async (id: string) => {
+  const deleteTicket = async (ticketId: string) => {
     try {
       const { error } = await supabase
         .from('tickets')
         .delete()
-        .eq('id', id);
-      
+        .eq('id', ticketId);
+
       if (error) throw error;
-      
-      setTickets(prev => prev.filter(ticket => ticket.id !== id));
-    } catch (err) {
-      console.error('Error deleting ticket:', err);
-      throw err;
+
+      toast({
+        title: "Success",
+        description: "Ticket deleted successfully",
+      });
+
+      await fetchTickets();
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete ticket",
+        variant: "destructive",
+      });
+      throw error;
     }
   };
 
@@ -180,10 +170,10 @@ export const useTickets = () => {
   return {
     tickets,
     loading,
-    error,
+    fetchTickets,
     createTicket,
     updateTicket,
     deleteTicket,
-    refetch: fetchTickets
+    refreshTickets: fetchTickets
   };
 };

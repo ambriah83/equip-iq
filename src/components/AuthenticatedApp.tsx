@@ -37,6 +37,8 @@ const AuthenticatedApp = ({ activeSection, setActiveSection }: AuthenticatedAppP
         return <EquipmentManagement />;
       case 'vendors':
         return <VendorManagement />;
+      case 'tickets':
+        return <div>Tickets page - Please navigate to /tickets</div>;
       case 'users':
         return <Settings />;
       case 'settings':

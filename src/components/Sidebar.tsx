@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Building2, Wrench, MessageSquare, FileText, Users, Settings, BarChart3, Package } from 'lucide-react';
+import { Building2, Wrench, MessageSquare, FileText, Users, Settings, BarChart3, Package, Ticket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -15,6 +15,7 @@ const Sidebar = ({ activeSection, onSectionChange, userRole }: SidebarProps) => 
     { id: 'ai-chat', label: 'AI Assistant', icon: MessageSquare, roles: ['admin', 'owner', 'manager', 'staff'] },
     { id: 'locations', label: 'Locations', icon: Building2, roles: ['admin', 'owner', 'manager'] },
     { id: 'equipment', label: 'Equipment', icon: Wrench, roles: ['admin', 'owner', 'manager', 'staff'] },
+    { id: 'tickets', label: 'Tickets', icon: Ticket, roles: ['admin', 'owner', 'manager', 'staff'] },
     { id: 'knowledge-base', label: 'Knowledge Base', icon: FileText, roles: ['admin', 'owner', 'manager'] },
     { id: 'vendors', label: 'Vendors', icon: Package, roles: ['admin', 'owner', 'manager'] },
     { id: 'users', label: 'User Management', icon: Users, roles: ['admin', 'owner'] },
