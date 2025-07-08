@@ -2,25 +2,14 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Phone, MessageSquare, Mail, Edit } from 'lucide-react';
-
-interface Vendor {
-  id: string;
-  equipment_type: string;
-  equipment_name?: string;
-  company_name: string;
-  vendor_department?: string;
-  contact_name?: string;
-  phone?: string;
-  website_email?: string;
-  notes?: string;
-}
+import { VendorWithContacts } from '@/types/Vendor';
 
 interface VendorActionsProps {
-  vendor: Vendor;
-  onEdit: (vendor: Vendor) => void;
-  onCall: (vendor: Vendor) => void;
-  onText: (vendor: Vendor) => void;
-  onEmail: (vendor: Vendor) => void;
+  vendor: VendorWithContacts;
+  onEdit: (vendor: VendorWithContacts) => void;
+  onCall: (vendor: VendorWithContacts) => void;
+  onText: (vendor: VendorWithContacts) => void;
+  onEmail: (vendor: VendorWithContacts) => void;
 }
 
 const VendorActions: React.FC<VendorActionsProps> = ({

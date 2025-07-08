@@ -1,30 +1,20 @@
 
 import React from 'react';
-import { Package, Phone, MessageSquare, Mail, Edit } from 'lucide-react';
+import { Package, Phone, MessageSquare, Mail, Edit, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/shared';
 import VendorActions from './VendorActions';
-
-interface Vendor {
-  id: string;
-  equipment_type: string;
-  equipment_name?: string;
-  company_name: string;
-  vendor_department?: string;
-  contact_name?: string;
-  phone?: string;
-  website_email?: string;
-  notes?: string;
-}
+import { VendorWithContacts } from '@/types/Vendor';
 
 interface VendorListProps {
-  vendors: Vendor[];
+  vendors: VendorWithContacts[];
   view: 'card' | 'list';
-  onEdit: (vendor: Vendor) => void;
-  onCall: (vendor: Vendor) => void;
-  onText: (vendor: Vendor) => void;
-  onEmail: (vendor: Vendor) => void;
+  onEdit: (vendor: VendorWithContacts) => void;
+  onCall: (vendor: VendorWithContacts) => void;
+  onText: (vendor: VendorWithContacts) => void;
+  onEmail: (vendor: VendorWithContacts) => void;
+  onTogglePrimary?: (vendor: VendorWithContacts) => void;
 }
 
 const VendorList: React.FC<VendorListProps> = ({
@@ -33,20 +23,21 @@ const VendorList: React.FC<VendorListProps> = ({
   onEdit,
   onCall,
   onText,
-  onEmail
+  onEmail,
+  onTogglePrimary
 }) => {
   const columns = [
     {
       key: 'company_name',
       label: 'Company',
-      render: (vendor: Vendor) => (
+      render: (vendor: VendorWithContacts) => (
         <div className="font-medium">{vendor.company_name}</div>
       )
     },
     {
       key: 'equipment_type',
       label: 'Equipment Type',
-      render: (vendor: Vendor) => (
+      render: (vendor: VendorWithContacts) => (
         <Badge variant="outline">{vendor.equipment_type}</Badge>
       )
     },
@@ -72,7 +63,7 @@ const VendorList: React.FC<VendorListProps> = ({
     }
   ];
 
-  const renderActions = (vendor: Vendor) => (
+  const renderActions = (vendor: VendorWithContacts) => (
     <VendorActions
       vendor={vendor}
       onEdit={onEdit}
@@ -85,15 +76,29 @@ const VendorList: React.FC<VendorListProps> = ({
   const renderCardView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {vendors.map((vendor) => (
-        <div key={vendor.id} className="bg-white rounded-lg border p-4 space-y-3">
+        <div key={vendor.id} className="bg-white rounded-lg border p-4 space-y-3 relative">
+          {vendor.is_primary && (
+            <Star className="absolute top-2 right-2 fill-yellow-400 text-yellow-400" size={20} />
+          )}
           <div className="flex items-start justify-between">
             <div>
               <h3 className="font-semibold">{vendor.company_name}</h3>
               <Badge variant="outline" className="mt-1">{vendor.equipment_type}</Badge>
             </div>
-            <Button size="sm" variant="ghost" onClick={() => onEdit(vendor)}>
-              <Edit size={16} />
-            </Button>
+            <div className="flex gap-1">
+              {onTogglePrimary && (
+                <Button 
+                  size="sm" 
+                  variant={vendor.is_primary ? "default" : "ghost"} 
+                  onClick={() => onTogglePrimary(vendor)}
+                >
+                  <Star size={16} />
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" onClick={() => onEdit(vendor)}>
+                <Edit size={16} />
+              </Button>
+            </div>
           </div>
           
           {vendor.equipment_name && (
