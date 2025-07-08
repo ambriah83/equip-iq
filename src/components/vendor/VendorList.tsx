@@ -5,26 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/shared';
 import VendorActions from './VendorActions';
-
-interface Vendor {
-  id: string;
-  equipment_type: string;
-  equipment_name?: string;
-  company_name: string;
-  vendor_department?: string;
-  contact_name?: string;
-  phone?: string;
-  website_email?: string;
-  notes?: string;
-}
+import { VendorWithContacts } from '@/types/Vendor';
 
 interface VendorListProps {
-  vendors: Vendor[];
+  vendors: VendorWithContacts[];
   view: 'card' | 'list';
-  onEdit: (vendor: Vendor) => void;
-  onCall: (vendor: Vendor) => void;
-  onText: (vendor: Vendor) => void;
-  onEmail: (vendor: Vendor) => void;
+  onEdit: (vendor: VendorWithContacts) => void;
+  onCall: (vendor: VendorWithContacts) => void;
+  onText: (vendor: VendorWithContacts) => void;
+  onEmail: (vendor: VendorWithContacts) => void;
 }
 
 const VendorList: React.FC<VendorListProps> = ({
@@ -39,14 +28,14 @@ const VendorList: React.FC<VendorListProps> = ({
     {
       key: 'company_name',
       label: 'Company',
-      render: (vendor: Vendor) => (
+      render: (vendor: VendorWithContacts) => (
         <div className="font-medium">{vendor.company_name}</div>
       )
     },
     {
       key: 'equipment_type',
       label: 'Equipment Type',
-      render: (vendor: Vendor) => (
+      render: (vendor: VendorWithContacts) => (
         <Badge variant="outline">{vendor.equipment_type}</Badge>
       )
     },
@@ -72,7 +61,7 @@ const VendorList: React.FC<VendorListProps> = ({
     }
   ];
 
-  const renderActions = (vendor: Vendor) => (
+  const renderActions = (vendor: VendorWithContacts) => (
     <VendorActions
       vendor={vendor}
       onEdit={onEdit}

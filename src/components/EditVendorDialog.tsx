@@ -2,24 +2,13 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import VendorForm from './vendor/VendorForm';
-
-interface Vendor {
-  id: string;
-  equipment_type: string;
-  equipment_name?: string;
-  company_name: string;
-  vendor_department?: string;
-  contact_name?: string;
-  phone?: string;
-  website_email?: string;
-  notes?: string;
-}
+import { VendorWithContacts, UpdateVendorData } from '@/types/Vendor';
 
 interface EditVendorDialogProps {
-  vendor: Vendor | null;
+  vendor: VendorWithContacts | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdateVendor: (vendor: Vendor) => void;
+  onUpdateVendor: (vendor: UpdateVendorData) => void;
 }
 
 const EditVendorDialog: React.FC<EditVendorDialogProps> = ({ 
@@ -28,7 +17,7 @@ const EditVendorDialog: React.FC<EditVendorDialogProps> = ({
   onOpenChange, 
   onUpdateVendor 
 }) => {
-  const handleFormSubmit = (updatedVendor: Vendor) => {
+  const handleFormSubmit = (updatedVendor: UpdateVendorData) => {
     onUpdateVendor(updatedVendor);
     onOpenChange(false);
   };
