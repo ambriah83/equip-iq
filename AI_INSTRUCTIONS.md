@@ -2,6 +2,8 @@
 
 **IMPORTANT**: Copy and paste these instructions at the start of any conversation with an AI assistant about the EquipIQ project.
 
+**UPDATE REMINDER**: After any work session, run `./update-reminder.sh` for a checklist of documentation to update.
+
 ## For All AI Assistants
 
 ```
@@ -16,12 +18,15 @@ This is the EquipIQ project. Please:
 3. USE tested prompts from:
    https://github.com/ambriah83/equip-iq/blob/main/PROMPTS.md
 
-4. After our session, UPDATE or tell me what to update in:
-   - PROGRESS.md - What we accomplished
+4. **CRITICAL**: After EVERY work session:
+   - If you can write to files: UPDATE these files directly
+   - If you cannot write: Tell me exactly what to update
+   - PROGRESS.md - What we accomplished (with date and who made changes)
    - PROMPTS.md - New prompts that worked
    - TROUBLESHOOTING.md - Issues we fixed
 
 Do NOT create new documentation files. Use the existing ones listed above.
+Always update PROGRESS.md - this is how we track all changes across AI tools!
 ```
 
 ## For AI with GitHub Access (Claude, Claude Code)
@@ -31,10 +36,12 @@ You have access to the GitHub repository at https://github.com/ambriah83/equip-i
 
 Please:
 1. Read all .md files in the root directory
-2. Update PROGRESS.md after making changes
-3. Add successful prompts to PROMPTS.md
-4. Document fixes in TROUBLESHOOTING.md
-5. Keep all documentation current
+2. DIRECTLY UPDATE these files after making changes:
+   - PROGRESS.md - Add what you accomplished (with date)
+   - PROMPTS.md - Add new working prompts
+   - TROUBLESHOOTING.md - Add fixes you implemented
+3. Always include who made the update (e.g., "by Claude Code", "by Lovable")
+4. Keep all documentation current
 ```
 
 ## For AI without GitHub Write Access (ChatGPT, Gemini)
@@ -55,8 +62,10 @@ Format your updates clearly so I can copy/paste them.
 Include in your prompts:
 ```
 See PROJECT_CONTEXT.md for project details.
-Update PROGRESS.md after completing these changes.
-Add this prompt to PROMPTS.md if it works well.
+IMPORTANT: After completing changes, update these files:
+- PROGRESS.md - Add what was accomplished today (with date)
+- PROMPTS.md - Add this prompt if it worked well
+- TROUBLESHOOTING.md - Add any fixes implemented
 ```
 
 ## Documentation File Purposes

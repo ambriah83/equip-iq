@@ -1,6 +1,6 @@
 # EquipIQ Progress Tracker
 
-**Last Updated**: 2025-07-08
+**Last Updated**: 2025-01-08 (by Claude Code)
 
 ## ✅ Completed Features
 
@@ -254,3 +254,6 @@
 - Focus should shift to UI integration of new backend features
 - Ticket system structure is ready, needs UI
 - Dashboard needs real data integration
+- Fixed line ending issues with .gitattributes (CRLF vs LF)
+- Created EquipIQ_Resources folder with quick reference documentation
+- IMPORTANT: All AI tools should update PROGRESS.md after making changes

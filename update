@@ -1,0 +1,3 @@
+#!/bin/bash
+# Shorter alias for update-reminder.sh
+./update-reminder.sh
