@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { Upload, File, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/shared/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface FileUploadProps {
   onFilesSelected: (files: File[]) => void;

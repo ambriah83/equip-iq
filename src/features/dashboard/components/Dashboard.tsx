@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, CheckCircle, Clock, TrendingUp, Brain, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AIEffectivenessModal } from '@/features/ai/components/AIEffectivenessModal';
+import AIEffectivenessModal from '@/components/AIEffectivenessModal';
 
 interface DashboardProps {
   onSectionChange: (section: string) => void;

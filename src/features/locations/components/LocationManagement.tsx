@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { Building2, MapPin, Users, Edit, Home, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useDataFiltering } from '@/shared/hooks/useDataFiltering';
-import { useViewToggle } from '@/shared/hooks/useViewToggle';
-import { useLocations, Location } from '@/shared/hooks/useLocations';
-import { useSupabaseRooms } from '@/shared/hooks/useSupabaseRooms';
-import { DataTable, FilterBar, StatusBadge } from '@/shared/components/common';
-import { LocationCard, AddLocationDialog, LocationDetailsModal, LocationImportDialog } from './location';
-import { AddRoomDialog } from './room';
+import { useDataFiltering } from '@/hooks/useDataFiltering';
+import { useViewToggle } from '@/hooks/useViewToggle';
+import { useLocations, Location } from '@/hooks/useLocations';
+import { useSupabaseRooms } from '@/hooks/useSupabaseRooms';
+import { DataTable, FilterBar, StatusBadge } from '@/components/shared';
+import { LocationCard, AddLocationDialog, LocationDetailsModal, LocationImportDialog } from '@/components/location';
+import { AddRoomDialog } from '@/components/room';
 import { Database } from '@/integrations/supabase/types';
-import { ViewToggle } from '@/shared/components/forms/ViewToggle';
+import ViewToggle from '@/components/ViewToggle';
 
 type DatabaseLocation = Database['public']['Tables']['locations']['Row'];
 

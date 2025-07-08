@@ -15,7 +15,7 @@ const AuthenticatedApp = () => {
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard onSectionChange={setActiveSection} />;
+        return <Dashboard onSectionChange={(section) => setActiveSection(section as Section)} />;
       case 'equipment':
         return <EquipmentManagement />;
       case 'locations':
@@ -28,7 +28,7 @@ const AuthenticatedApp = () => {
       case 'settings':
         return <Settings />;
       default:
-        return <Dashboard onSectionChange={setActiveSection} />;
+        return <Dashboard onSectionChange={(section) => setActiveSection(section as Section)} />;
     }
   };
 
@@ -36,7 +36,7 @@ const AuthenticatedApp = () => {
     <div className="flex h-screen bg-slate-50">
       <Sidebar 
         activeSection={activeSection} 
-        onSectionChange={setActiveSection} 
+        onSectionChange={(section) => setActiveSection(section as Section)} 
       />
       <main className="flex-1 overflow-auto">
         {renderSection()}

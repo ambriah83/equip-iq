@@ -10,11 +10,11 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useLocations } from '@/shared/hooks/useLocations';
-import { useSupabaseRooms } from '@/shared/hooks/useSupabaseRooms';
-import { useEquipmentTypes } from '@/shared/hooks/useEquipmentTypes';
+import { useLocations } from '@/hooks/useLocations';
+import { useSupabaseRooms } from '@/hooks/useSupabaseRooms';
+import { useEquipmentTypes } from '@/hooks/useEquipmentTypes';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/shared/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const AddEquipmentDialog = () => {
   const [open, setOpen] = useState(false);

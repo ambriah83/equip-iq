@@ -3,7 +3,7 @@ import { MessageSquare, Send, Upload, Mic, Image as ImageIcon, ThumbsUp, ThumbsD
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { useToast } from '@/shared/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;

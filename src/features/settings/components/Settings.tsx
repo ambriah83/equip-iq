@@ -1,18 +1,18 @@
 import React from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserManagement, RolePermissionManagement, SystemSettings } from './settings';
+import { PersonalInfoTab, UserManagementTab, PermissionsTab, BillingTab, LocationsBillingTab, OwnerBillingTab, DropdownFieldsTab } from '@/components/settings';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = React.useState('users');
 
   const tabs = [
-    { id: 'users', label: 'User Management', component: UserManagement },
-    { id: 'permissions', label: 'Roles & Permissions', component: RolePermissionManagement },
-    { id: 'system', label: 'System Settings', component: SystemSettings }
+    { id: 'users', label: 'User Management', component: UserManagementTab },
+    { id: 'permissions', label: 'Roles & Permissions', component: PermissionsTab },
+    { id: 'system', label: 'System Settings', component: DropdownFieldsTab }
   ];
 
-  const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component || UserManagement;
+  const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component || UserManagementTab;
 
   return (
     <div className="p-6 space-y-6">

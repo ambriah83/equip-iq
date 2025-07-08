@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useDataFiltering } from '@/shared/hooks/useDataFiltering';
-import { useViewToggle } from '@/shared/hooks/useViewToggle';
-import { useEquipment, EquipmentWithDetails } from '@/shared/hooks/useEquipment';
-import { DataTable, FilterBar } from '@/shared/components/common';
-import { EquipmentCard, WarrantyAlert } from './equipment';
-import EquipmentHeader from './equipment/EquipmentHeader';
-import EquipmentOverview from './equipment/EquipmentOverview';
-import { getEquipmentColumns } from './equipment/EquipmentTableColumns';
-import { getEquipmentFilterConfigs } from './equipment/EquipmentFilters';
-import EditEquipmentDialog from './EditEquipmentDialog';
+import { useDataFiltering } from '@/hooks/useDataFiltering';
+import { useViewToggle } from '@/hooks/useViewToggle';
+import { useEquipment, EquipmentWithDetails } from '@/hooks/useEquipment';
+import { DataTable, FilterBar } from '@/components/shared';
+import { EquipmentCard, WarrantyAlert } from '@/components/equipment';
+import EquipmentHeader from '@/components/equipment/EquipmentHeader';
+import EquipmentOverview from '@/components/equipment/EquipmentOverview';
+import { getEquipmentColumns } from '@/components/equipment/EquipmentTableColumns';
+import { getEquipmentFilterConfigs } from '@/components/equipment/EquipmentFilters';
+import EditEquipmentDialog from '@/components/EditEquipmentDialog';
 
 const EquipmentManagement = () => {
   const { view, setView } = useViewToggle();

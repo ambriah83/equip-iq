@@ -1,11 +1,11 @@
 import React from 'react';
-import { useDataFiltering } from '@/shared/hooks/useDataFiltering';
-import { useViewToggle } from '@/shared/hooks/useViewToggle';
-import { FilterBar, CSVImportDialog } from '@/shared/components/common';
-import { EditVendorDialog, VendorChatbot } from './vendor';
-import VendorHeader from './vendor/VendorHeader';
-import VendorList from './vendor/VendorList';
-import { useVendorManagement } from './vendor/VendorManagementHooks';
+import { useDataFiltering } from '@/hooks/useDataFiltering';
+import { useViewToggle } from '@/hooks/useViewToggle';
+import { DataTable, FilterBar, CSVImportDialog } from '@/components/shared';
+import { VendorCard, AddVendorDialog, EditVendorDialog, VendorContactDialog, VendorChatbot } from '@/components/vendor';
+import VendorHeader from '@/components/vendor/VendorHeader';
+import VendorList from '@/components/vendor/VendorList';
+import { useVendorManagement } from '@/components/vendor/VendorManagementHooks';
 
 const VendorManagement = () => {
   const { view, setView } = useViewToggle();
