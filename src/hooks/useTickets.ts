@@ -27,14 +27,6 @@ export const useTickets = () => {
           room:room_id (
             id,
             name
-          ),
-          assigned_to:assigned_to_user_id (
-            id,
-            email
-          ),
-          reported_by:reported_by_user_id (
-            id,
-            email
           )
         `)
         .order('created_at', { ascending: false });
