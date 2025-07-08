@@ -15,6 +15,7 @@ export interface Vendor {
 export interface VendorWithContacts extends Vendor {
   contacts?: VendorContact[];
   primary_contact?: VendorContact;
+  is_primary?: boolean;
 }
 
 export interface CreateVendorData {
