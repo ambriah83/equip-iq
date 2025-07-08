@@ -46,7 +46,7 @@ const VendorManagement = () => {
     data: vendors,
     searchFields: ['company_name', 'equipment_type', 'contact_name', 'notes'],
     filterConfigs: {
-      equipment_type: 'Equipment Type'
+      equipment_type: 'all'
     }
   });
 
