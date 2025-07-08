@@ -185,6 +185,182 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      inventory_items: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          id: string
+          manufacturer: string | null
+          max_stock: number | null
+          min_stock: number | null
+          name: string
+          part_number: string | null
+          reorder_point: number | null
+          unit_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          manufacturer?: string | null
+          max_stock?: number | null
+          min_stock?: number | null
+          name: string
+          part_number?: string | null
+          reorder_point?: number | null
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          manufacturer?: string | null
+          max_stock?: number | null
+          min_stock?: number | null
+          name?: string
+          part_number?: string | null
+          reorder_point?: number | null
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_movements: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          item_id: string
+          location_id: string
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          notes: string | null
+          quantity: number
+          reference_id: string | null
+          reference_type: Database["public"]["Enums"]["reference_type"]
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          item_id: string
+          location_id: string
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          notes?: string | null
+          quantity: number
+          reference_id?: string | null
+          reference_type: Database["public"]["Enums"]["reference_type"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          item_id?: string
+          location_id?: string
+          movement_type?: Database["public"]["Enums"]["movement_type"]
+          notes?: string | null
+          quantity?: number
+          reference_id?: string | null
+          reference_type?: Database["public"]["Enums"]["reference_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_stock: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          last_counted: string | null
+          location_id: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          last_counted?: string | null
+          location_id: string
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          last_counted?: string | null
+          location_id?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_stock_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_stock_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_base: {
         Row: {
           content: string | null
@@ -889,6 +1065,7 @@ export type Database = {
           equipment_name: string | null
           equipment_type: string
           id: string
+          is_primary: boolean | null
           notes: string | null
           phone: string | null
           updated_at: string
@@ -902,6 +1079,7 @@ export type Database = {
           equipment_name?: string | null
           equipment_type: string
           id?: string
+          is_primary?: boolean | null
           notes?: string | null
           phone?: string | null
           updated_at?: string
@@ -915,6 +1093,7 @@ export type Database = {
           equipment_name?: string | null
           equipment_type?: string
           id?: string
+          is_primary?: boolean | null
           notes?: string | null
           phone?: string | null
           updated_at?: string
@@ -976,6 +1155,8 @@ export type Database = {
         | "can_operate_heavy_equipment"
         | "can_access_restricted_areas"
         | "can_perform_emergency_shutdowns"
+      movement_type: "purchase" | "usage" | "adjustment" | "transfer"
+      reference_type: "ticket" | "purchase_order" | "manual"
       subscription_tier_enum: "basic" | "professional" | "enterprise"
       user_role:
         | "owner"
@@ -1123,6 +1304,8 @@ export const Constants = {
         "can_access_restricted_areas",
         "can_perform_emergency_shutdowns",
       ],
+      movement_type: ["purchase", "usage", "adjustment", "transfer"],
+      reference_type: ["ticket", "purchase_order", "manual"],
       subscription_tier_enum: ["basic", "professional", "enterprise"],
       user_role: [
         "owner",
