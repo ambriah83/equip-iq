@@ -12,6 +12,7 @@ import AcceptInvitation from '@/pages/AcceptInvitation';
 import NotFound from '@/pages/NotFound';
 import TermsOfService from '@/pages/TermsOfService';
 import PrivacyPolicy from '@/pages/PrivacyPolicy';
+import Tickets from '@/pages/Tickets';
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,10 @@ function App() {
           <Route 
             path="/" 
             element={session ? <Index /> : <Navigate to="/auth" replace />} 
+          />
+          <Route 
+            path="/tickets" 
+            element={session ? <Tickets /> : <Navigate to="/auth" replace />} 
           />
           
           {/* Catch all */}
