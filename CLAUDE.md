@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Important Paths - REMEMBER THESE
+- **EquipIQ Project Location**: `/mnt/c/Users/ambri/OneDrive/Documents/GitHub/equip-iq`
+- **Windows Path**: `C:\Users\ambri\OneDrive\Documents\GitHub\equip-iq`
+- **Note**: This project is in OneDrive/Documents/GitHub, NOT in the home directory
+
 ## Project Documentation References
 
 **ALWAYS start by reading these files in order:**

@@ -63,10 +63,7 @@ const CSVImportDialog: React.FC<CSVImportDialogProps> = ({
   };
 
   const handleProcessWithAI = async (csvText: string) => {
-    if (file) {
-      const text = await file.text();
-      await processCSVWithAI(text);
-    }
+    await processCSVWithAI(csvText);
   };
 
   return (

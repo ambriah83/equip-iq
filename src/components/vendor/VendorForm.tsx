@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { VendorContactsSection } from './VendorContactsSection';
 
 interface VendorFormData {
   company_name: string;
@@ -150,6 +151,12 @@ const VendorForm: React.FC<VendorFormProps> = ({
           placeholder="Additional information about this vendor, service agreements, preferred contact methods, etc."
         />
       </div>
+
+      {isEditing && initialData.id && (
+        <div className="mt-6">
+          <VendorContactsSection vendorId={initialData.id} />
+        </div>
+      )}
 
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>

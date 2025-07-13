@@ -112,9 +112,38 @@ Can't assign equipment to rooms. Fix the room dropdown to show all rooms for the
 
 ### Vendor Management
 
-**Vendor Contacts Not Saving**:
+**Vendor Contacts Not Saving** ✅ FIXED:
 ```
-The vendor contacts aren't saving. Fix the form to properly save multiple contacts per vendor with their roles.
+The vendor contacts weren't showing in the edit form. Fixed by integrating VendorContactsSection into VendorForm when editing vendors.
+Solution: Added VendorContactsSection component to the VendorForm for existing vendors, increased dialog width to 700px.
+```
+
+**Vendor Import Not Saving** ✅ FIXED:
+```
+Vendor import was validating data but not actually inserting into database. Shows success but vendors don't appear.
+Solution: Added actual database insertion logic to VendorImportDialog, including duplicate checking.
+- Now checks for existing vendors before inserting
+- Actually saves vendors to the database
+- Reports specific errors for duplicates
+```
+
+**Excel Files Show as Binary in AI Processing** ✅ FIXED:
+```
+When manually processing Excel files with AI, it was reading binary data instead of converting to CSV first.
+Solution: Updated processCSVWithAI to detect Excel files and convert them to CSV before AI processing.
+- Now properly detects .xlsx and .xls files
+- Converts Excel to CSV before sending to AI
+- Works for both auto and manual AI processing
+```
+
+**AI Returns Explanations Instead of CSV** ✅ FIXED:
+```
+The AI endpoint was returning explanatory text like "To process the provided CSV data..." instead of actual CSV.
+Solution: Added logic to bypass AI processing when Excel file already has all required fields.
+- Checks if converted Excel has required headers (equipment_type, company_name)
+- If well-formatted, skips AI and imports directly
+- Prevents parsing AI explanations as CSV data
+- Much faster import for properly formatted Excel files
 ```
 
 ### Work Orders (Tickets)

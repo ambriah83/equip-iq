@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CSVParser } from '@/utils/csvParser';
 import { CSVAIPreprocessor } from '@/utils/csvAIPreprocessor';
 import { supabase } from '@/integrations/supabase/client';
+import * as XLSX from 'xlsx';
 
 interface ImportResult {
   success: boolean;
@@ -59,21 +60,110 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
     if (!file) return;
 
     console.log('🚀 Starting enhanced import process for:', file.name);
+    console.log('📊 File type:', file.type);
+    console.log('📊 File name ends with .xlsx?', file.name.endsWith('.xlsx'));
+    console.log('📊 File name ends with .xls?', file.name.endsWith('.xls'));
+    
     setImporting(true);
     setResult(null);
-    setAutoProcessingStatus('🔍 Analyzing CSV structure...');
+    setAutoProcessingStatus('🔍 Analyzing file structure...');
 
     try {
-      const text = await file.text();
-      console.log('📄 File content loaded, size:', text.length);
+      let text = '';
+      
+      // Check if it's an Excel file by name or MIME type
+      const isExcel = file.name.toLowerCase().endsWith('.xlsx') || 
+                     file.name.toLowerCase().endsWith('.xls') ||
+                     file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                     file.type === 'application/vnd.ms-excel';
+      
+      if (isExcel) {
+        console.log('📊 Detected Excel file:', file.name);
+        setAutoProcessingStatus('📊 Converting Excel file to CSV format...');
+        
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          console.log('📊 Excel file loaded, size:', arrayBuffer.byteLength);
+          
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+          console.log('📊 Workbook parsed, sheets:', workbook.SheetNames);
+          
+          // Get the first sheet
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          console.log('📊 Using sheet:', firstSheetName);
+          
+          // Convert to CSV
+          text = XLSX.utils.sheet_to_csv(worksheet);
+          console.log('✅ Excel converted to CSV, size:', text.length);
+          console.log('📊 First 200 chars of CSV:', text.substring(0, 200));
+        } catch (xlsxError) {
+          console.error('❌ Excel conversion error:', xlsxError);
+          throw new Error(`Failed to convert Excel file: ${xlsxError.message}`);
+        }
+      } else {
+        // Regular CSV file
+        text = await file.text();
+        console.log('📄 File content loaded, size:', text.length);
+      }
 
+      // Only analyze as CSV if it's actually text
+      if (text.includes('\0') || text.charCodeAt(0) === 0xFFFE || text.charCodeAt(0) === 0xFEFF || text.startsWith('PK')) {
+        // This is binary data that wasn't converted properly
+        console.error('❌ Binary data detected after conversion attempt');
+        throw new Error('Failed to convert Excel file to CSV format. Please try uploading a CSV file instead.');
+      }
+      
       // Enhanced CSV analysis
       const analysis = CSVAIPreprocessor.analyzeCSVForPreprocessing(text, requiredFields, fieldDescriptions);
       setProcessingDetails(analysis.analysisDetails);
       
       console.log('📊 CSV Analysis completed:', analysis);
 
-      if (analysis.needsPreprocessing) {
+      // Check if this is a well-formatted Excel conversion that doesn't need AI
+      const hasRequiredHeaders = requiredFields.every(field => {
+        const headers = analysis.analysisDetails?.originalHeaders || [];
+        console.log(`Checking for required field "${field}" in headers:`, headers);
+        
+        // More flexible matching for Excel headers
+        const fieldWords = field.toLowerCase().replace(/_/g, ' ').split(' ');
+        return headers.some(header => {
+          const headerLower = header.toLowerCase();
+          // Check if all words from the field exist in the header (in any order)
+          return fieldWords.every(word => headerLower.includes(word));
+        });
+      });
+      
+      console.log('Has all required headers?', hasRequiredHeaders);
+
+      if (hasRequiredHeaders && analysis.confidence >= 40) {
+        console.log('✅ Excel file has all required fields, skipping AI processing');
+        setAutoProcessingStatus('✅ Excel file is well-formatted! Parsing data...');
+        
+        const parseResult = CSVParser.parse(text);
+        setParseResult(parseResult);
+        
+        if (parseResult.data && parseResult.data.length > 0) {
+          setAutoProcessingStatus('📥 Importing data...');
+          const importResult = await onImport(parseResult.data);
+          setResult(importResult);
+          
+          if (importResult.success) {
+            setAutoProcessingStatus('✅ Import completed successfully!');
+            toast({
+              title: "Import Successful",
+              description: `Successfully imported ${importResult.processed} ${title.toLowerCase()}.`,
+            });
+          } else {
+            setAutoProcessingStatus('⚠️ Import completed with some issues');
+            toast({
+              title: "Import Completed with Issues",
+              description: `Imported ${importResult.processed} items, but ${importResult.errors.length} had errors.`,
+              variant: "destructive"
+            });
+          }
+        }
+      } else if (analysis.needsPreprocessing) {
         setAutoProcessingStatus('🤖 AI is enhancing your CSV for better compatibility...');
         setProcessingWithAI(true);
 
@@ -299,13 +389,37 @@ export const useCSVImport = ({ title, onImport, requiredFields, fieldDescription
     }
   };
 
-  const processCSVWithAI = async (csvText: string) => {
+  const processCSVWithAI = async (csvText?: string) => {
     console.log('Manual CSV processing with AI...');
     setProcessingWithAI(true);
 
     try {
+      let textToProcess = csvText || '';
+      
+      // If no csvText provided and we have a file, convert it first
+      if (!csvText && file) {
+        // Check if it's an Excel file
+        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+          console.log('📊 Detected Excel file, converting to CSV for AI processing...');
+          
+          const arrayBuffer = await file.arrayBuffer();
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+          
+          // Get the first sheet
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          
+          // Convert to CSV
+          textToProcess = XLSX.utils.sheet_to_csv(worksheet);
+          console.log('✅ Excel converted to CSV for AI processing');
+        } else {
+          // Regular CSV file
+          textToProcess = await file.text();
+        }
+      }
+      
       const result = await CSVAIPreprocessor.preprocessWithAI(
-        csvText,
+        textToProcess,
         title,
         requiredFields,
         fieldDescriptions

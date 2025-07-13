@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git stash:*)",
+      "Bash(git pull:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ls:*)",
+      "Bash(dos2unix:*)",
+      "Bash(mv:*)",
+      "Bash(git push:*)",
+      "Bash(chmod:*)",
+      "Bash(rm:*)",
+      "Bash(npm install:*)",
+      "Bash(npx supabase:*)",
+      "Bash(docker:*)"
+    ],
+    "deny": []
+  }
+}

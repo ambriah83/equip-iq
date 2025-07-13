@@ -13,7 +13,7 @@ import {
 
 export const useVendorManagement = () => {
   const [vendors, setVendors] = useState<VendorWithContacts[]>([]);
-  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
+  const [editingVendor, setEditingVendor] = useState<VendorWithContacts | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -197,7 +197,7 @@ export const useVendorManagement = () => {
     }
   };
 
-  const handleEdit = (vendor: Vendor) => {
+  const handleEdit = (vendor: VendorWithContacts) => {
     setEditingVendor(vendor);
     setShowEditDialog(true);
   };
