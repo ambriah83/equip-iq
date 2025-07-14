@@ -2,139 +2,246 @@
 
 **Integration Status**: ✅ API tested, 348 assets retrieved successfully, 20,055+ work orders available
 
-## 🔌 API Connection
+## 🔐 AUTHENTICATION
 
-### Authentication
+### Credentials
 ```javascript
-// Environment Variables Required
-LIMBLE_API_KEY=your_api_key_here
-LIMBLE_BASE_URL=https://api.limble.com/v1
-```
-
-### Base Configuration
-```javascript
-const limbleConfig = {
-  baseURL: 'https://api.limble.com/v1',
-  headers: {
-    'Authorization': `Bearer ${LIMBLE_API_KEY}`,
-    'Content-Type': 'application/json'
-  }
+const LIMBLE_CONFIG = {
+  client_id: 'W9J69W1YXPZCDGGIIWVG6JVKY78HVF',
+  client_secret: process.env.LIMBLE_CLIENT_SECRET, // Store in .env
+  base_url: 'https://api.limblecmms.com',
+  auth_type: 'Basic Auth',
+  test_account: 'maintenance@glotanning.com'
 };
 ```
 
-## 📊 Available Data
+### Implementation
+```javascript
+// Basic Auth Header
+const authHeader = {
+  'Authorization': `Basic ${Buffer.from(`${client_id}:${client_secret}`).toString('base64')}`,
+  'Content-Type': 'application/json',
+  'Accept': 'application/json'
+};
+```
 
-### Assets (1,168 total)
-**Endpoint**: `GET /assets`
-**Response includes**:
-- Asset ID and name
-- Equipment type and model
-- Location hierarchy
-- Serial numbers
-- Purchase dates
-- Warranty information
-- Current status
-- Maintenance history
+## 📊 API ENDPOINTS
 
-### Work Orders (20,055 total)  
-**Endpoint**: `GET /work-orders`
-**Response includes**:
-- Work order ID and description
-- Asset association
-- Priority level (Low/Medium/High/Urgent)
-- Status (Open/In Progress/Resolved/Closed)
-- Created/due/completed dates
-- Assigned technician
-- Time estimates vs. actual
-- Resolution notes
-- Parts used
-- Cost breakdown
+### Verified Working
+- `GET /v2/assets` - All equipment/assets (348 items retrieved)
+- Returns comprehensive asset data with images, metadata, and work request URLs
 
-### Parts Inventory (940 total)
-**Endpoint**: `GET /parts`
-**Response includes**:
-- Part ID and name
-- Part numbers
-- Current quantities
-- Min/Max stock levels
-- Cost information
-- Supplier details
-- Compatible equipment
+### To Be Tested
+- `GET /v2/tasks` - Work orders and maintenance tasks
+- `GET /v2/locations` - Facility locations
+- `GET /v2/users` - User management
+- `GET /v2/parts` - Parts inventory
+- `GET /v2/assets/fields/?assets={id}` - Custom fields per asset
+- `GET /v2/work-orders` - Work order history
+- `GET /v2/purchase-orders` - Purchase order data
 
-### Locations (38 active)
-**Endpoint**: `GET /locations`
-**Response includes**:
-- Location hierarchy (State > City > Building > Room)
-- Location codes and names
-- Manager assignments
-- Contact information
-- Operating status
+### Webhook Endpoints (To Configure)
+- `/v2/webhooks/tasks` - Real-time task updates
+- `/v2/webhooks/assets` - Asset changes
+- `/v2/webhooks/purchase-orders` - PO updates
 
-### Users
-**Endpoint**: `GET /users`
-**Response includes**:
-- User roles and permissions
-- Contact information
-- Location assignments
-- Skill sets/certifications
+## 🏗️ DATA STRUCTURES
 
-## 🗂️ Data Structure Examples
-
-### Asset Record
-```json
-{
-  "id": "asset_12345",
-  "name": "Norvell Auto Rev #27 MK",
-  "type": "Tanning Equipment",
-  "model": "Auto Rev Pro",
-  "serial_number": "NRV-2023-0127",
-  "location": {
-    "building": "McKinney Location",
-    "room": "Tanning Room 5",
-    "position": "Bay A"
-  },
-  "status": "Active",
-  "purchase_date": "2023-03-15",
-  "warranty_expires": "2025-03-15",
-  "maintenance_cost_total": "$2,847",
-  "last_service_date": "2024-07-01"
+### Asset Object
+```typescript
+interface LimbleAsset {
+  assetID: number;
+  name: string;
+  startedOn: number; // Unix timestamp
+  lastEdited: number; // Unix timestamp
+  parentAssetID: number; // 0 if top-level
+  locationID: number;
+  geoLocation: null | {
+    lat: number;
+    lng: number;
+  };
+  hoursPerWeek: number;
+  meta: {
+    fields: string; // URL to custom fields
+    tasks: string;  // URL to asset tasks
+  };
+  workRequestPortal: string; // Direct work request URL
+  image: Array<{
+    fileName: string;
+    link: string; // Time-limited signed URL
+  }>;
 }
 ```
 
-### Work Order Record
-```json
-{
-  "id": "wo_67890",
-  "asset_id": "asset_12345", 
-  "title": "Tanning bed won't start",
-  "description": "Customer reported bed #27 not responding to start button. No error codes visible.",
-  "priority": "High",
-  "status": "Open",
-  "created_date": "2024-07-13T09:30:00Z",
-  "due_date": "2024-07-13T17:00:00Z",
-  "assigned_to": "John Tech",
-  "estimated_time": 60,
-  "category": "Electrical",
-  "location": "McKinney - Room 5"
+### Location Mapping (Real Glo Data)
+```javascript
+const GLO_LOCATIONS = {
+  23600: 'ALL', // Main/All locations
+  23597: 'DC',  // Washington DC
+  23592: 'ES',  // Eastern Shore
+  23596: 'NW',  // Northwest
+  27108: 'WH'   // Warehouse/Storage
+};
+```
+
+## 🔧 IMPLEMENTATION REQUIREMENTS
+
+### Environment Variables
+```bash
+# .env file
+LIMBLE_CLIENT_ID=W9J69W1YXPZCDGGIIWVG6JVKY78HVF
+LIMBLE_CLIENT_SECRET=your_secret_here
+LIMBLE_BASE_URL=https://api.limblecmms.com
+LIMBLE_WEBHOOK_SECRET=generate_this
+```
+
+### Database Schema Updates
+```sql
+-- Add to equipment table
+ALTER TABLE equipment ADD COLUMN limble_asset_id INTEGER UNIQUE;
+ALTER TABLE equipment ADD COLUMN limble_location_id INTEGER;
+ALTER TABLE equipment ADD COLUMN limble_parent_id INTEGER;
+ALTER TABLE equipment ADD COLUMN work_request_url TEXT;
+ALTER TABLE equipment ADD COLUMN last_limble_sync TIMESTAMP;
+
+-- Add sync log table
+CREATE TABLE limble_sync_log (
+  id SERIAL PRIMARY KEY,
+  sync_type VARCHAR(50),
+  started_at TIMESTAMP,
+  completed_at TIMESTAMP,
+  records_synced INTEGER,
+  errors TEXT[],
+  status VARCHAR(20)
+);
+```
+
+### Service Implementation
+```typescript
+// src/services/limble.service.ts
+export class LimbleService {
+  private headers: Headers;
+  
+  constructor() {
+    this.headers = new Headers({
+      'Authorization': this.getBasicAuth(),
+      'Content-Type': 'application/json'
+    });
+  }
+
+  async syncAssets(): Promise<SyncResult> {
+    // 1. Fetch all assets from Limble
+    const response = await fetch(`${LIMBLE_CONFIG.base_url}/v2/assets`, {
+      headers: this.headers
+    });
+    
+    // 2. Transform to EquipIQ format
+    const assets = await response.json();
+    
+    // 3. Upsert to database
+    for (const asset of assets) {
+      await this.upsertAsset(asset);
+    }
+    
+    // 4. Log sync results
+    await this.logSync('assets', assets.length);
+  }
+
+  async syncWorkOrders(since?: Date): Promise<SyncResult> {
+    // Implement incremental sync for work orders
+    const params = since ? `?created_after=${since.toISOString()}` : '';
+    const response = await fetch(`${LIMBLE_CONFIG.base_url}/v2/work-orders${params}`, {
+      headers: this.headers
+    });
+    
+    return this.processWorkOrders(await response.json());
+  }
 }
 ```
 
-### Parts Usage
-```json
-{
-  "part_id": "part_456",
-  "name": "UV Bulb - 100W",
-  "part_number": "UV-100-STD",
-  "quantity_used": 4,
-  "cost_per_unit": "$23.50",
-  "supplier": "Tanning Supply Co",
-  "compatible_equipment": ["Norvell Auto Rev", "Skin Wellness Pro"]
-}
+## 🚨 GOTCHAS & CONSIDERATIONS
+
+1. **Authentication**: Uses Basic Auth despite having OAuth-style credentials
+2. **Rate Limits**: Unknown - implement exponential backoff
+3. **Data Limits**: 36-month historical data limit
+4. **Image URLs**: Expire after ~24 hours - must cache locally
+5. **Regions**: Different base URLs for different regions:
+   - US: `api.limblecmms.com`
+   - Canada: `ca-api.limblecmms.com`
+   - Australia: `au-api.limblecmms.com`
+   - Europe: `eu-api.limblecmms.com`
+
+## 📈 GLO TANNING INSIGHTS (From Real Data)
+
+### Equipment Summary
+- **Total Assets**: 348 active equipment pieces
+- **Equipment Types**:
+  - Tanning beds (P90, Magic 636, Sun Angel, etc.)
+  - Spray tan booths (Norvell Auto Rev, VersaSpa Pro)
+  - Red light therapy (Cocoon, Skin Wellness, Beauty Angel)
+  - Stand-up units (Sunrise 480, KBL models)
+  
+### Hierarchical Structure
+- Top level: Location rooms
+- Child level: Equipment within rooms
+- Naming convention: `[Equipment Model] #[Room Number] [Location Code]`
+
+### Common Equipment Names
+- "Norvell Auto Rev #27 MK" (McKinney location)
+- "Skin Wellness Pro #38 ALL" (Allen location)
+- "VersaSpa Pro #12 FRI" (Frisco location)
+
+## 🎯 INTEGRATION ROADMAP
+
+### Phase 1: Basic Sync (Week 1)
+- [x] Test API authentication
+- [x] Retrieve asset data
+- [ ] Implement asset sync service
+- [ ] Create sync monitoring
+- [ ] Handle errors gracefully
+
+### Phase 2: Work Orders (Week 2)
+- [ ] Test work order endpoints
+- [ ] Map Limble tasks to EquipIQ tickets
+- [ ] Implement incremental sync
+- [ ] Set up webhook handlers
+
+### Phase 3: Real-time Updates (Week 3)
+- [ ] Configure webhooks in Limble
+- [ ] Implement webhook endpoints
+- [ ] Add real-time notifications
+- [ ] Test bi-directional sync
+
+### Phase 4: Advanced Features (Week 4)
+- [ ] Parts inventory sync
+- [ ] Purchase order integration
+- [ ] Custom field mapping
+- [ ] Multi-tenant support
+
+## 🚀 QUICK START COMMANDS
+
+```bash
+# Test connection (replace YOUR_SECRET with actual secret)
+curl -u "W9J69W1YXPZCDGGIIWVG6JVKY78HVF:YOUR_SECRET" \
+  https://api.limblecmms.com/v2/assets
+
+# In TypeScript
+const response = await fetch(`${LIMBLE_CONFIG.base_url}/v2/assets`, {
+  headers: authHeader
+});
 ```
 
-## 🔄 Integration Patterns
+## 📝 NOTES FOR DEVELOPERS
 
-### 1. **Real-time Data Sync**
+1. **Start Simple**: Focus on asset sync first
+2. **Error Handling**: Expect 401/403 errors during development
+3. **Logging**: Log all API calls for debugging
+4. **Testing**: Create mock data from real responses
+5. **Security**: Never log the client_secret
+
+## 🔄 Data Sync Patterns
+
+### Real-time Data Sync
 ```javascript
 // Sync new work orders every 5 minutes
 const syncWorkOrders = async () => {
@@ -148,7 +255,7 @@ const syncWorkOrders = async () => {
 };
 ```
 
-### 2. **Asset Lookup for AI**
+### Asset Lookup for AI
 ```javascript
 // When user mentions equipment, lookup asset details
 const getAssetContext = async (equipmentMention) => {
@@ -165,7 +272,7 @@ const getAssetContext = async (equipmentMention) => {
 };
 ```
 
-### 3. **Auto-Ticket Creation**
+### Auto-Ticket Creation
 ```javascript
 // When AI chat identifies need for technician
 const createLimbleTicket = async (chatContext) => {
@@ -184,155 +291,6 @@ const createLimbleTicket = async (chatContext) => {
 };
 ```
 
-## 🧠 AI Training Data Extraction
-
-### Historical Pattern Analysis
-```javascript
-// Extract common issue patterns for AI training
-const analyzeWorkOrderPatterns = async () => {
-  const workOrders = await limbleAPI.get('/work-orders?limit=20000');
-  
-  const patterns = {
-    equipment_issues: groupBy(workOrders, 'asset_type'),
-    resolution_times: calculateAverageResolution(workOrders),
-    common_solutions: extractSolutionPatterns(workOrders),
-    escalation_triggers: identifyEscalationPatterns(workOrders)
-  };
-  
-  return patterns;
-};
-```
-
-### Equipment Knowledge Base
-```javascript
-// Build equipment-specific knowledge from work orders
-const buildEquipmentKnowledge = async (asset_id) => {
-  const workOrders = await limbleAPI.get(`/work-orders?asset_id=${asset_id}`);
-  
-  return {
-    common_issues: extractIssueFrequency(workOrders),
-    typical_solutions: extractSolutions(workOrders),
-    parts_commonly_replaced: extractPartsUsage(workOrders),
-    average_repair_time: calculateRepairTimes(workOrders),
-    seasonal_patterns: analyzeSeasonalTrends(workOrders)
-  };
-};
-```
-
-## ⚡ Performance Optimization
-
-### Caching Strategy
-```javascript
-// Cache frequently accessed data
-const cacheStrategy = {
-  assets: '1 hour', // Asset info changes rarely
-  work_orders_active: '5 minutes', // Active work orders change frequently  
-  work_orders_historical: '24 hours', // Historical data for AI training
-  parts_inventory: '30 minutes', // Inventory levels change regularly
-  locations: '12 hours', // Location info stable
-};
-```
-
-### Batch Operations
-```javascript
-// Batch multiple API calls for efficiency
-const batchAssetLookup = async (assetIds) => {
-  const chunks = chunkArray(assetIds, 50); // Limble API limit
-  const results = await Promise.all(
-    chunks.map(chunk => 
-      limbleAPI.get(`/assets?ids=${chunk.join(',')}`)
-    )
-  );
-  return results.flat();
-};
-```
-
-## 🔍 Search & Filtering
-
-### Equipment Search
-```javascript
-// Smart equipment search for AI context
-const searchEquipment = async (userInput) => {
-  // Extract equipment identifiers from user input
-  const searchTerms = extractEquipmentTerms(userInput);
-  
-  const searchParams = {
-    name: searchTerms.name,
-    location: searchTerms.location,
-    type: searchTerms.type,
-    status: 'Active'
-  };
-  
-  return await limbleAPI.get('/assets/search', { params: searchParams });
-};
-```
-
-### Work Order Filters
-```javascript
-// Filter work orders for AI training and context
-const getRelevantWorkOrders = async (asset_id, issue_type) => {
-  const filters = {
-    asset_id: asset_id,
-    status: ['Closed'], // Only completed work orders for training
-    category: issue_type,
-    created_after: '2023-01-01', // Recent data only
-    limit: 100
-  };
-  
-  return await limbleAPI.get('/work-orders', { params: filters });
-};
-```
-
-## 🚨 Error Handling
-
-### API Rate Limits
-```javascript
-// Handle Limble API rate limits gracefully
-const limbleAPIWithRetry = async (endpoint, options, retries = 3) => {
-  try {
-    return await limbleAPI(endpoint, options);
-  } catch (error) {
-    if (error.status === 429 && retries > 0) {
-      const waitTime = error.headers['retry-after'] * 1000;
-      await sleep(waitTime);
-      return limbleAPIWithRetry(endpoint, options, retries - 1);
-    }
-    throw error;
-  }
-};
-```
-
-### Data Validation
-```javascript
-// Validate Limble data before processing
-const validateWorkOrder = (workOrder) => {
-  const required = ['id', 'asset_id', 'title', 'status'];
-  const missing = required.filter(field => !workOrder[field]);
-  
-  if (missing.length > 0) {
-    throw new Error(`Missing required fields: ${missing.join(', ')}`);
-  }
-  
-  return true;
-};
-```
-
-## 📈 Monitoring & Analytics
-
-### Sync Health Monitoring
-```javascript
-// Monitor Limble integration health
-const monitorSyncHealth = () => {
-  return {
-    last_successful_sync: getLastSyncTime(),
-    failed_requests_24h: getFailedRequestCount(),
-    api_response_times: getAverageResponseTime(),
-    data_freshness: calculateDataFreshness(),
-    sync_errors: getRecentSyncErrors()
-  };
-};
-```
-
 ---
 
-**Note**: This integration leverages Glo Tanning's existing Limble CMMS data (20,055+ work orders) to train the AI and provide equipment-aware responses. The focus is on augmenting Limble with intelligent chat capabilities, not replacing existing workflows.
+**REMEMBER**: This integration is critical for EquipIQ's success. Glo Tanning is our first customer - make it smooth, make it reliable, make it impressive! 🏰
