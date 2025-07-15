@@ -20,10 +20,9 @@
   - Uses GPT-4o-mini model
 - **Route**: `/ai-chat` and `/ai-chatgpt` in main app
 
-#### Gemini Prototype (Still Exists)
-- **Location**: `/src/gemini-prototype/components/pages/AIChat.tsx`
-- **Status**: Separate prototype, converted from Gemini to ChatGPT
-- **Issue**: Runs on same port (8080) as main app, causing conflicts
+#### Gemini Prototype (REMOVED)
+- **Status**: Deleted - prototype has been removed from the codebase
+- **Reason**: Main app now has all features, prototype was causing conflicts
 
 ### Key Technical Details
 - **API Key**: `VITE_OPENAI_API_KEY` in `.env` file
@@ -48,14 +47,11 @@ The main app's `AIChatGPTSecure.tsx` now has all the features from both previous
 ```
 /mnt/c/Users/ambri/Projects/equip-iq/
 ├── src/
-│   ├── components/
-│   │   └── AIChatGPTSecure.tsx  # ✅ Main AI chat (enhanced)
-│   └── gemini-prototype/
-│       └── components/pages/
-│           └── AIChat.tsx        # ⚠️ Prototype (may cause conflicts)
+│   └── components/
+│       └── AIChatGPTSecure.tsx  # ✅ Main AI chat (enhanced)
 └── netlify/
     └── functions/
-        └── chat.ts              # Backend function for secure API calls
+        └── chat.js              # Backend function for secure API calls
 ```
 
 ### Current Features in AIChatGPTSecure
