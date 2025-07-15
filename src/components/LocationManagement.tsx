@@ -12,6 +12,7 @@ import { LimbleSyncDialog } from '@/components/location/LimbleSyncDialog';
 import { AddRoomDialog } from '@/components/room';
 import { Database } from '@/integrations/supabase/types';
 import ViewToggle from './ViewToggle';
+import { LocationAccessDebug } from '@/components/LocationAccessDebug';
 
 type DatabaseLocation = Database['public']['Tables']['locations']['Row'];
 
@@ -38,7 +39,7 @@ const LocationManagement = () => {
     data: locations,
     searchFields: ['name', 'address', 'manager_name', 'abbreviation'],
     filterConfigs: {
-      status: 'Status'
+      status: 'all'
     }
   });
 

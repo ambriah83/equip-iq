@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { PersonalInfoTab, BillingTab, UserManagementTab, PermissionsTab, DropdownFieldsTab, OwnerBillingTab } from '@/components/settings/index';
 import LocationsBillingTab from '@/components/settings/LocationsBillingTab';
 import { LimbleDataImport } from '@/components/LimbleDataImport';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Settings as SettingsIcon, User, CreditCard, Users, Shield, ChevronDown, Building, MapPin, Upload } from 'lucide-react';
 
 const Settings = () => {
@@ -57,7 +58,9 @@ const Settings = () => {
         </TabsContent>
         
         <TabsContent value="import">
-          <LimbleDataImport />
+          <ErrorBoundary>
+            <LimbleDataImport />
+          </ErrorBoundary>
         </TabsContent>
       </Tabs>
     </div>

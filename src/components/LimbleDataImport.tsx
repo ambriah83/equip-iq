@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, FileSpreadsheet, Check, AlertCircle, Users, Building2, Wrench, Package } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   importLocations, 
   importEquipment, 
@@ -27,6 +28,31 @@ export const LimbleDataImport = () => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  
+  // Monitor auth state to prevent unexpected logouts
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    
+    checkAuth();
+    
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        setIsAuthenticated(false);
+        toast({
+          title: 'Session expired',
+          description: 'Please log in again to continue importing',
+          variant: 'destructive'
+        });
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [toast]);
   
   const [steps, setSteps] = useState<ImportStep[]>([
     {
@@ -70,6 +96,48 @@ export const LimbleDataImport = () => {
   const handleFileSelect = async (stepIndex: number, file: File) => {
     const step = steps[stepIndex];
     
+    // Check authentication first
+    if (!isAuthenticated) {
+      toast({
+        title: 'Authentication required',
+        description: 'Please log in to import data',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    // Validate file before processing
+    if (!file) {
+      toast({
+        title: 'No file selected',
+        description: 'Please select a file to import',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    // Check file type
+    const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls)$/)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please select an Excel file (.xlsx or .xls)',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    // Check file size (10MB limit)
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      toast({
+        title: 'File too large',
+        description: 'Please select a file smaller than 10MB',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     // Update step status
     const updatedSteps = [...steps];
     updatedSteps[stepIndex].status = 'importing';
@@ -89,9 +157,19 @@ export const LimbleDataImport = () => {
           description: `Successfully imported ${result.imported || result.total || 0} items`,
         });
         
-        // Auto-advance to next step
+        // Auto-advance to next step after a brief delay
         if (stepIndex < steps.length - 1) {
-          setCurrentStep(stepIndex + 1);
+          setTimeout(() => {
+            setCurrentStep(stepIndex + 1);
+          }, 500);
+        }
+        
+        // If this was locations import, refresh the page data
+        if (step.id === 'locations' && result.imported > 0) {
+          // Trigger a small delay before any navigation to ensure data is committed
+          setTimeout(() => {
+            console.log('Locations imported successfully, data should be available');
+          }, 1000);
         }
       } else {
         toast({
@@ -190,10 +268,17 @@ export const LimbleDataImport = () => {
                         {step.result && (
                           <div className="mt-3 p-3 bg-gray-50 rounded text-sm">
                             {step.result.success ? (
-                              <div className="text-green-700">
-                                ✓ Imported: {step.result.imported || step.result.total || 0} items
-                                {step.result.rooms && ` (${step.result.rooms} rooms)`}
-                              </div>
+                              <>
+                                <div className="text-green-700">
+                                  ✓ Imported: {step.result.imported || step.result.total || 0} items
+                                  {step.result.rooms && ` (${step.result.rooms} rooms)`}
+                                </div>
+                                {step.result.warning && (
+                                  <div className="text-yellow-700 mt-2 p-2 bg-yellow-50 rounded">
+                                    ⚠️ {step.result.warning}
+                                  </div>
+                                )}
+                              </>
                             ) : (
                               <div className="text-red-700">
                                 ✗ Error: {step.result.error}
@@ -203,6 +288,18 @@ export const LimbleDataImport = () => {
                               <div className="text-gray-600 mt-1">
                                 Note: {step.result.note}
                               </div>
+                            )}
+                            {step.result.errors && step.result.errors.length > 0 && (
+                              <details className="mt-2">
+                                <summary className="cursor-pointer text-red-600 text-xs">
+                                  View error details ({step.result.errors.length} errors)
+                                </summary>
+                                <ul className="mt-1 text-xs text-red-600 max-h-32 overflow-y-auto">
+                                  {step.result.errors.map((err, idx) => (
+                                    <li key={idx} className="ml-4 list-disc">{err}</li>
+                                  ))}
+                                </ul>
+                              </details>
                             )}
                           </div>
                         )}
@@ -257,6 +354,42 @@ export const LimbleDataImport = () => {
               <AlertDescription className="text-green-700">
                 <strong>Import complete!</strong> All data has been successfully imported.
                 You can now manage your locations, equipment, and vendors in EquipIQ.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {steps[0].status === 'success' && steps[0].result?.imported > 0 && (
+            <Alert className="mt-4 border-blue-200 bg-blue-50">
+              <AlertDescription className="flex items-center justify-between">
+                <span className="text-blue-700">
+                  {steps[0].result.imported} locations imported successfully!
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    // Use a safer navigation method
+                    try {
+                      // First, ensure we're still authenticated
+                      supabase.auth.getSession().then(({ data: { session } }) => {
+                        if (session) {
+                          // Navigate to locations through the app's routing
+                          window.location.hash = '#/locations';
+                          window.location.reload();
+                        } else {
+                          // If not authenticated, go to home
+                          window.location.href = '/';
+                        }
+                      });
+                    } catch (err) {
+                      console.error('Navigation error:', err);
+                      window.location.href = '/';
+                    }
+                  }}
+                  className="ml-4"
+                >
+                  View Locations
+                </Button>
               </AlertDescription>
             </Alert>
           )}

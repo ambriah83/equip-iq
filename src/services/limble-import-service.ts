@@ -19,86 +19,192 @@ const parseMultiValue = (str: string): string[] => {
 // Import Locations from Assets file
 export const importLocations = async (file: File) => {
   try {
+    // Validate file before processing
+    if (!file) {
+      return {
+        success: false,
+        error: 'No file provided',
+        imported: 0,
+        total: 0
+      };
+    }
+    
+    // Check file size (limit to 10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      return {
+        success: false,
+        error: 'File size exceeds 10MB limit',
+        imported: 0,
+        total: 0
+      };
+    }
+    
+    // Check file type
+    const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls)$/)) {
+      return {
+        success: false,
+        error: 'Invalid file type. Please upload an Excel file (.xlsx or .xls)',
+        imported: 0,
+        total: 0
+      };
+    }
+    
+    // Get current user with proper error handling
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error('Authentication error during import:', authError);
+      return {
+        success: false,
+        error: 'Authentication required. Please log in and try again.',
+        imported: 0,
+        total: 0
+      };
+    }
+    
+    // Store user ID to ensure we maintain the session
+    const userId = user.id;
+    
     const data = await readExcelFile(file);
+    
+    // Validate data structure
+    if (!Array.isArray(data) || data.length === 0) {
+      return {
+        success: false,
+        error: 'No data found in the Excel file',
+        imported: 0,
+        total: 0
+      };
+    }
+    
     const locations = new Map<string, any>();
     
-    // Extract unique locations
-    data.forEach(row => {
-      if (row['Location Name']) {
-        const locationName = row['Location Name'].trim();
-        if (!locations.has(locationName)) {
-          locations.set(locationName, {
-            name: locationName,
-            // Try to infer state from location name or default to empty
-            state: extractState(locationName),
-            status: 'active',
-            metadata: {
-              imported_from_limble: true,
-              import_date: new Date().toISOString()
-            }
-          });
+    // Extract unique locations with validation
+    data.forEach((row, index) => {
+      try {
+        if (row['Location Name'] && typeof row['Location Name'] === 'string') {
+          const locationName = row['Location Name'].trim();
+          if (locationName && !locations.has(locationName)) {
+            locations.set(locationName, {
+              name: locationName,
+              // Try to infer state from location name or default to empty
+              state: extractState(locationName),
+              status: 'active',
+              metadata: {
+                imported_from_limble: true,
+                import_date: new Date().toISOString(),
+                row_number: index + 2 // Excel rows start at 1, plus header
+              }
+            });
+          }
         }
+      } catch (err) {
+        console.error(`Error processing row ${index + 2}:`, err);
       }
     });
     
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
+    if (locations.size === 0) {
+      return {
+        success: false,
+        error: 'No valid locations found in the file. Please check the "Location Name" column.',
+        imported: 0,
+        total: 0
+      };
     }
     
-    // Insert locations into database
+    // Insert locations into database with transaction-like behavior
     const results = [];
+    const errors = [];
+    let processedCount = 0;
+    
     for (const [name, location] of locations) {
-      const { data: existingLocation } = await supabase
-        .from('locations')
-        .select('id')
-        .eq('name', name)
-        .single();
-      
-      if (!existingLocation) {
-        const { data: newLocation, error } = await supabase
+      processedCount++;
+      try {
+        // Check for existing location
+        const { data: existingLocation, error: checkError } = await supabase
           .from('locations')
-          .insert({
-            ...location,
-            abbreviation: name.substring(0, 3).toUpperCase()
-          })
-          .select()
-          .single();
+          .select('id')
+          .eq('name', name)
+          .maybeSingle(); // Use maybeSingle instead of single to avoid errors when not found
         
-        if (!error && newLocation) {
-          results.push(newLocation);
-          
-          // Grant the current user access to this location
-          const { error: accessError } = await supabase
-            .from('user_location_access')
-            .insert({
-              user_id: user.id,
-              location_id: newLocation.id,
-              access_level: 'admin'
-            })
-            .select();
-            
-          if (accessError) {
-            console.error('Error granting location access:', accessError);
-          }
-        } else if (error) {
-          console.error('Error inserting location:', name, error);
+        if (checkError) {
+          console.error(`Error checking location "${name}":`, checkError);
+          errors.push(`Failed to check if "${name}" exists: ${checkError.message}`);
+          continue;
         }
+        
+        if (!existingLocation) {
+          // Generate a unique abbreviation
+          let abbreviation = name.substring(0, 3).toUpperCase();
+          if (abbreviation.length < 3) {
+            abbreviation = abbreviation.padEnd(3, 'X');
+          }
+          
+          // Insert new location
+          const { data: newLocation, error: insertError } = await supabase
+            .from('locations')
+            .insert({
+              ...location,
+              abbreviation: abbreviation
+            })
+            .select()
+            .single();
+          
+          if (insertError) {
+            console.error(`Error inserting location "${name}":`, insertError);
+            errors.push(`Failed to create "${name}": ${insertError.message}`);
+            continue;
+          }
+          
+          if (newLocation) {
+            results.push(newLocation);
+            
+            // Grant the current user access to this location
+            const { error: accessError } = await supabase
+              .from('user_location_access')
+              .insert({
+                user_id: userId,
+                location_id: newLocation.id,
+                access_level: 'admin'
+              })
+              .select();
+              
+            if (accessError) {
+              console.warn(`Warning: Could not grant access to location "${name}":`, accessError);
+              // Don't fail the import, just log the warning
+            }
+          }
+        } else {
+          console.log(`Location "${name}" already exists, skipping`);
+        }
+      } catch (err) {
+        console.error(`Unexpected error processing location "${name}":`, err);
+        errors.push(`Unexpected error for "${name}": ${err.message}`);
+      }
+      
+      // Add a small delay every 10 items to prevent overwhelming the database
+      if (processedCount % 10 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
     
+    // Determine overall success
+    const success = results.length > 0 || (results.length === 0 && errors.length === 0);
+    
     return {
-      success: true,
+      success: success,
       imported: results.length,
       total: locations.size,
-      locations: results
+      locations: results,
+      errors: errors.length > 0 ? errors : undefined,
+      warning: errors.length > 0 ? `Imported ${results.length} of ${locations.size} locations. ${errors.length} failed.` : undefined
     };
   } catch (error) {
-    console.error('Error importing locations:', error);
+    console.error('Critical error importing locations:', error);
     return {
       success: false,
-      error: error.message,
+      error: error.message || 'An unexpected error occurred',
       imported: 0,
       total: 0
     };
@@ -314,25 +420,80 @@ export const importUsers = async (file: File) => {
   }
 };
 
-// Helper function to read Excel file
+// Helper function to read Excel file with proper error handling
 async function readExcelFile(file: File): Promise<any[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
+    // Set a timeout for file reading
+    const timeout = setTimeout(() => {
+      reader.abort();
+      reject(new Error('File reading timed out after 30 seconds'));
+    }, 30000);
+    
     reader.onload = (e) => {
+      clearTimeout(timeout);
       try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
+        if (!e.target?.result) {
+          reject(new Error('Failed to read file contents'));
+          return;
+        }
+        
+        const data = new Uint8Array(e.target.result as ArrayBuffer);
+        
+        // Check if XLSX is loaded
+        if (!XLSX || !XLSX.read) {
+          reject(new Error('Excel library not loaded. Please refresh the page and try again.'));
+          return;
+        }
+        
+        const workbook = XLSX.read(data, { 
+          type: 'array',
+          cellDates: true,
+          cellNF: false,
+          cellText: false
+        });
+        
+        if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+          reject(new Error('No sheets found in the Excel file'));
+          return;
+        }
+        
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+        if (!firstSheet) {
+          reject(new Error('Unable to read the first sheet'));
+          return;
+        }
+        
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet, {
+          raw: false,
+          defval: null,
+          blankrows: false
+        });
+        
         resolve(jsonData);
       } catch (error) {
-        reject(error);
+        console.error('Error parsing Excel file:', error);
+        reject(new Error(`Failed to parse Excel file: ${error.message || 'Unknown error'}`));
       }
     };
     
-    reader.onerror = reject;
-    reader.readAsArrayBuffer(file);
+    reader.onerror = () => {
+      clearTimeout(timeout);
+      reject(new Error('Failed to read file. Please check the file and try again.'));
+    };
+    
+    reader.onabort = () => {
+      clearTimeout(timeout);
+      reject(new Error('File reading was cancelled'));
+    };
+    
+    try {
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      clearTimeout(timeout);
+      reject(new Error(`Failed to start reading file: ${error.message}`));
+    }
   });
 }
 
