@@ -5,7 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { PersonalInfoTab, BillingTab, UserManagementTab, PermissionsTab, DropdownFieldsTab, OwnerBillingTab } from '@/components/settings/index';
 import LocationsBillingTab from '@/components/settings/LocationsBillingTab';
-import { Settings as SettingsIcon, User, CreditCard, Users, Shield, ChevronDown, Building, MapPin } from 'lucide-react';
+import { LimbleDataImport } from '@/components/LimbleDataImport';
+import { Settings as SettingsIcon, User, CreditCard, Users, Shield, ChevronDown, Building, MapPin, Upload } from 'lucide-react';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('personal');
@@ -18,12 +19,13 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="personal" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
           <TabsTrigger value="personal">Personal</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="permissions">Permissions</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="fields">Fields</TabsTrigger>
+          <TabsTrigger value="import">Import</TabsTrigger>
         </TabsList>
 
         <TabsContent value="personal">
@@ -52,6 +54,10 @@ const Settings = () => {
         
         <TabsContent value="fields">
           <DropdownFieldsTab />
+        </TabsContent>
+        
+        <TabsContent value="import">
+          <LimbleDataImport />
         </TabsContent>
       </Tabs>
     </div>

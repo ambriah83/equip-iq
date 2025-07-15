@@ -14,8 +14,6 @@ import NotFound from '@/pages/NotFound';
 import TermsOfService from '@/pages/TermsOfService';
 import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import Tickets from '@/pages/Tickets';
-import ChatGPTTest from '@/pages/ChatGPTTest';
-import GeminiDemo from '@/pages/GeminiDemo';
 
 const queryClient = new QueryClient();
 
@@ -58,8 +56,6 @@ function App() {
           <Route path="/accept-invitation" element={<AcceptInvitation />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/chatgpt-test" element={<ChatGPTTest />} />
-          <Route path="/demo" element={<GeminiDemo />} />
           
           {/* Protected routes */}
           <Route 

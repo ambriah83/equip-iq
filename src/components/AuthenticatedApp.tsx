@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Dashboard from '@/components/Dashboard';
-import AIChat from '@/components/AIChat';
+import AIChatGPTSecure from '@/components/AIChatGPTSecure';
 import LocationManagement from '@/components/LocationManagement';
 import EquipmentManagement from '@/components/EquipmentManagement';
 import VendorManagement from '@/components/VendorManagement';
@@ -30,7 +30,9 @@ const AuthenticatedApp = ({ activeSection, setActiveSection }: AuthenticatedAppP
       case 'dashboard':
         return <Dashboard onSectionChange={setActiveSection} />;
       case 'ai-chat':
-        return <AIChat />;
+        return <AIChatGPTSecure />;
+      case 'ai-chatgpt':
+        return <AIChatGPTSecure />;
       case 'locations':
         return <LocationManagement />;
       case 'equipment':

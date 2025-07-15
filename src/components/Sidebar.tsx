@@ -17,6 +17,7 @@ const Sidebar = ({ activeSection, onSectionChange, userRole }: SidebarProps) => 
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, roles: ['admin', 'owner', 'manager', 'staff'], path: '/' },
     { id: 'ai-chat', label: 'AI Assistant', icon: MessageSquare, roles: ['admin', 'owner', 'manager', 'staff'] },
+    { id: 'ai-chatgpt', label: 'AI ChatGPT', icon: MessageSquare, roles: ['admin', 'owner', 'manager', 'staff'] },
     { id: 'locations', label: 'Locations', icon: Building2, roles: ['admin', 'owner', 'manager'] },
     { id: 'equipment', label: 'Equipment', icon: Wrench, roles: ['admin', 'owner', 'manager', 'staff'] },
     { id: 'tickets', label: 'Tickets', icon: Ticket, roles: ['admin', 'owner', 'manager', 'staff'], path: '/tickets' },

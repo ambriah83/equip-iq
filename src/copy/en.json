@@ -1,0 +1,59 @@
+{
+  "hero": {
+    "headline": "Equipment down? Get answers in seconds.",
+    "subhead": "AI-powered troubleshooting that creates tickets automatically when you're stuck",
+    "primaryCta": "Start Fixing Now",
+    "secondaryCta": "See How It Works"
+  },
+  "chat": {
+    "welcomeMessage": "👋 Hi! What equipment problem can I help you fix?",
+    "placeholder": "Describe what's wrong (e.g., 'red light flashing on bed 3')",
+    "exampleProblems": [
+      "Tanning bed won't turn on",
+      "Error code E4 on display", 
+      "Spray tan gun not spraying",
+      "Strange noise from bed 5"
+    ],
+    "thinkingState": "🔍 Analyzing your problem...",
+    "successPrefix": "✅ Here's how to fix that:",
+    "ticketPrompt": "🎫 Want me to create a support ticket for this issue?",
+    "ticketCreated": "✅ Ticket created! Help is on the way.",
+    "buttons": {
+      "yes": "Yes, Create Ticket",
+      "no": "No, I'll Try This",
+      "sendMessage": "Send",
+      "newChat": "New Problem"
+    }
+  },
+  "errors": {
+    "connection": "😕 Connection lost. Check your internet and try again.",
+    "timeout": "⏱️ Taking longer than usual. Try simplifying your question.",
+    "noSolution": "🤔 I couldn't find a solution. Let me create a support ticket for you.",
+    "generic": "😬 Something went wrong. Please try again."
+  },
+  "auth": {
+    "loginTitle": "Welcome Back!",
+    "loginCta": "Sign In",
+    "signupTitle": "Start Fixing Equipment Faster",
+    "signupCta": "Start Free Trial",
+    "emailPlaceholder": "your@email.com",
+    "passwordPlaceholder": "Password"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "chat": "Fix Equipment",
+    "tickets": "Support Tickets",
+    "settings": "Settings",
+    "logout": "Sign Out"
+  },
+  "empty": {
+    "noTickets": "No tickets yet. Start fixing equipment!",
+    "noHistory": "No chat history. Ask your first question!"
+  },
+  "footer": {
+    "tagline": "Fix equipment faster. Save thousands.",
+    "support": "Need Help?",
+    "terms": "Terms",
+    "privacy": "Privacy"
+  }
+}

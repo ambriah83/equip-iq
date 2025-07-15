@@ -10,13 +10,16 @@
 This is the EquipIQ project. Please:
 
 1. READ the current project status:
-   https://github.com/ambriah83/equip-iq/blob/main/PROJECT_CONTEXT.md
+   Local: C:\Users\ambri\Projects\equip-iq\PROJECT_CONTEXT.md
+   GitHub: https://github.com/ambriah83/equip-iq/blob/main/PROJECT_CONTEXT.md
 
 2. CHECK what's already done:
-   https://github.com/ambriah83/equip-iq/blob/main/PROGRESS.md
+   Local: C:\Users\ambri\Projects\equip-iq\PROGRESS.md
+   GitHub: https://github.com/ambriah83/equip-iq/blob/main/PROGRESS.md
 
 3. USE tested prompts from:
-   https://github.com/ambriah83/equip-iq/blob/main/PROMPTS.md
+   Local: C:\Users\ambri\Projects\equip-iq\PROMPTS.md
+   GitHub: https://github.com/ambriah83/equip-iq/blob/main/PROMPTS.md
 
 4. **CRITICAL**: After EVERY work session:
    - If you can write to files: UPDATE these files directly
@@ -83,8 +86,19 @@ IMPORTANT: After completing changes, update these files:
 - **Tanning salon industry** - Multi-location equipment management
 - **Current focus** - Fix import errors, create ticket UI, dashboard real data
 
+## AI Chat Implementation
+
+**IMPORTANT**: Use Google Vertex AI for the AI chat feature (when available)
+- Vertex AI has long-term memory capabilities announced
+- **NOTE**: Open API not yet released - waiting for public availability
+- Will provide persistent context for equipment troubleshooting
+- Will maintain conversation history across sessions
+- Better understanding of equipment patterns over time
+- Check for API availability before implementation
+
 ## GitHub Repository
 
 https://github.com/ambriah83/equip-iq
+Local Project Path: C:\Users\ambri\Projects\equip-iq
 
 Always check existing documentation before creating anything new!

@@ -13,7 +13,27 @@
       "Bash(rm:*)",
       "Bash(npm install:*)",
       "Bash(npx supabase:*)",
-      "Bash(docker:*)"
+      "Bash(docker:*)",
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)",
+      "Bash(find:*)",
+      "Bash(curl:*)",
+      "Bash(git fetch:*)",
+      "Bash(diff:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(cp:*)",
+      "Bash(VITE_PORT=5173 npm run dev)",
+      "Bash(npx vite:*)",
+      "Bash(wsl.exe:*)",
+      "Bash(pip install:*)",
+      "Bash(/tmp/excel_venv/bin/pip install:*)",
+      "Bash(/tmp/excel_venv/bin/python3:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

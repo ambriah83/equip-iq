@@ -1,6 +1,5 @@
-
-import React, { useState, useRef } from 'react';
-import { MessageSquare, Send, Upload, Mic, Image as ImageIcon, ThumbsUp, ThumbsDown, Video, Phone } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { MessageSquare, Send, Loader2, Upload, Mic, Image as ImageIcon, ThumbsUp, ThumbsDown, Video, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -24,22 +23,73 @@ interface FeedbackData {
   conversationSummary: string;
 }
 
-const AIChat = () => {
+const AIChatGPTSecure = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hello! I'm your AI troubleshooting assistant. I can help you diagnose equipment issues, guide you through repairs, and escalate complex problems to our support team. You can share images, videos, or start a live video call for real-time assistance. How can I help you today?",
+      text: "Hello! I'm your AI assistant powered by ChatGPT. I can help you troubleshoot equipment issues, answer maintenance questions, and provide guidance on your tanning salon operations. What can I help you with today?",
       sender: 'ai',
       timestamp: new Date(),
-    }
+    },
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [sessionId] = useState(Date.now().toString());
+  const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const getChatGPTResponse = async (prompt: string, chatHistory: Message[]) => {
+    try {
+      const messages = chatHistory.map(msg => ({
+        role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
+        content: msg.text
+      }));
+
+      messages.unshift({
+        role: 'system' as const,
+        content: "You are IQ, an expert AI equipment technician for tanning salons. Your knowledge is based on real work orders. Be concise and helpful. When a user has an issue, guide them through troubleshooting. If it's a known issue that requires a technician, suggest creating a ticket."
+      });
+
+      messages.push({
+        role: 'user' as const,
+        content: prompt
+      });
+
+      // Call our secure backend function instead of OpenAI directly
+      const response = await fetch('/.netlify/functions/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages })
+      });
+
+      const result = await response.json();
+      
+      if (result.choices && result.choices[0]?.message?.content) {
+        return result.choices[0].message.content;
+      } else if (result.error) {
+        console.error("API Error:", result.error);
+        throw new Error(result.error.message || 'API error occurred');
+      } else {
+        throw new Error("Unexpected response format");
+      }
+    } catch (error) {
+      console.error("Error calling ChatGPT API:", error);
+      throw error;
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
@@ -55,22 +105,31 @@ const AIChat = () => {
     setInputText('');
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const aiResponseText = await getChatGPTResponse(inputText, messages);
+      
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: "I understand you're experiencing an issue. Can you please tell me which location and equipment this relates to? If possible, please upload an image or video of the equipment, or we can start a live video call for real-time troubleshooting.",
+        text: aiResponseText,
         sender: 'ai',
         timestamp: new Date(),
       };
+      
       setMessages(prev => [...prev, aiResponse]);
-      setIsLoading(false);
-
+      
       // Show feedback prompt after a few exchanges
       if (messages.length >= 4) {
         setTimeout(() => setShowFeedback(true), 3000);
       }
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to get AI response. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleFeedback = (wasSolved: boolean) => {
@@ -208,14 +267,21 @@ const AIChat = () => {
     setMessages(prev => [...prev, endCallMessage]);
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex-1 flex flex-col h-full bg-slate-50">
       <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-6 text-white">
         <div className="flex items-center gap-3">
           <MessageSquare size={24} />
           <div>
             <h2 className="text-xl font-bold">AI Troubleshooting Assistant</h2>
-            <p className="text-blue-100">Get instant help with equipment issues - now with video support!</p>
+            <p className="text-blue-100">Powered by GPT-4o-mini with multimedia support</p>
           </div>
         </div>
       </div>
@@ -241,147 +307,142 @@ const AIChat = () => {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
-          <div
+          <Card
             key={message.id}
-            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <Card className={`max-w-md p-4 ${
+            className={`p-4 ${
               message.sender === 'user' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-white border-slate-200'
-            }`}>
-              {message.image && (
-                <img 
-                  src={message.image} 
-                  alt="Uploaded" 
-                  className="w-full h-48 object-cover rounded-lg mb-3"
-                />
-              )}
-              {message.video && (
-                <video 
-                  src={message.video} 
-                  controls 
-                  className="w-full h-48 rounded-lg mb-3"
-                />
-              )}
-              <p className="text-sm">{message.text}</p>
-              <p className={`text-xs mt-2 ${
-                message.sender === 'user' ? 'text-blue-100' : 'text-slate-500'
-              }`}>
-                {message.timestamp.toLocaleTimeString()}
-              </p>
-            </Card>
-          </div>
-        ))}
-        
-        {isLoading && (
-          <div className="flex justify-start">
-            <Card className="max-w-md p-4 bg-white border-slate-200">
-              <div className="flex items-center gap-2">
-                <div className="animate-pulse flex space-x-1">
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                </div>
-                <span className="text-sm text-slate-500">AI is analyzing...</span>
+                ? 'ml-auto max-w-[80%] bg-blue-50' 
+                : 'mr-auto max-w-[80%]'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium mb-1">
+                  {message.sender === 'user' ? 'You' : 'AI Assistant'}
+                </p>
+                <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                {message.image && (
+                  <img src={message.image} alt="Uploaded" className="mt-2 max-w-full h-auto rounded" />
+                )}
+                {message.video && (
+                  <video src={message.video} controls className="mt-2 max-w-full h-auto rounded" />
+                )}
+                <p className="text-xs text-gray-500 mt-2">
+                  {message.timestamp.toLocaleTimeString()}
+                </p>
               </div>
-            </Card>
-          </div>
+            </div>
+          </Card>
+        ))}
+        {isLoading && (
+          <Card className="mr-auto max-w-[80%] p-4">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm text-gray-500">AI is typing...</span>
+            </div>
+          </Card>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Feedback Modal */}
+      {/* Feedback Popup */}
       {showFeedback && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="p-6 max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">Was your issue resolved?</h3>
-            <p className="text-sm text-slate-600 mb-6">
-              Your feedback helps us improve our AI assistant for everyone.
-            </p>
-            <div className="flex gap-3">
-              <Button 
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="p-6 max-w-sm">
+            <h3 className="text-lg font-semibold mb-3">Was your issue resolved?</h3>
+            <div className="flex justify-center gap-4">
+              <Button
                 onClick={() => handleFeedback(true)}
-                className="flex-1 gap-2"
+                className="bg-green-600 hover:bg-green-700"
               >
-                <ThumbsUp size={16} />
-                Yes, resolved
+                <ThumbsUp className="mr-2 h-4 w-4" />
+                Yes
               </Button>
-              <Button 
+              <Button
                 onClick={() => handleFeedback(false)}
                 variant="outline"
-                className="flex-1 gap-2"
+                className="border-red-600 text-red-600 hover:bg-red-50"
               >
-                <ThumbsDown size={16} />
-                No, still need help
+                <ThumbsDown className="mr-2 h-4 w-4" />
+                No
               </Button>
             </div>
-            <Button 
-              onClick={() => setShowFeedback(false)}
-              variant="ghost"
-              className="w-full mt-2 text-sm"
-            >
-              Skip feedback
-            </Button>
           </Card>
         </div>
       )}
 
-      <div className="border-t border-slate-200 p-6">
-        <div className="flex gap-3 mb-4 flex-wrap">
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
-            <Button variant="outline" size="sm" className="gap-2">
-              <ImageIcon size={16} />
-              Upload Image
-            </Button>
-          </label>
-          
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              accept="video/*"
-              onChange={handleVideoUpload}
-              className="hidden"
-            />
-            <Button variant="outline" size="sm" className="gap-2">
-              <Video size={16} />
-              Upload Video
-            </Button>
-          </label>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-2"
-            onClick={isVideoCallActive ? endVideoCall : startVideoCall}
+      <div className="bg-white border-t p-4">
+        <div className="flex gap-2 mb-2">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+            id="image-upload"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="cursor-pointer"
+            onClick={() => document.getElementById('image-upload')?.click()}
           >
-            <Phone size={16} />
-            {isVideoCallActive ? 'End Video Call' : 'Start Video Call'}
+            <ImageIcon className="mr-2 h-4 w-4" />
+            Image
           </Button>
           
-          <Button variant="outline" size="sm" className="gap-2">
-            <Mic size={16} />
-            Voice
+          <input
+            type="file"
+            accept="video/*"
+            onChange={handleVideoUpload}
+            className="hidden"
+            id="video-upload"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="cursor-pointer"
+            onClick={() => document.getElementById('video-upload')?.click()}
+          >
+            <Video className="mr-2 h-4 w-4" />
+            Video
+          </Button>
+          
+          <Button
+            onClick={isVideoCallActive ? endVideoCall : startVideoCall}
+            variant={isVideoCallActive ? "destructive" : "outline"}
+            size="sm"
+          >
+            <Phone className="mr-2 h-4 w-4" />
+            {isVideoCallActive ? "End Call" : "Live Call"}
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            disabled
+            title="Voice input coming soon"
+          >
+            <Mic className="h-4 w-4" />
           </Button>
         </div>
         
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <Input
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Describe your issue or ask a question..."
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            onKeyPress={handleKeyPress}
+            placeholder="Type your message..."
+            disabled={isLoading}
             className="flex-1"
           />
-          <Button onClick={handleSendMessage} disabled={!inputText.trim() || isLoading}>
-            <Send size={20} />
+          <Button
+            onClick={handleSendMessage}
+            disabled={isLoading || !inputText.trim()}
+            size="icon"
+          >
+            <Send className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -389,4 +450,4 @@ const AIChat = () => {
   );
 };
 
-export default AIChat;
+export default AIChatGPTSecure;

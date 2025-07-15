@@ -10,6 +10,29 @@ A comprehensive web application for managing equipment, locations, users, and ma
 - 💬 [PROMPTS.md](./PROMPTS.md) - Tested prompts that work with Lovable.dev
 - 🔧 [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues and solutions
 
+## 📝 Copy & Messaging
+
+All copy follows our conversion-focused guidelines designed to SHIP FAST and convert users!
+
+- **Copy Guidelines:** [`/docs/COPY-GUIDE.md`](./docs/COPY-GUIDE.md) - READ THIS FIRST!
+- **All Copy Strings:** [`/src/copy/en.json`](./src/copy/en.json) - Import don't hardcode!
+
+### For Developers:
+```tsx
+// ❌ DON'T hardcode strings
+<button>Submit</button>
+
+// ✅ DO import from copy file
+import copy from '@/copy/en.json';
+<button>{copy.chat.buttons.sendMessage}</button>
+```
+
+### Copy Checklist:
+- [ ] No Lorem Ipsum
+- [ ] All copy from en.json
+- [ ] Mobile-friendly (test at 375px)
+- [ ] Error messages are helpful
+
 ## 🚀 Features
 
 - **Equipment Management**: Track equipment status, warranties, maintenance schedules, and locations

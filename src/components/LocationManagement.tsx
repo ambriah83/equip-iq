@@ -8,6 +8,7 @@ import { useLocations, Location } from '@/hooks/useLocations';
 import { useSupabaseRooms } from '@/hooks/useSupabaseRooms';
 import { DataTable, FilterBar, StatusBadge } from '@/components/shared';
 import { LocationCard, AddLocationDialog, LocationDetailsModal, LocationImportDialog } from '@/components/location';
+import { LimbleSyncDialog } from '@/components/location/LimbleSyncDialog';
 import { AddRoomDialog } from '@/components/room';
 import { Database } from '@/integrations/supabase/types';
 import ViewToggle from './ViewToggle';
@@ -199,6 +200,7 @@ const LocationManagement = () => {
               <Upload size={16} />
               Import
             </button>
+            <LimbleSyncDialog />
             <AddRoomDialog locations={locations.map(loc => ({ ...loc, status: loc.status }))} />
             <AddLocationDialog />
           </div>
